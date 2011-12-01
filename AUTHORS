@@ -1,0 +1,8 @@
+Kevin Klues and Barret Rhoden wrote the initial version of Parlib for the
+Akaros Operating system.  This is a linux port of that library.
+<klueska@cs.berkeley.edu>
+<brho@cs.berkeley.edu>
+
+Ben Hindman wrote the original HT library from which some of the vcore code in
+Parlib is inspired. However, their actual implementations vary significantly.
+<benh@cs.berkeley.edu>

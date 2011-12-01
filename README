@@ -1,1 +1,25 @@
-Fill me in
+Parlib 1.0
+For questions or comments, please contact: Kevin Klues <klueska@cs.berkeley.edu>
+
+* This is a Linux ONLY port of the Parlib library
+* Unless otherwise noted in individual files, all software contained in this
+  directory is licensed under an LGPL license.  Please see the COPYING.LESSER
+  and COYPING files located in this directory for details.
+* Please see the INSTALL file for installation instructions.
+* Please see the AUTHOR file for author information.
+
+The Parlib library was originally written for the Akaros operating system.  For
+this reason, this port was originally designed as an emulation layer on top of
+Linux that would allow developers to write applications and test them on a
+linux system before deplying them on Akaros.
+
+Since its original inception, however, we've discovered that Parlib is useful
+in its own right as a standalone library on linux for use by other projects.
+Most notably, as the backend for the Lithe implementation.
+
+At present, Parlib provides 3 primary services to developers:
+1) A virtual core (vcore) abstraction
+2) A user-level thread (uthread) abstraction
+3) User-space Mcs and Spin Locks
+
+
