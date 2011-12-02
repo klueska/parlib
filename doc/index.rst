@@ -6,17 +6,20 @@
 Welcome to Parlib's documentation!
 ==================================
 
-Contents:
+API Reference:
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
-
+  vcore
+  uthread
+  tls
+  mcs
+  spinlock
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
 
