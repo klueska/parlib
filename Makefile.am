@@ -15,6 +15,7 @@ LIB_CFILES = \
 
 LIB_HFILES = \
   @SRCDIR@/spinlock.h  \
+  @SRCDIR@/parlib.h    \
   @SRCDIR@/mcs.h       \
   @SRCDIR@/queue.h     \
   @SRCDIR@/tls.h       \
