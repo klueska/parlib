@@ -467,7 +467,6 @@ int vcore_lib_init()
   } else {
     __limit_vcores = get_nprocs();  
   }
-  printf("limit_vcores: %d\n", __limit_vcores);
 
   /* Allocate the structs containing meta data about the vcores
    * themselves. Never freed though.  Just freed automatically when the program
