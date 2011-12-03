@@ -50,14 +50,13 @@ endif
 # Setup parameters to build the library
 lib_LTLIBRARIES = libparlib.la
 libparlib_la_CFLAGS = $(AM_CFLAGS)
-libparlib_la_CFLAGS += -fno-exceptions -fno-strict-aliasing
 libparlib_la_CFLAGS += -I$(SYSDEPDIR)
 libparlib_la_SOURCES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES)
 libparlib_la_LIBADD = -lpthread
 
 # Setup a directory where all of the include files will be installed
-incdir = $(includedir)/$(LIBNAME)
-dist_inc_DATA = $(LIB_HFILES)
+parlibincdir = $(includedir)/$(LIBNAME)
+dist_parlibinc_DATA = $(LIB_HFILES)
 
 # Setup parameters to build the test programs
 check_PROGRAMS = lock_test vcore_test
@@ -75,6 +74,9 @@ vcore_test_LDADD = libparlib.la
 ChangeLog:
 	cd $(srcdir); \
 	./git-changelog.sh
+
+uninstall-hook:
+	rm -rf $(parlibincdir)
 
 .PHONY: ChangeLog
 

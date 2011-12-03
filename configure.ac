@@ -11,6 +11,9 @@ AC_CONFIG_MACRO_DIR([m4])
 # Auxiliary scripts such as install-sh and depcomp should be in DIRECTORY
 AC_CONFIG_AUX_DIR([build-aux])
 
+# Make the default prefix /usr instead of /usr/local
+AC_PREFIX_DEFAULT([/usr])
+
 # Initialize automake
 # Turn on all Automake warnings and report them as errors.
 # This is a foreign package
@@ -47,12 +50,17 @@ AC_CONFIG_FILES([
 AC_CONFIG_SRCDIR([src/vcore.c])
 
 # Set the common AM_CFLAGS for all Makefile.am files
-AC_SUBST([AM_CFLAGS],["    \
-  -g -O2 -Wall -std=gnu99  \
+CFLAGS="                   \
+  -g -O2 -Wall             \
   -Wno-unused-function     \
   -Wno-unused-value        \
-  -Wno-missing-braces 
-"])
+  -Wno-missing-braces      \
+  -fno-exceptions          \
+  -fno-strict-aliasing     \
+"
+
+# Set the common AM_CFLAGS for all Makefile.am files
+AC_SUBST([AM_CFLAGS],["-std=gnu99 $CFLAGS"])
 
 # Set up some global variables for use in the makefile
 SRCDIR=src
