@@ -1,4 +1,5 @@
-Installation instructions
+Parlib 1.0 - INSTALL
+For questions or comments, please contact: Kevin Klues <klueska@cs.berkeley.edu>
 
 To install this library, simply follow the standard GNU installation procedure.
 
@@ -31,3 +32,19 @@ make install
 
 Don't forget to use 'sudo' if you are installing into a directory which
 requires root priveleges.
+
+Also, if you install to a non-standard <install_dir>, it's probably a good idea
+to add these paths to a few environment variables.  Doing this will allow you
+to compile and run programs that depend on this library much easier. I set
+these variables in my .bashrc file in my home directory, but feel free to set
+them however you like.
+
+C_INCLUDE_PATH = <install_dir>/include
+CPLUS_INCLUDE_PATH = <install_dir>/include
+LD_LIBRARY_PATH = <install_dir>/lib
+LD_RUN_PATH = <install_dir>/lib
+
+Alternatively, you can set up a gcc spec file so that these tools will be
+available to all users on the system.  See the following link for details:
+http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Spec-Files.html
+
