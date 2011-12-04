@@ -107,7 +107,7 @@ void uthread_init(struct uthread *uthread)
 
 	/* If a tls_desc is already set for this thread, reinit it... */
 	if (uthread->tls_desc)
-		assert(__uthread_reinit_tls(uthread));
+		assert(!__uthread_reinit_tls(uthread));
 	/* Otherwise get a TLS for the new thread */
 	else
 		assert(!__uthread_allocate_tls(uthread));
