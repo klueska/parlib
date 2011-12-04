@@ -46,6 +46,7 @@
 #include <stdint.h>
 
 #include "tls.h"
+#include "atomic.h"
 
 #ifdef __cplusplus
 extern "C" {
