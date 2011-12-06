@@ -50,7 +50,7 @@ AC_CONFIG_FILES([
 AC_CONFIG_SRCDIR([src/vcore.c])
 
 # Set the common AM_CFLAGS for all Makefile.am files
-CFLAGS="                   \
+MY_CFLAGS="                \
   -g -O2 -Wall             \
   -Wno-unused-function     \
   -Wno-unused-value        \
@@ -60,7 +60,7 @@ CFLAGS="                   \
 "
 
 # Set the common AM_CFLAGS for all Makefile.am files
-AC_SUBST([AM_CFLAGS],["-std=gnu99 $CFLAGS"])
+AC_SUBST([AM_CFLAGS],["-std=gnu99 $MY_CFLAGS"])
 
 # Set up some global variables for use in the makefile
 SRCDIR=src
@@ -85,6 +85,18 @@ case $host in
 esac
 AM_CONDITIONAL([ARCH_i686], [test x$ARCH_i686 = xtrue])
 AM_CONDITIONAL([ARCH_x86_64], [test x$ARCH_x86_64 = xtrue])
+
+# Check if we have gcc > 4.4
+AC_PREPROC_IFELSE(
+[
+#include <features.h>
+#if !__GNUC_PREREQ(4,4)
+  #error "Looks like I'm going to be building just static libs :("
+#endif
+],
+[STATIC_ONLY=false],
+[STATIC_ONLY=true])
+AM_CONDITIONAL([STATIC_ONLY], [test x$STATIC_ONLY = xtrue])
 
 # Check whether LIBRARY exists and contains FUNCT
 # Execute ACT-IF-FOUND if it does.  ACT-IF-NOT otherwise.

@@ -53,6 +53,9 @@ libparlib_la_CFLAGS = $(AM_CFLAGS)
 libparlib_la_CFLAGS += -I$(SYSDEPDIR)
 libparlib_la_SOURCES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES)
 libparlib_la_LIBADD = -lpthread
+if STATIC_ONLY
+libparlib_la_LDFLAGS = -all-static
+endif
 
 # Setup a directory where all of the include files will be installed
 parlibincdir = $(includedir)/$(LIBNAME)
@@ -64,11 +67,13 @@ check_PROGRAMS = lock_test vcore_test
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
 lock_test_CFLAGS = $(AM_CFLAGS)
 lock_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
+lock_test_LDFLAGS = -all-static
 lock_test_LDADD = libparlib.la
 
 vcore_test_SOURCES = @TESTSDIR@/vcore_test.c
 vcore_test_CFLAGS = $(AM_CFLAGS)
 vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
+vcore_test_LDFLAGS = -all-static
 vcore_test_LDADD = libparlib.la 
 
 ChangeLog:

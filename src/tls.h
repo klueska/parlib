@@ -22,6 +22,7 @@
 #define HT_TLS_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifndef __GNUC__
   #error "You need to be using gcc to compile this library..."
@@ -72,7 +73,16 @@ void *get_tls_desc(uint32_t vcoreid);
   } safe_access_tls_var_internal();                                     \
 
 #else
-  #warning "For PIC you must be using gcc 4.4 or above for tls support!"
+
+#define begin_safe_access_tls_vars()                                                   \
+  printf("ERROR: For PIC you must be using gcc 4.4 or above for tls support!\n");      \
+  printf("ERROR: As a quick fix, try recompiling your application with -static...\n"); \
+  exit(2);
+
+#define end_safe_access_tls_vars()                                         \
+  printf("Will never be called because we abort above!");                  \
+  exit(2);
+
 #endif //__GNUC_PREREQ
 #endif // __PIC__
 
