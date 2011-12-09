@@ -22,10 +22,18 @@ LIB_HFILES = \
   @SRCDIR@/uthread.h   \
   @SRCDIR@/vcore.h
 
+LIB_SFILES = 
+
+LIB_INTERNAL_FILES = \
+  @SRCDIR@/internal/futex.h \
+  @SRCDIR@/internal/glibc-tls.h \
+  @SRCDIR@/internal/tls.h \
+  @SRCDIR@/internal/vcore.h
+
 if ARCH_i686
 SYSDEPDIR = $(srcdir)/@SYSDEPDIR_i686@
 
-LIB_SFILES = 
+LIB_SFILES += 
 
 LIB_HFILES += \
   @SYSDEPDIR_i686@/arch.h   \
@@ -36,7 +44,7 @@ endif
 if ARCH_x86_64
 SYSDEPDIR = $(srcdir)/@SYSDEPDIR_x86_64@
 
-LIB_SFILES = \
+LIB_SFILES += \
   @SYSDEPDIR_x86_64@/swapcontext.S \
   @SYSDEPDIR_x86_64@/setcontext.S  \
   @SYSDEPDIR_x86_64@/getcontext.S
@@ -45,13 +53,17 @@ LIB_HFILES += \
   @SYSDEPDIR_x86_64@/arch.h   \
   @SYSDEPDIR_x86_64@/atomic.h
 
+LIB_INTERNAL_FILES += \
+  @SYSDEPDIR_x86_64@/internal/ucontext_i.h
+
 endif
+LIB_FILES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES) $(LIB_INTERNAL_FILES)
 
 # Setup parameters to build the library
 lib_LTLIBRARIES = libparlib.la
 libparlib_la_CFLAGS = $(AM_CFLAGS)
 libparlib_la_CFLAGS += -I$(SYSDEPDIR)
-libparlib_la_SOURCES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES)
+libparlib_la_SOURCES = $(LIB_FILES)
 libparlib_la_LIBADD = -lpthread
 if STATIC_ONLY
 libparlib_la_LDFLAGS = -all-static
