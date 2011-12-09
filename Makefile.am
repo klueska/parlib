@@ -3,6 +3,7 @@ ACLOCAL_AMFLAGS=-I m4
 
 # Set up global variables
 LIBNAME = parlib
+CAP_LIBNAME = $(shell echo $(LIBNAME) | sed -e 's/^[a-z]/\U&/g')
 SRCDIR = $(srcdir)/@SRCDIR@
 
 # List of C FILES to build into objects
@@ -73,6 +74,12 @@ endif
 parlibincdir = $(includedir)/$(LIBNAME)
 dist_parlibinc_DATA = $(LIB_HFILES)
 
+# Include pre-generated documentation in the distribution
+EXTRA_DIST = \
+  doc/html \
+  doc/singlehtml \
+  doc/latex/$(CAP_LIBNAME).pdf
+
 # Setup parameters to build the test programs
 check_PROGRAMS = lock_test vcore_test
 
@@ -88,9 +95,48 @@ vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 vcore_test_LDFLAGS = -all-static
 vcore_test_LDADD = libparlib.la 
 
+$(abs_builddir)/doc/%: | $(abs_builddir)/doc
+	cd $(srcdir)/doc; \
+	if [ -f Makefile ]; then \
+	  make BUILDDIR=$(abs_builddir)/doc $(@F); \
+	else \
+	  cp -R $(@F) $(@D); \
+	fi;
+
+$(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf: | $(abs_builddir)/doc
+	cd $(srcdir)/doc; \
+	if [ -f Makefile ]; then \
+	  make BUILDDIR=$(abs_builddir)/doc latexpdf; \
+	else \
+	  cp -R latex $(@D); \
+	fi;
+
+$(abs_builddir)/doc:
+	mkdir -p $@
+
+doc/html: $(abs_builddir)/doc/html
+doc/singlehtml: $(abs_builddir)/doc/singlehtml
+doc/latex/$(CAP_LIBNAME).pdf: $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf
+
+doc: \
+  $(abs_builddir)/doc/html \
+  $(abs_builddir)/doc/singlehtml \
+  $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf
+
 ChangeLog:
 	cd $(srcdir); \
-	./git-changelog.sh
+	if [ -f git-changelog.sh ]; then \
+	  ./git-changelog.sh; \
+	fi;
+
+clean-local:
+	rm -rf doc
+
+install-data-hook: doc
+	install -d $(docdir)
+	cp -r $(abs_builddir)/doc/html $(docdir)
+	cp -r $(abs_builddir)/doc/singlehtml $(docdir)
+	cp -r $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf $(docdir)
 
 uninstall-hook:
 	rm -rf $(parlibincdir)
