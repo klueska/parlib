@@ -74,12 +74,6 @@ endif
 parlibincdir = $(includedir)/$(LIBNAME)
 dist_parlibinc_DATA = $(LIB_HFILES)
 
-# Include pre-generated documentation in the distribution
-EXTRA_DIST = \
-  doc/html \
-  doc/singlehtml \
-  doc/latex/$(CAP_LIBNAME).pdf
-
 # Setup parameters to build the test programs
 check_PROGRAMS = lock_test vcore_test
 
@@ -95,12 +89,37 @@ vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 vcore_test_LDFLAGS = -all-static
 vcore_test_LDADD = libparlib.la 
 
+man_MANS = \
+  doc/man/$(LIBNAME).1
+
+# Don't suppport doing things this way for now because automake is dumb and
+# doesn't allow 'generated' texi files...
+# Instead we'll add the generated .info file and install it manually...
+#info_TEXINFOS = \
+#  doc/texinfo/$(CAP_LIBNAME).texi
+
+# Include pre-generated documentation in the distribution
+EXTRA_DIST = \
+  doc/html \
+  doc/singlehtml \
+  doc/man \
+  doc/texinfo/$(CAP_LIBNAME).info \
+  doc/latex/$(CAP_LIBNAME).pdf
+
 $(abs_builddir)/doc/%: | $(abs_builddir)/doc
 	cd $(srcdir)/doc; \
 	if [ -f Makefile ]; then \
 	  make BUILDDIR=$(abs_builddir)/doc $(@F); \
 	else \
 	  cp -R $(@F) $(@D); \
+	fi;
+
+$(abs_builddir)/doc/texinfo/$(CAP_LIBNAME).info: | $(abs_builddir)/doc
+	cd $(srcdir)/doc; \
+	if [ -f Makefile ]; then \
+	  make BUILDDIR=$(abs_builddir)/doc info; \
+	else \
+	  cp -R texinfo $(@D); \
 	fi;
 
 $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf: | $(abs_builddir)/doc
@@ -114,13 +133,16 @@ $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf: | $(abs_builddir)/doc
 $(abs_builddir)/doc:
 	mkdir -p $@
 
-doc/html: $(abs_builddir)/doc/html
-doc/singlehtml: $(abs_builddir)/doc/singlehtml
+doc/%: $(abs_builddir)/doc/%
+doc/man/$(LIBNAME).1: $(abs_builddir)/doc/man
+doc/texinfo/$(CAP_LIBNAME).info: $(abs_builddir)/doc/texinfo/$(CAP_LIBNAME).info
 doc/latex/$(CAP_LIBNAME).pdf: $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf
 
 doc: \
   $(abs_builddir)/doc/html \
   $(abs_builddir)/doc/singlehtml \
+  $(abs_builddir)/doc/man \
+  $(abs_builddir)/doc/texinfo/$(CAP_LIBNAME).info \
   $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf
 
 ChangeLog:
@@ -134,12 +156,15 @@ clean-local:
 
 install-data-hook: doc
 	install -d $(docdir)
+	install -d $(infodir)
 	cp -r $(abs_builddir)/doc/html $(docdir)
 	cp -r $(abs_builddir)/doc/singlehtml $(docdir)
+	cp -r $(abs_builddir)/doc/texinfo/$(CAP_LIBNAME).info $(infodir)
 	cp -r $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf $(docdir)
 
 uninstall-hook:
-	rm -rf $(parlibincdir)
-
+	rm -rf $(litheincdir)
+	rm -rf $(docdir)
+	rm -rf $(infodir)/$(CAP_LIBNAME).info
 .PHONY: ChangeLog
 
