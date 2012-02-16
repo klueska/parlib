@@ -1,0 +1,190 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>MCS Locks &mdash; Parlib 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="next" title="Spinlocks" href="spinlock.html" />
+    <link rel="prev" title="Thread Local Storage" href="tls.html" /> 
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html">
+  <img src="_static/logo.png" border="0" alt="Parlib"/>
+</a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="spinlock.html" title="Spinlocks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tls.html" title="Thread Local Storage"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
+  <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
+  
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tls.html"
+                        title="previous chapter">Thread Local Storage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="spinlock.html"
+                        title="next chapter">Spinlocks</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/mcs.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="mcs-locks">
+<h1>MCS Locks<a class="headerlink" href="#mcs-locks" title="Permalink to this headline">¶</a></h1>
+<dl class="type">
+<dt id="mcs_lock_qnode">
+struct <tt class="descname">mcs_lock_qnode</tt><a class="headerlink" href="#mcs_lock_qnode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="type">
+<dt id="mcs_lock">
+struct <tt class="descname">mcs_lock</tt><a class="headerlink" href="#mcs_lock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="type">
+<dt id="mcs_dissem_flags_t">
+<tt class="descname">mcs_dissem_flags_t</tt><a class="headerlink" href="#mcs_dissem_flags_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="type">
+<dt id="mcs_barrier_t">
+<tt class="descname">mcs_barrier_t</tt><a class="headerlink" href="#mcs_barrier_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_barrier_init">
+int <tt class="descname">mcs_barrier_init</tt><big>(</big><a class="reference internal" href="#mcs_barrier_t" title="mcs_barrier_t">mcs_barrier_t</a>*<em>&nbsp;b</em>, size_t<em>&nbsp;nprocs</em><big>)</big><a class="headerlink" href="#mcs_barrier_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_barrier_wait">
+void <tt class="descname">mcs_barrier_wait</tt><big>(</big><a class="reference internal" href="#mcs_barrier_t" title="mcs_barrier_t">mcs_barrier_t</a>*<em>&nbsp;b</em>, size_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#mcs_barrier_wait" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_lock_init">
+void <tt class="descname">mcs_lock_init</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#mcs_lock_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_lock_lock">
+void <tt class="descname">mcs_lock_lock</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_lock_lock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_lock_unlock">
+void <tt class="descname">mcs_lock_unlock</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_lock_unlock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_lock_notifsafe">
+void <tt class="descname">mcs_lock_notifsafe</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_lock_notifsafe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mcs_unlock_notifsafe">
+void <tt class="descname">mcs_unlock_notifsafe</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_unlock_notifsafe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="spinlock.html" title="Spinlocks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tls.html" title="Thread Local Storage"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

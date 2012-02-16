@@ -1,0 +1,150 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Spinlocks &mdash; Parlib 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="prev" title="MCS Locks" href="mcs.html" /> 
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html">
+  <img src="_static/logo.png" border="0" alt="Parlib"/>
+</a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="mcs.html" title="MCS Locks"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
+  <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
+  
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mcs.html"
+                        title="previous chapter">MCS Locks</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/spinlock.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="spinlocks">
+<h1>Spinlocks<a class="headerlink" href="#spinlocks" title="Permalink to this headline">¶</a></h1>
+<dl class="type">
+<dt id="spinlock_t">
+<tt class="descname">spinlock_t</tt><a class="headerlink" href="#spinlock_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="spinlock_init">
+void <tt class="descname">spinlock_init</tt><big>(</big><a class="reference internal" href="#spinlock_t" title="spinlock_t">spinlock_t</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#spinlock_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="spinlock_trylock">
+int <tt class="descname">spinlock_trylock</tt><big>(</big><a class="reference internal" href="#spinlock_t" title="spinlock_t">spinlock_t</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#spinlock_trylock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="spinlock_lock">
+void <tt class="descname">spinlock_lock</tt><big>(</big><a class="reference internal" href="#spinlock_t" title="spinlock_t">spinlock_t</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#spinlock_lock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="spinlock_unlock">
+void <tt class="descname">spinlock_unlock</tt><big>(</big><a class="reference internal" href="#spinlock_t" title="spinlock_t">spinlock_t</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#spinlock_unlock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="mcs.html" title="MCS Locks"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

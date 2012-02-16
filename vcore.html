@@ -1,0 +1,235 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Vcores &mdash; Parlib 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="next" title="Uthreads" href="uthread.html" />
+    <link rel="prev" title="Welcome to Parlib’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html">
+  <img src="_static/logo.png" border="0" alt="Parlib"/>
+</a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="uthread.html" title="Uthreads"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Parlib’s documentation!"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
+  <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
+  
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Parlib&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="uthread.html"
+                        title="next chapter">Uthreads</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/vcore.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="vcores">
+<h1>Vcores<a class="headerlink" href="#vcores" title="Permalink to this headline">¶</a></h1>
+<dl class="var">
+<dt id="vcore">
+struct <tt class="descname">vcore</tt><a class="headerlink" href="#vcore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="var">
+<dt id="__vcores">
+extern struct <a class="reference internal" href="#vcore" title="vcore">vcore</a> *<tt class="descname">__vcores</tt><a class="headerlink" href="#__vcores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="var">
+<dt id="vcore_tls_descs">
+extern void **<tt class="descname">vcore_tls_descs</tt><a class="headerlink" href="#vcore_tls_descs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="var">
+<dt id="vcore_context">
+extern __thread ucontext_t <tt class="descname">vcore_context</tt><a class="headerlink" href="#vcore_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="var">
+<dt id="vcore_saved_ucontext">
+extern __thread ucontext_t *<tt class="descname">vcore_saved_ucontext</tt><a class="headerlink" href="#vcore_saved_ucontext" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="var">
+<dt id="vcore_saved_tls_desc">
+extern __thread void *<tt class="descname">vcore_saved_tls_desc</tt><a class="headerlink" href="#vcore_saved_tls_desc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vcore_entry">
+extern void <tt class="descname">vcore_entry</tt><big>(</big>)<em>&nbsp;__attribute__((weak)</em><big>)</big><a class="headerlink" href="#vcore_entry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">extern int vcore_lib_init();</tt></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">int vcore_request(int k);</tt></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">void vcore_yield();</tt></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vcore_id">
+int <tt class="descname">vcore_id</tt><big>(</big>void<big>)</big><a class="headerlink" href="#vcore_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="num_vcores">
+size_t <tt class="descname">num_vcores</tt><big>(</big>void<big>)</big><a class="headerlink" href="#num_vcores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="max_vcores">
+size_t <tt class="descname">max_vcores</tt><big>(</big>void<big>)</big><a class="headerlink" href="#max_vcores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="limit_vcores">
+size_t <tt class="descname">limit_vcores</tt><big>(</big>void<big>)</big><a class="headerlink" href="#limit_vcores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="in_vcore_context">
+bool <tt class="descname">in_vcore_context</tt><big>(</big><big>)</big><a class="headerlink" href="#in_vcore_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">void clear_notif_pending(uint32_t vcoreid);</tt></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">void enable_notifs(uint32_t vcoreid);</tt></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<tt class="descname">void disable_notifs(uint32_t vcoreid);</tt></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vcore_set_tls_var">
+#define <tt class="descname">vcore_set_tls_var</tt><big>(</big>name, val<big>)</big><a class="headerlink" href="#vcore_set_tls_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vcore_get_tls_var">
+#define <tt class="descname">vcore_get_tls_var</tt><big>(</big>name<big>)</big><a class="headerlink" href="#vcore_get_tls_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="uthread.html" title="Uthreads"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Parlib’s documentation!"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

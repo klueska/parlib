@@ -1,0 +1,235 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Uthreads &mdash; Parlib 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="next" title="Thread Local Storage" href="tls.html" />
+    <link rel="prev" title="Vcores" href="vcore.html" /> 
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html">
+  <img src="_static/logo.png" border="0" alt="Parlib"/>
+</a>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tls.html" title="Thread Local Storage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="vcore.html" title="Vcores"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
+  <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
+  
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="vcore.html"
+                        title="previous chapter">Vcores</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tls.html"
+                        title="next chapter">Thread Local Storage</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/uthread.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="uthreads">
+<h1>Uthreads<a class="headerlink" href="#uthreads" title="Permalink to this headline">¶</a></h1>
+<dl class="type">
+<dt id="uthread">
+struct <tt class="descname">uthread</tt><a class="headerlink" href="#uthread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="type">
+<dt id="uthread_t">
+<tt class="descname">uthread_t</tt><a class="headerlink" href="#uthread_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="type">
+<dt id="current_uthread">
+extern __thread <a class="reference internal" href="#uthread_t" title="uthread_t">uthread_t</a> *<tt class="descname">current_uthread</tt><a class="headerlink" href="#current_uthread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="type">
+<dt id="schedule_ops">
+struct <tt class="descname">schedule_ops</tt><a class="headerlink" href="#schedule_ops" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="var">
+<dt id="sched_ops">
+extern struct <a class="reference internal" href="#schedule_ops" title="schedule_ops">schedule_ops</a> *<tt class="descname">sched_ops</tt><a class="headerlink" href="#sched_ops" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_vcore_entry">
+extern void <tt class="descname">uthread_vcore_entry</tt><big>(</big><big>)</big><a class="headerlink" href="#uthread_vcore_entry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_lib_init">
+int <tt class="descname">uthread_lib_init</tt><big>(</big><big>)</big><a class="headerlink" href="#uthread_lib_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_init">
+void <tt class="descname">uthread_init</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uth</em><big>)</big><a class="headerlink" href="#uthread_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_cleanup">
+void <tt class="descname">uthread_cleanup</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#uthread_cleanup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_runnable">
+void <tt class="descname">uthread_runnable</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#uthread_runnable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_yield">
+void <tt class="descname">uthread_yield</tt><big>(</big>bool<em>&nbsp;save_state</em><big>)</big><a class="headerlink" href="#uthread_yield" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="check_preempt_pending">
+bool <tt class="descname">check_preempt_pending</tt><big>(</big>uint32_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#check_preempt_pending" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="save_current_uthread">
+void <tt class="descname">save_current_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#save_current_uthread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="set_current_uthread">
+void <tt class="descname">set_current_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#set_current_uthread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="run_current_uthread">
+void <tt class="descname">run_current_uthread</tt><big>(</big>void)<em>&nbsp;__attribute((noreturn)</em><big>)</big><a class="headerlink" href="#run_current_uthread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="run_uthread">
+void <tt class="descname">run_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a> *<a class="reference internal" href="#uthread" title="uthread">uthread</a>)<em>&nbsp;__attribute((noreturn)</em><big>)</big><a class="headerlink" href="#run_uthread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="swap_uthreads">
+void <tt class="descname">swap_uthreads</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*__old</em>, struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*__new</em><big>)</big><a class="headerlink" href="#swap_uthreads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="init_uthread_tf">
+void <tt class="descname">init_uthread_tf</tt><big>(</big><a class="reference internal" href="#uthread_t" title="uthread_t">uthread_t</a><em>&nbsp;*uth</em>, void<em>&nbsp;(*entry)(void)</em>, void<em>&nbsp;*stack_bottom</em>, uint32_t<em>&nbsp;size</em><big>)</big><a class="headerlink" href="#init_uthread_tf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_set_tls_var">
+#define <tt class="descname">uthread_set_tls_var</tt><big>(</big><a class="reference internal" href="#uthread" title="uthread">uthread</a>, name, val<big>)</big><a class="headerlink" href="#uthread_set_tls_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_get_tls_var">
+#define <tt class="descname">uthread_get_tls_var</tt><big>(</big><a class="reference internal" href="#uthread" title="uthread">uthread</a>, name<big>)</big><a class="headerlink" href="#uthread_get_tls_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tls.html" title="Thread Local Storage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="vcore.html" title="Vcores"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="contact.html">Contact</a>|&nbsp;</li>
+  <li><a href="contents.html">Documentation </a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
