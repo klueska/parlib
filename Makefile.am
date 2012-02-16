@@ -89,6 +89,7 @@ vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 vcore_test_LDFLAGS = -all-static
 vcore_test_LDADD = libparlib.la 
 
+if SPHINX_BUILD
 man_MANS = \
   doc/man/$(LIBNAME).1
 
@@ -145,12 +146,6 @@ doc: \
   $(abs_builddir)/doc/texinfo/$(CAP_LIBNAME).info \
   $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf
 
-ChangeLog:
-	cd $(srcdir); \
-	if [ -f git-changelog.sh ]; then \
-	  ./git-changelog.sh; \
-	fi;
-
 clean-local:
 	rm -rf doc
 
@@ -161,10 +156,18 @@ install-data-hook: doc
 	cp -r $(abs_builddir)/doc/singlehtml $(docdir)
 	cp -r $(abs_builddir)/doc/texinfo/$(CAP_LIBNAME).info $(infodir)
 	cp -r $(abs_builddir)/doc/latex/$(CAP_LIBNAME).pdf $(docdir)
+endif
+
+ChangeLog:
+	cd $(srcdir); \
+	if [ -f git-changelog.sh ]; then \
+	  ./git-changelog.sh; \
+	fi;
 
 uninstall-hook:
-	rm -rf $(litheincdir)
+	rm -rf $(parlibincdir)
 	rm -rf $(docdir)
 	rm -rf $(infodir)/$(CAP_LIBNAME).info
+
 .PHONY: ChangeLog
 

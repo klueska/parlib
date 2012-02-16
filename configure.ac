@@ -98,6 +98,10 @@ AC_PREPROC_IFELSE(
 [STATIC_ONLY=true])
 AM_CONDITIONAL([STATIC_ONLY], [test x$STATIC_ONLY = xtrue])
 
+# Check if we have the sphinx documentation tool installed
+SPHINX_BUILD=`which sphinx-buil`
+AM_CONDITIONAL([SPHINX_BUILD], [test x$SPHINX_BUILD != x])
+
 # Check whether LIBRARY exists and contains FUNCT
 # Execute ACT-IF-FOUND if it does.  ACT-IF-NOT otherwise.
 #AC_CHECK_LIB(LIBRARY, FUNCT, [ACT-IF-FOUND], [ACT-IF-NOT])
