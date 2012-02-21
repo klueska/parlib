@@ -3,23 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Parlib's documentation!
+Overview
 ==================================
+The Parlib library was originally written for the Akaros operating system.  For 
+this reason, this port was originally designed as an emulation layer on top of
+Linux that would allow developers to write applications and test them on a
+linux system before deplying them on Akaros.
 
-API Reference:
+Since its original inception, however, we've discovered that Parlib is useful
+in its own right as a standalone library on linux for use by other projects.
+Most notably, as the backend for the Lithe implementation.
 
-.. toctree::
-  :maxdepth: 2
+At present, Parlib provides 3 primary services to developers:
 
-  vcore
-  uthread
-  tls
-  mcs
-  spinlock
+1) A virtual core (vcore) abstraction
 
-Indices and tables
-==================
+2) A user-level thread (uthread) abstraction
 
-* :ref:`genindex`
-* :ref:`search`
+3) User-space Mcs and Spin Locks
 

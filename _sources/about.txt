@@ -1,0 +1,14 @@
+About
+=======================
+
+People
+------------------------
+**Current Contributors:**
+
+- Kevin Klues <klueska@cs.berkeley.edu>
+
+- Barret Rhoden <brho@cs.berkeley.edu>
+
+Publications
+------------------------
+There are currently no publications on Parlib.

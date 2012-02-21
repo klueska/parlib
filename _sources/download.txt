@@ -1,0 +1,20 @@
+Download and Installation
+===================================
+Parlib is a standalone library and should work on most new Linux distributions
+
+Download
+-----------------------------------
+
+**Releases:**
+
+Parlib is still new! There are currently no stable releases.
+
+**Git repositories:**
+::
+
+  git clone git://github.com/klueska/parlib.git
+
+Install
+-----------------------------------
+To install follow the instructions in the INSTALL file included with the 
+distribution.
