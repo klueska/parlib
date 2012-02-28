@@ -59,6 +59,7 @@
 #include "atomic.h"
 #include "tls.h"
 #include "vcore.h"
+#include "mcs.h"
 
 /* Array of vcores using clone to masquerade. */
 struct vcore *__vcores = NULL;
@@ -102,7 +103,8 @@ volatile int __limit_vcores = 0;
 static ucontext_t main_context = { 0 };
 
 /* Mutex used to provide mutually exclusive access to our globals. */
-static pthread_mutex_t __vcore_mutex = PTHREAD_MUTEX_INITIALIZER;
+//static pthread_mutex_t __vcore_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mcs_lock_t __vcore_mutex = MCS_LOCK_INIT;
 
 /* Stack space to use when a vcore yields without a stack. */
 static __thread void *__vcore_stack = NULL;
@@ -126,12 +128,13 @@ void __vcore_entry_gate()
   /* Cache a copy of vcoreid so we don't lose track of it over system call
    * invocations in which TLS might change out from under us. */
   int vcoreid = __vcore_id;
-  pthread_mutex_lock(&__vcore_mutex);
+  mcs_lock_qnode_t qnode = {0};
+  mcs_lock_lock(&__vcore_mutex, &qnode);
   {
     /* Check and see if we should wait at the gate. */
     if (__max_vcores > __num_vcores) {
       printf("%d not waiting at gate\n", vcoreid);
-      pthread_mutex_unlock(&__vcore_mutex);
+      mcs_lock_unlock(&__vcore_mutex, &qnode);
       goto entry;
     }
 
@@ -145,7 +148,7 @@ void __vcore_entry_gate()
     /* Signal that we are about to wait on the futex. */
     __vcores[vcoreid].running = false;
   }
-  pthread_mutex_unlock(&__vcore_mutex);
+  mcs_lock_unlock(&__vcore_mutex, &qnode);
 
   /* Wait for this vcore to get woken up. */
   futex_wait(&(__vcores[vcoreid].running), false);
@@ -154,7 +157,7 @@ void __vcore_entry_gate()
 entry:
   /* Wait for the original main to reach the point of not requiring its stack
    * anymore.  TODO: Think of a better way to this.  Required for now because
-   * we need to call pthread_mutex_unlock() in this thread, which causes a race
+   * we need to call mcs_lock_unlock() in this thread, which causes a race
    * for using the main threads stack with the vcore restarting it in
    * ht_entry(). */
   while(!original_main_done) 
@@ -404,10 +407,14 @@ int vcore_request(int k)
   }
  
   int vcores = 0;
-  pthread_mutex_lock(&__vcore_mutex);
+  // Always access the qnode through the qnode_ptr variable.  The reasons are
+  // made clearer below. In the normal path we will just acquire and release
+  // using this qnode.
+  mcs_lock_qnode_t qnode = {0};
+  mcs_lock_lock(&__vcore_mutex, &qnode);
   {
     if (k == 0) {
-      pthread_mutex_unlock(&__vcore_mutex);
+      mcs_lock_unlock(&__vcore_mutex, &qnode);
       return 0;
     } else {
       /* If this is the first vcore requested, do something special */
@@ -418,14 +425,15 @@ int vcore_request(int k)
         if(once) {
           once = false;
           __vcore_request(1);
-          pthread_mutex_unlock(&__vcore_mutex);
           /* Don't use the stack anymore! */
+		  /* This is also my poor man's lock to ensure the main context is not
+		   * restored until after I'm done using the stack and this "version"
+		   * of the main thread goes to sleep forever */
           original_main_done = true;
           /* Futex calls are forced inline */
           futex_wait(&original_main_done, true);
           assert(0);
         }
-        pthread_mutex_lock(&__vcore_mutex);
         vcores = 1;
         k -=1;
       }
@@ -433,7 +441,7 @@ int vcore_request(int k)
       vcores += __vcore_request(k);
     }
   }
-  pthread_mutex_unlock(&__vcore_mutex);
+  mcs_lock_unlock(&__vcore_mutex, &qnode);
   return 0;
 }
 
