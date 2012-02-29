@@ -36,8 +36,14 @@
 #include <sys/time.h>
 #include <assert.h>
 
+#include "parlib-config.h"
 #include "atomic.h"
 #include "arch.h"
+#include "vcore.h"
+#include "uthread.h"
+#include "mcs.h"
+#include "tls.h"
+#include "spinlock.h"
 
 enum {
 	PG_RDONLY = 4,

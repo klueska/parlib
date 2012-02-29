@@ -165,8 +165,6 @@ entry:
   /* Use cached value of htid in case TLS changed out from under us while
    * waiting for this vcore to get woken up. */
   assert(__vcores[vcoreid].running == true);
-  /* Restore the TLS associated with this vcore's context */
-  set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
   /* Jump to the vcore's entry point */
   vcore_entry();
 
@@ -450,6 +448,10 @@ void vcore_yield()
   /* Clear out the saved ht_saved_context and ht_saved_tls_desc variables */
   vcore_saved_ucontext = NULL;
   vcore_saved_tls_desc = NULL;
+#ifndef PARLIB_NO_UTHREAD_TLS
+  /* Restore the TLS associated with this vcore's context */
+  set_tls_desc(vcore_tls_descs[__vcore_id], __vcore_id);
+#endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
   set_stack_pointer(__vcore_stack);

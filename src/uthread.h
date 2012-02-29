@@ -32,7 +32,9 @@
  * the proper arch.h file */
 struct uthread {
 	uthread_context_t uc;
+#ifndef PARLIB_NO_UTHREAD_TLS
 	void *tls_desc;
+#endif
 	/* whether or not the scheduler can migrate you from your vcore */
 	bool dont_migrate;
 };
@@ -96,21 +98,31 @@ init_uthread_tf(uthread_t *uth, void (*entry)(void),
   init_uthread_entry_ARCH(uth, entry);
 }
 
-#define uthread_set_tls_var(uthread, name, val)                        \
-{                                                                      \
-	typeof(val) __val = val;                                           \
-	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc);          \
-	name = __val;                                                      \
-	end_access_tls_vars();                                             \
-}
-
-#define uthread_get_tls_var(uthread, name)                             \
-({                                                                     \
-	typeof(name) val;                                                  \
-	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc);          \
-	val = name;                                                        \
-	end_access_tls_vars();                                             \
-	val;                                                               \
-})
+#ifndef PARLIB_NO_UTHREAD_TLS
+  #define uthread_set_tls_var(uthread, name, val)                        \
+  {                                                                      \
+  	typeof(val) __val = val;                                           \
+  	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc);          \
+  	name = __val;                                                      \
+  	end_access_tls_vars();                                             \
+  }
+  
+  #define uthread_get_tls_var(uthread, name)                             \
+  ({                                                                     \
+  	typeof(name) val;                                                  \
+  	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc);          \
+  	val = name;                                                        \
+  	end_access_tls_vars();                                             \
+  	val;                                                               \
+  })
+#else
+  #define uthread_set_tls_var(uthread, name, val)                        \
+  {                                                                      \
+  }
+  
+  #define uthread_get_tls_var(uthread, name)                             \
+  ({                                                                     \
+  })
+#endif
 
 #endif /* _UTHREAD_H */

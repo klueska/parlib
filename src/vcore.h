@@ -47,6 +47,7 @@
 
 #include "tls.h"
 #include "atomic.h"
+#include "parlib-config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -167,22 +168,30 @@ void enable_notifs(uint32_t vcoreid);
  */
 void disable_notifs(uint32_t vcoreid);
 
-#define vcore_set_tls_var(name, val)                                   \
-{                                                                      \
-	typeof(val) __val = val;                                           \
-	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);                \
-	name = __val;                                                      \
-	end_access_tls_vars();                                             \
-}
-
-#define vcore_get_tls_var(name)                                        \
-({                                                                     \
-	typeof(name) val;                                                  \
-	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);                \
-	val = name;                                                        \
-	end_access_tls_vars();                                             \
-	val;                                                               \
-})
+#ifndef PARLIB_NO_UTHREAD_TLS
+  #define vcore_set_tls_var(name, val)                                 \
+  {                                                                    \
+  	typeof(val) __val = val;                                           \
+  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);                \
+  	name = __val;                                                      \
+  	end_access_tls_vars();                                             \
+  }
+  
+  #define vcore_get_tls_var(name)                                      \
+  ({                                                                   \
+  	typeof(name) val;                                                  \
+  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);                \
+  	val = name;                                                        \
+  	end_access_tls_vars();                                             \
+  	val;                                                               \
+  })
+#else
+  #define vcore_set_tls_var(name, val)                                 \
+  	name = val;                                                        \
+  
+  #define vcore_get_tls_var(name)                                      \
+  	name
+#endif
 
 #ifdef __cplusplus
 }
