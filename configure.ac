@@ -39,6 +39,7 @@ AC_PROG_LIBTOOL
 
 # Declare config.h as the output header
 AC_CONFIG_HEADERS([config.h])
+AX_PREFIX_CONFIG_H()
 
 # Declare Makefiles as output files
 AC_CONFIG_FILES([
@@ -97,6 +98,18 @@ AC_PREPROC_IFELSE(
 [STATIC_ONLY=false],
 [STATIC_ONLY=true])
 AM_CONDITIONAL([STATIC_ONLY], [test x$STATIC_ONLY = xtrue])
+
+# Allow us to disable TLS for Uthreads
+AC_ARG_WITH([uthread-tls],
+  [AS_HELP_STRING([--without-uthread-tls],
+    [disable tls support for uthreads])],
+  [],
+  [with_uthread_tls=yes])
+
+if test "x$with_uthread_tls" != xyes; then
+  AC_DEFINE([NO_UTHREAD_TLS], [1],
+              [Define if you want to disable support for uthread tls])
+fi
 
 # Check if we have the sphinx documentation tool installed
 SPHINX_BUILD=`which sphinx-build`

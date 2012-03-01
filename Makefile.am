@@ -15,6 +15,7 @@ LIB_CFILES = \
   @SRCDIR@/vcore.c
 
 LIB_HFILES = \
+  $(LIBNAME)-config.h  \
   @SRCDIR@/spinlock.h  \
   @SRCDIR@/parlib.h    \
   @SRCDIR@/mcs.h       \
