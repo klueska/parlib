@@ -103,7 +103,6 @@ volatile int __limit_vcores = 0;
 static ucontext_t main_context = { 0 };
 
 /* Mutex used to provide mutually exclusive access to our globals. */
-//static pthread_mutex_t __vcore_mutex = PTHREAD_MUTEX_INITIALIZER;
 static mcs_lock_t __vcore_mutex = MCS_LOCK_INIT;
 
 /* Stack space to use when a vcore yields without a stack. */
@@ -162,7 +161,7 @@ entry:
    * ht_entry(). */
   while(!original_main_done) 
     cpu_relax();
-  /* Use cached value of htid in case TLS changed out from under us while
+  /* Use cached value of vcoreid in case TLS changed out from under us while
    * waiting for this vcore to get woken up. */
   assert(__vcores[vcoreid].running == true);
   /* Jump to the vcore's entry point */
@@ -195,7 +194,7 @@ __vcore_trampoline_entry(void *arg)
   /* Set the proper affinity for this vcore */
   cpu_set_t c;
   CPU_ZERO(&c);
-  CPU_SET(htid, &c);
+  CPU_SET(vcoreid, &c);
   if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
     exit(1);
@@ -517,25 +516,25 @@ int vcore_lib_init()
  *
  * Note that this won't catch every race/case of an incoming event.  Future
  * events will get caught in pop_ros_tf() */
-void clear_notif_pending(uint32_t htid)
+void clear_notif_pending(uint32_t vcoreid)
 {
 //	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
 }
 
 /* Only call this if you know what you are doing. */
-static inline void __enable_notifs(uint32_t htid)
+static inline void __enable_notifs(uint32_t vcoreid)
 {
 //	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
 }
 
 /* Enables notifs, and deals with missed notifs by self notifying.  This should
  * be rare, so the syscall overhead isn't a big deal. */
-void enable_notifs(uint32_t htid)
+void enable_notifs(uint32_t vcoreid)
 {
 //	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
 }
 
-void disable_notifs(uint32_t htid)
+void disable_notifs(uint32_t vcoreid)
 {
 //	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
 }
