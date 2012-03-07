@@ -202,7 +202,7 @@ __vcore_trampoline_entry(void *arg)
   sched_yield();
 #endif
 
-  /* Initialize the tls region to be used by this ht */
+  /* Initialize the tls region to be used by this vcore */
   init_tls(vcoreid);
   set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
 
@@ -310,7 +310,7 @@ static void __create_vcore(int i)
 #else 
   struct vcore *cvcore = &__vcores[i];
   cvcore->stack_size = VCORE_MIN_STACK_SIZE;
-  if((cvcore->stack_top = malloc(cvcore->stack_size)) == NULL) {
+  if((cvcore->stack_bottom = malloc(cvcore->stack_size)) == NULL) {
     fprintf(stderr, "vcore: could not set stack size of underlying vcore\n");
     exit(1);
   }
@@ -340,7 +340,7 @@ static void __create_vcore(int i)
                      | CLONE_DETACHED
                      | 0);
 
-  if(clone(__vcore_trampoline_entry, cvcore->stack_top+cvcore->stack_size, 
+  if(clone(__vcore_trampoline_entry, cvcore->stack_bottom+cvcore->stack_size, 
            clone_flags, (void *)((long int)i), 
            &cvcore->ptid, &cvcore->ldt_entry, &cvcore->ptid) == -1) {
     perror("Error");
@@ -387,7 +387,6 @@ static int __vcore_request(int k)
   if(k != j) {
     printf("&k, %p, k: %d\n", &k, k);
   }
-  fflush(stdout);
   assert(k == j);
 
   /* Update vcore counts. */

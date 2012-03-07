@@ -53,7 +53,7 @@ struct vcore {
 #else
   /* Thread properties when running in vcore context: stack + TLS stuff */
   pid_t ptid;
-  void *stack_top;
+  void *stack_bottom;
   size_t stack_size;
   void *tls_desc;
 #endif
