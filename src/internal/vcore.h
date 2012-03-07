@@ -29,8 +29,8 @@
 #include <bits/local_lim.h>
 
 #include "arch.h"
+#include "parlib-config.h"
 
-#define PARLIB_VCORE_AS_PTHREAD
 #ifdef PARLIB_VCORE_AS_PTHREAD
   #include <pthread.h>
 #endif
