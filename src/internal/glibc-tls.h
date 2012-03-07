@@ -40,7 +40,7 @@ typedef union dtv
   } pointer;
 } dtv_t;
 
-
+#ifdef __i386__
 typedef struct
 {
   void *tcb;		/* Pointer to the TCB.  Not necessarily the
@@ -60,5 +60,43 @@ typedef struct
   /* Reservation of some values for the TM ABI.  */
   void *__private_tm[5];
 } tcbhead_t;
+
+#elif __x86_64__
+
+#include <xmmintrin.h>
+typedef struct
+{
+  void *tcb;        /* Pointer to the TCB.  Not necessarily the
+               thread descriptor used by libpthread.  */
+  dtv_t *dtv;
+  void *self;       /* Pointer to the thread descriptor.  */
+  int multiple_threads;
+  int gscope_flag;
+  uintptr_t sysinfo;
+  uintptr_t stack_guard;
+  uintptr_t pointer_guard;
+  unsigned long int vgetcpu_cache[2];
+# ifndef __ASSUME_PRIVATE_FUTEX
+  int private_futex;
+# else
+  int __unused1;
+# endif
+# if __WORDSIZE == 64
+  int rtld_must_xmm_save;
+# endif
+  /* Reservation of some values for the TM ABI.  */
+  void *__private_tm[5];
+# if __WORDSIZE == 64
+  long int __unused2;
+  /* Have space for the post-AVX register size.  */
+  __m128 rtld_savespace_sse[8][4];
+
+  void *__padding[8];
+# endif
+} tcbhead_t;
+
+#endif
+
+
 
 #endif /* _GLIBC_TLS_H */

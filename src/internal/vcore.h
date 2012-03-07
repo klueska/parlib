@@ -30,8 +30,8 @@
 
 #include "arch.h"
 
-#define VCORE_USE_PTHREAD
-#ifdef VCORE_USE_PTHREAD
+#define PARLIB_VCORE_AS_PTHREAD
+#ifdef PARLIB_VCORE_AS_PTHREAD
   #include <pthread.h>
 #endif
 
@@ -47,7 +47,7 @@ struct vcore {
    * user space. */
   struct user_desc ldt_entry;
   
-#ifdef VCORE_USE_PTHREAD
+#ifdef PARLIB_VCORE_AS_PTHREAD
   /* The linux pthread associated with this vcore */
   pthread_t thread;
 #else

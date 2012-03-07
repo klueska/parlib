@@ -24,8 +24,22 @@
 #include <assert.h>
 
 #include "atomic.h"
-#include "vcore.h"
 #include "tls.h"
+#include "vcore.h"
+
+#ifndef PARLIB_VCORE_AS_PTHREAD
+#include "spinlock.h"
+spinlock_t printf_lock = UNLOCKED;
+#define printf_safe(...)           \
+{                                  \
+  spinlock_lock(&printf_lock);     \
+  printf(__VA_ARGS__);             \
+  spinlock_unlock(&printf_lock);   \
+}
+#else
+#define printf_safe(...)           \
+  printf(__VA_ARGS__)
+#endif
 
 #define NUM_VCORES \
   limit_vcores()
@@ -34,13 +48,13 @@ void vcore_entry()
 {
   if(vcore_saved_ucontext) {
     void *cuc = vcore_saved_ucontext;
-    printf("Restoring context: entry %d, num_vcores: %d\n", vcore_id(), num_vcores());
+    printf_safe("Restoring context: entry %d, num_vcores: %d\n", vcore_id(), num_vcores());
     set_tls_desc(current_tls_desc, vcore_id());
     setcontext(cuc);
     assert(0);
   }
 
-  printf("entry %d, num_vcores: %d\n", vcore_id(), num_vcores());
+  printf_safe("entry %d, num_vcores: %d\n", vcore_id(), num_vcores());
   vcore_request(1);
   vcore_yield();
 }
@@ -48,7 +62,7 @@ void vcore_entry()
 int main()
 {
   vcore_lib_init();
-  printf("main, limit_vcores: %d\n", limit_vcores());
+  printf_safe("main, limit_vcores: %d\n", limit_vcores());
   vcore_request(NUM_VCORES);
   set_tls_desc(vcore_tls_descs[0], 0);
   vcore_saved_ucontext = NULL;  

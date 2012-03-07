@@ -49,7 +49,6 @@
 #include <stdlib.h>
 #include <ucontext.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <sys/sysinfo.h>
 #include <sys/wait.h>
 
@@ -60,6 +59,12 @@
 #include "tls.h"
 #include "vcore.h"
 #include "mcs.h"
+
+#ifdef PARLIB_VCORE_AS_PTHREAD
+#include <pthread.h>
+#else
+#include <sched.h>
+#endif
 
 /* Array of vcores using clone to masquerade. */
 struct vcore *__vcores = NULL;
@@ -179,7 +184,7 @@ entry:
   exit(1);
 }
 
-#ifdef VCORE_USE_PTHREAD
+#ifdef PARLIB_VCORE_AS_PTHREAD
 void *
 #else
 int 
@@ -190,7 +195,7 @@ __vcore_trampoline_entry(void *arg)
 
   int vcoreid = (int) (long int) arg;
 
-#ifndef VCORE_USE_PTHREAD
+#ifndef PARLIB_VCORE_AS_PTHREAD
   /* Set the proper affinity for this vcore */
   cpu_set_t c;
   CPU_ZERO(&c);
@@ -267,7 +272,7 @@ __vcore_trampoline_entry(void *arg)
 
 static void __create_vcore(int i)
 {
-#ifdef VCORE_USE_PTHREAD
+#ifdef PARLIB_VCORE_AS_PTHREAD
   struct vcore *cht = &__vcores[i];
   pthread_attr_t attr;
   pthread_attr_init(&attr);
@@ -340,9 +345,15 @@ static void __create_vcore(int i)
                      | CLONE_DETACHED
                      | 0);
 
+#ifdef __i386__
+  #define TLS_PARAM (&cvcore->ldt_entry)
+#elif __x86_64__
+  #define TLS_PARAM (cvcore->ldt_entry.base_addr)
+#endif
+
   if(clone(__vcore_trampoline_entry, cvcore->stack_bottom+cvcore->stack_size, 
            clone_flags, (void *)((long int)i), 
-           &cvcore->ptid, &cvcore->ldt_entry, &cvcore->ptid) == -1) {
+           &cvcore->ptid, TLS_PARAM, &cvcore->ptid) == -1) {
     perror("Error");
     exit(2);
   }

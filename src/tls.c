@@ -120,19 +120,12 @@ void set_tls_desc(void *tls_desc, uint32_t vcoreid)
 {
   assert(tls_desc != NULL);
 
-#ifdef __x86_64__
-  if(tls_desc > (void *)0xFFFFFFFF) {
-	arch_prctl(ARCH_SET_FS, tls_desc);
-  }
-  else 
-#endif
-  {
-    struct user_desc *ud = &(__vcores[vcoreid].ldt_entry);
-    ud->base_addr = (unsigned long int)tls_desc;
-    int ret = syscall(SYS_modify_ldt, 1, ud, sizeof(struct user_desc));
-    assert(ret == 0);
-    TLS_SET_SEGMENT_REGISTER(ud->entry_number, 1);
-  }
+  struct user_desc *ud = &(__vcores[vcoreid].ldt_entry);
+  ud->base_addr = (unsigned long int)tls_desc;
+  int ret = syscall(SYS_modify_ldt, 1, ud, sizeof(struct user_desc));
+  assert(ret == 0);
+  TLS_SET_SEGMENT_REGISTER(ud->entry_number, 1);
+
   current_tls_desc = tls_desc;
   extern __thread int __vcore_id;
   safe_set_tls_var(__vcore_id, vcoreid);
