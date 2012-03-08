@@ -102,6 +102,7 @@ void init_tls(uint32_t vcoreid)
 	void *tcb = get_current_tls_base();
 	assert(tcb);
 
+#ifdef __i386__
 	/* Set up the TLS region as an entry in the LDT */
 	struct user_desc *ud = &(__vcores[vcoreid].ldt_entry);
 	memset(ud, 0, sizeof(struct user_desc));
@@ -110,6 +111,9 @@ void init_tls(uint32_t vcoreid)
 	ud->seg_32bit = 1;
 	ud->limit_in_pages = 1;
 	ud->useable = 1;
+#elif __x86_64__
+	__vcores[vcoreid].current_tls_base = tcb;
+#endif
 
 	/* Set the tls_desc in the tls_desc array */
 	vcore_tls_descs[vcoreid] = tcb;
@@ -120,23 +124,33 @@ void set_tls_desc(void *tls_desc, uint32_t vcoreid)
 {
   assert(tls_desc != NULL);
 
+#if __i386__
   struct user_desc *ud = &(__vcores[vcoreid].ldt_entry);
-  ud->base_addr = (unsigned long int)tls_desc;
+  ud->base_addr = (unsigned int)tls_desc;
   int ret = syscall(SYS_modify_ldt, 1, ud, sizeof(struct user_desc));
   assert(ret == 0);
   TLS_SET_SEGMENT_REGISTER(ud->entry_number, 1);
+#elif __x86_64__
+  __vcores[vcoreid].current_tls_base = tls_desc;
+  arch_prctl(ARCH_SET_FS, tls_desc);
+#endif
 
-  current_tls_desc = tls_desc;
   extern __thread int __vcore_id;
-  safe_set_tls_var(__vcore_id, vcoreid);
+  current_tls_desc = tls_desc;
+  __vcore_id = vcoreid;
 }
 
 /* Get the tls descriptor currently set for a given vcore. This should
  * only ever be called once the vcore has been initialized */
 void *get_tls_desc(uint32_t vcoreid)
 {
+#if __i386__
 	struct user_desc *ud = &(__vcores[vcoreid].ldt_entry);
 	assert(ud->base_addr != 0);
 	return (void *)(unsigned long)ud->base_addr;
+#elif __x86_64__
+	assert(__vcores[vcoreid].current_tls_base != 0);
+	return __vcores[vcoreid].current_tls_base;
+#endif
 }
 

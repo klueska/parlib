@@ -43,9 +43,15 @@ struct vcore {
   bool allocated __attribute__((aligned (ARCH_CL_SIZE)));
   bool running __attribute__((aligned (ARCH_CL_SIZE)));
 
-  /* The ldt entry associated with this vcore. Used for manging TLS in
-   * user space. */
+#ifdef __i386___
+  /* The ldt entry associated with this vcore. Used for managing TLS in user
+   * space. */
   struct user_desc ldt_entry;
+#elif __x86_64__
+  /* The base address of the TLS currently installed on this vcore. Used for
+   * managing TLS in user space. */
+  void *current_tls_base;
+#endif
   
 #ifdef PARLIB_VCORE_AS_PTHREAD
   /* The linux pthread associated with this vcore */

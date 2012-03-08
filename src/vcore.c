@@ -323,9 +323,13 @@ static void __create_vcore(int i)
     fprintf(stderr, "vcore: could not allocate tls for underlying vcore\n");
     exit(1);
   }
+#ifdef __i386__
   init_tls(i);
   cvcore->ldt_entry.entry_number = 6;
   cvcore->ldt_entry.base_addr = (uintptr_t)cvcore->tls_desc;
+#elif __x86_64__
+  cvcore->current_tls_base = cvcore->tls_desc;
+#endif
   
   /* Set the created flag for the thread we are about to spawn off */
   cvcore->created = true;
@@ -348,7 +352,7 @@ static void __create_vcore(int i)
 #ifdef __i386__
   #define TLS_PARAM (&cvcore->ldt_entry)
 #elif __x86_64__
-  #define TLS_PARAM (cvcore->ldt_entry.base_addr)
+  #define TLS_PARAM (cvcore->current_tls_base)
 #endif
 
   if(clone(__vcore_trampoline_entry, cvcore->stack_bottom+cvcore->stack_size, 
