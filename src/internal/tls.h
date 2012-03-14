@@ -75,7 +75,6 @@ static __inline void *get_current_tls_base()
   ({ \
     int reg = 0; \
     asm volatile("movl %%gs, %0" : "=r" (reg)); \
-    printf("reg: 0x%x\n", reg); \
     *(entry) = (reg >> 3); \
     *(ldt) = (0x1 & (reg >> 2)); \
     *(perms) = (0x3 & reg); \
@@ -89,7 +88,6 @@ static __inline void *get_current_tls_base()
   ({ \
     int reg = 0; \
     asm volatile("movl %%fs, %0" : "=r" (reg)); \
-    printf("reg: 0x%x\n", reg); \
     *(entry) = (reg >> 3); \
     *(ldt) = (0x1 & (reg >> 2)); \
     *(perms) = (0x3 & reg); \

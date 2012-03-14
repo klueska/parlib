@@ -99,9 +99,11 @@ void *get_tls_desc(uint32_t vcoreid);
 	cmb();
 
 #define safe_set_tls_var(name, val)                               \
+({                                                                \
 	begin_safe_access_tls_vars();                                 \
 	name = val;                                                   \
-	end_safe_access_tls_vars();
+	end_safe_access_tls_vars();                                   \
+})
 
 #define safe_get_tls_var(name)                                    \
 ({                                                                \

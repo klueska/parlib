@@ -43,7 +43,7 @@ struct vcore {
   bool allocated __attribute__((aligned (ARCH_CL_SIZE)));
   bool running __attribute__((aligned (ARCH_CL_SIZE)));
 
-#ifdef __i386___
+#ifdef __i386__
   /* The ldt entry associated with this vcore. Used for managing TLS in user
    * space. */
   struct user_desc ldt_entry;

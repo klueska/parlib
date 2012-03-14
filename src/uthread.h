@@ -59,10 +59,6 @@ extern struct schedule_ops *sched_ops;
  * pthread_create(), which can wrap these with their own stuff (like attrs,
  * retvals, etc). */
 
-/* Entry point for a uthread.  Defined by the scheduler using the uthread
- * library */
-extern void uthread_vcore_entry();
-
 /* Initilization function for the uthread library */
 int uthread_lib_init();
 

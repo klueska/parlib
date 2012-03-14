@@ -85,6 +85,7 @@ int uthread_lib_init(struct uthread* uthread)
 	return 0;
 }
 
+void __attribute__((noreturn)) uthread_vcore_entry(void);
 void vcore_entry() {
 	if(vcore_saved_ucontext) {
 		assert(current_uthread);
