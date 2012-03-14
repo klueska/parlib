@@ -24,6 +24,7 @@
 
 #include "arch.h"
 #include "vcore.h"
+#include "syscall.h"
 
 /* Bare necessities of a user thread.  2LSs should allocate a bigger struct and
  * cast their threads to uthreads when talking with vcore code.  Vcore/default
@@ -35,8 +36,9 @@ struct uthread {
 #ifndef PARLIB_NO_UTHREAD_TLS
 	void *tls_desc;
 #endif
-	/* whether or not the scheduler can migrate you from your vcore */
-	bool dont_migrate;
+    int flags;
+    void *sysc;   /* syscall we're blocking on, if any */
+    int state;
 };
 typedef struct uthread uthread_t;
 
@@ -49,9 +51,11 @@ struct schedule_ops {
 	void (*sched_entry)(void);
 	void (*thread_runnable)(struct uthread *);
 	void (*thread_yield)(struct uthread *);
-	/* Functions event handling wants */
-	void (*preempt_pending)(void);
-	void (*spawn_thread)(uintptr_t pc_start, void *data);	/* don't run yet */
+    void (*thread_paused)(struct uthread *);
+    void (*thread_blockon_sysc)(struct syscall *);
+    /* Functions event handling wants */
+    void (*preempt_pending)(void);
+    void (*spawn_thread)(uintptr_t pc_start, void *data);   /* don't run yet */
 };
 extern struct schedule_ops *sched_ops;
 
@@ -76,8 +80,8 @@ void uthread_runnable(struct uthread *uthread);
 /* Function to yield a uthread - it can be made runnable again in the future */
 void uthread_yield(bool save_state);
 
-/* Utility function.  Event code also calls this. */
-bool check_preempt_pending(uint32_t vcoreid);
+/* Block the calling uthread on sysc until it makes progress or is done */
+void uthread_syscall_blockon(struct syscall *sysc);
 
 /* Helpers, which sched_entry() can call */
 void save_current_uthread(struct uthread *uthread);

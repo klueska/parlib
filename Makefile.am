@@ -8,6 +8,7 @@ SRCDIR = $(srcdir)/@SRCDIR@
 
 # List of C FILES to build into objects
 LIB_CFILES = \
+  @SRCDIR@/syscall.c  \
   @SRCDIR@/spinlock.c \
   @SRCDIR@/mcs.c      \
   @SRCDIR@/tls.c      \
@@ -16,6 +17,7 @@ LIB_CFILES = \
 
 LIB_HFILES = \
   $(LIBNAME)-config.h  \
+  @SRCDIR@/syscall.h   \
   @SRCDIR@/spinlock.h  \
   @SRCDIR@/parlib.h    \
   @SRCDIR@/mcs.h       \
