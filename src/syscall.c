@@ -1,10 +1,10 @@
 #include <pthread.h>
 #include "parlib.h"
-#include "syscall.h"
 #include "internal/tls.h"
 #include "tls.h"
+#include "syscall.h"
 
-void *__async_start(void *func, bool detached) {
+void *__async_call_start(void *func, int detached) {
   pthread_attr_t attr;
   pthread_t *handle = (pthread_t*)__safe_call(malloc, sizeof(pthread_t));
   pthread_attr_init(&attr);
@@ -22,7 +22,7 @@ void *__async_start(void *func, bool detached) {
   return (void*)handle;
 }
 
-int __async_wait(void *handle, void **result) {
+int __async_call_wait(void *handle, void **result) {
   int ret = __safe_call(pthread_join, *((pthread_t*)handle), result);
   __safe_call(free, handle);
   return ret;

@@ -42,7 +42,7 @@ spinlock_t printf_lock = UNLOCKED;
 #endif
 
 #define NUM_VCORES \
-  limit_vcores()
+  max_vcores()
 
 void vcore_entry()
 {
@@ -62,7 +62,7 @@ void vcore_entry()
 int main()
 {
   vcore_lib_init();
-  printf_safe("main, limit_vcores: %d\n", limit_vcores());
+  printf_safe("main, max_vcores: %d\n", max_vcores());
   vcore_request(NUM_VCORES);
   set_tls_desc(vcore_tls_descs[0], 0);
   vcore_saved_ucontext = NULL;  

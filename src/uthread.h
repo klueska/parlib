@@ -32,9 +32,9 @@
 /* The definition of uthread_context_t is system dependant and located under
  * the proper arch.h file */
 struct uthread {
-	uthread_context_t uc;
+    uthread_context_t uc;
 #ifndef PARLIB_NO_UTHREAD_TLS
-	void *tls_desc;
+    void *tls_desc;
 #endif
     int flags;
     void *sysc;   /* syscall we're blocking on, if any */
@@ -85,7 +85,7 @@ void uthread_syscall_blockon(struct syscall *sysc);
 
 /* Helpers, which sched_entry() can call */
 void save_current_uthread(struct uthread *uthread);
-void set_current_uthread(struct uthread *uthread);
+void highjack_current_uthread(struct uthread *uthread);
 void run_current_uthread(void) __attribute((noreturn));
 void run_uthread(struct uthread *uthread) __attribute((noreturn));
 void swap_uthreads(struct uthread *__old, struct uthread *__new);

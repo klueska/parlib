@@ -223,7 +223,7 @@ void save_current_uthread(struct uthread *uthread)
  * and make sure that the new uthread struct is used to store this context upon
  * yielding, etc. USE WITH EXTREME CAUTION!
 */
-void set_current_uthread(struct uthread *uthread)
+void highjack_current_uthread(struct uthread *uthread)
 {
 	assert(uthread != current_uthread);
 	vcore_set_tls_var(current_uthread, uthread);
@@ -257,7 +257,7 @@ void run_current_uthread(void)
 /* Launches the uthread on the vcore.  Don't call this on current_uthread. */
 void run_uthread(struct uthread *uthread)
 {
-	set_current_uthread(uthread);
+	highjack_current_uthread(uthread);
 	setcontext(&uthread->uc);
 	assert(0);
 }

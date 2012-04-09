@@ -128,21 +128,12 @@ static inline size_t num_vcores(void)
 }
 
 /**
- * Returns the maximum number of vcores requested.
+ * Returns the maximum number of allocatable vcores.
  */
 static inline size_t max_vcores(void)
 {
 	extern volatile int __max_vcores;
-	return __max_vcores;
-}
-
-/**
- * Returns the limit of allocatable vcores.
- */
-static inline size_t limit_vcores(void)
-{
-	extern volatile int __limit_vcores;
-	return MIN(__limit_vcores, MAX_VCORES);
+	return MIN(__max_vcores, MAX_VCORES);
 }
 
 /**

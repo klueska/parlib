@@ -14,7 +14,7 @@ Uthreads
 .. c:function:: void uthread_yield(bool save_state)
 .. c:function:: bool check_preempt_pending(uint32_t vcoreid)
 .. c:function:: void save_current_uthread(struct uthread *uthread)
-.. c:function:: void set_current_uthread(struct uthread *uthread)
+.. c:function:: void highjack_current_uthread(struct uthread *uthread)
 .. c:function:: void run_current_uthread(void) __attribute((noreturn))
 .. c:function:: void run_uthread(struct uthread *uthread) __attribute((noreturn))
 .. c:function:: void swap_uthreads(struct uthread *__old, struct uthread *__new)

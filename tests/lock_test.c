@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 	assert(!vcore_lib_init());
 
 	/* Request as many as the system will give us */
-	vcore_request(limit_vcores());
+	vcore_request(max_vcores());
 	vcore_yield(false);
 	assert(0);
 }

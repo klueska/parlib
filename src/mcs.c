@@ -92,7 +92,7 @@ void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 // MCS dissemination barrier!
 int mcs_barrier_init(mcs_barrier_t* b, size_t np)
 {
-	if(np > limit_vcores())
+	if(np > max_vcores())
 		return -1;
 	b->allnodes = (mcs_dissem_flags_t*)malloc(np*sizeof(mcs_dissem_flags_t));
 	memset(b->allnodes,0,np*sizeof(mcs_dissem_flags_t));

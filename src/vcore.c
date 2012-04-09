@@ -98,10 +98,10 @@ __thread bool __in_vcore_context = false;
 volatile int __num_vcores = 0;
 
 /* Max number of vcores this application has requested. */
-volatile int __max_vcores = 0;
+volatile int __max_requested_vcores = 0;
 
-/* Limit on the number of vcoress that can be allocated. */
-volatile int __limit_vcores = 0;
+/* Maximum number of vcores that can ever be allocated. */
+volatile int __max_vcores = 0;
 
 /* Global context associated with the main thread.  Used when swapping this
  * context over to vcore0 */
@@ -136,7 +136,7 @@ void __vcore_entry_gate()
   mcs_lock_lock(&__vcore_mutex, &qnode);
   {
     /* Check and see if we should wait at the gate. */
-    if (__max_vcores > __num_vcores) {
+    if (__max_requested_vcores > __num_vcores) {
       printf("%d not waiting at gate\n", vcoreid);
       mcs_lock_unlock(&__vcore_mutex, &qnode);
       goto entry;
@@ -144,7 +144,7 @@ void __vcore_entry_gate()
 
     /* Update vcore counts. */
     __num_vcores--;
-    __max_vcores--;
+    __max_requested_vcores--;
 
     /* Deallocate the thread. */
     __vcores[vcoreid].allocated = false;
@@ -303,7 +303,7 @@ static void __create_vcore(int i)
   cht->allocated = true;
   cht->running = true;
   __num_vcores++;
-  __max_vcores++;
+  __max_requested_vcores++;
 
   if ((errno = pthread_create(&cht->thread,
                               &attr,
@@ -340,7 +340,7 @@ static void __create_vcore(int i)
   cvcore->allocated = true;
   cvcore->running = true;
   __num_vcores++;
-  __max_vcores++;
+  __max_requested_vcores++;
 
   int clone_flags = (CLONE_VM | CLONE_FS | CLONE_FILES 
                      | CLONE_SIGHAND | CLONE_THREAD
@@ -368,7 +368,7 @@ static int __vcore_allocate(int k)
 {
   int j = 0;
   for (; k > 0; k--) {
-    for (int i = 0; i < __limit_vcores; i++) {
+    for (int i = 0; i < __max_vcores; i++) {
       assert(__vcores[i].created);
       if (!__vcores[i].allocated) {
         assert(__vcores[i].running == false);
@@ -390,14 +390,14 @@ static int __vcore_request(int k)
     return 0;
 
   /* Determine how many vcores we can allocate. */
-  int available = __limit_vcores - __max_vcores;
+  int available = __max_vcores - __max_requested_vcores;
   k = available >= k ? k : available;
 
   /* Update vcore counts. */
-  __max_vcores += k;
+  __max_requested_vcores += k;
 
   /* Allocate as many as known available. */
-  k = __max_vcores - __num_vcores;
+  k = __max_requested_vcores - __num_vcores;
   int j = __vcore_allocate(k);
   if(k != j) {
     printf("&k, %p, k: %d\n", &k, k);
@@ -412,8 +412,8 @@ static int __vcore_request(int k)
 
 int vcore_request(int k)
 {
-  if(!__limit_vcores) {
-    fprintf(stderr, "vcore: __limit_vcores == 0: Are you sure you called vcore_lib_init()?\n");
+  if(!__max_vcores) {
+    fprintf(stderr, "vcore: __max_vcores == 0: Are you sure you called vcore_lib_init()?\n");
     exit(1);
   }
  
@@ -486,17 +486,17 @@ int vcore_lib_init()
   /* Get the number of available vcores in the system */
   char *limit = getenv("VCORE_LIMIT");
   if (limit != NULL) {
-    __limit_vcores = atoi(limit);
+    __max_vcores = atoi(limit);
   } else {
-    __limit_vcores = get_nprocs();  
+    __max_vcores = get_nprocs();  
   }
 
   /* Allocate the structs containing meta data about the vcores
    * themselves. Never freed though.  Just freed automatically when the program
    * dies since vcores should be alive for the entire lifetime of the
    * program. */
-  __vcores = malloc(sizeof(struct vcore) * __limit_vcores);
-  vcore_tls_descs = malloc(sizeof(uintptr_t) * __limit_vcores);
+  __vcores = malloc(sizeof(struct vcore) * __max_vcores);
+  vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
 
   if (__vcores == NULL || vcore_tls_descs == NULL) {
     fprintf(stderr, "vcore: failed to initialize vcores\n");
@@ -504,14 +504,14 @@ int vcore_lib_init()
   }
 
   /* Initialize. */
-  for (int i = 0; i < __limit_vcores; i++) {
+  for (int i = 0; i < __max_vcores; i++) {
     __vcores[i].created = true;
     __vcores[i].allocated = true;
     __vcores[i].running = true;
   }
 
   /* Create all the vcores up front */
-  for (int i = 0; i < __limit_vcores; i++) {
+  for (int i = 0; i < __max_vcores; i++) {
     /* Create all the vcores */
     __create_vcore(i);
 
