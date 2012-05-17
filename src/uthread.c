@@ -143,6 +143,24 @@ void uthread_runnable(struct uthread *uthread)
 	sched_ops->thread_runnable(uthread);
 }
 
+/* Informs the 2LS that its thread blocked, and it is not under the control of
+ * the 2LS.  This is for informational purposes, and some semantic meaning
+ * should be passed by flags (from uthread.h's UTH_EXT_BLK_xxx options).
+ * Eventually, whoever calls this will call uthread_runnable(), giving the
+ * thread back to the 2LS.
+ *
+ * If code outside the 2LS has blocked a thread (via uthread_yield) and ran its
+ * own callback/yield_func instead of some 2LS code, that callback needs to
+ * call this.
+ *
+ * AKA: obviously_a_uthread_has_blocked_in_lincoln_park() */
+void uthread_has_blocked(struct uthread *uthread, int flags)
+{
+	if (sched_ops->thread_has_blocked)
+		sched_ops->thread_has_blocked(uthread, flags);
+}
+
+
 /* Need to have this as a separate, non-inlined function since we clobber the
  * stack pointer before calling it, and don't want the compiler to play games
  * with my hart. */
@@ -150,13 +168,11 @@ static void __attribute__((noinline, noreturn))
 __uthread_yield(void)
 {
 	assert(in_vcore_context());
-	assert(sched_ops->thread_yield);
 
 	struct uthread *uthread = current_uthread;
-	/* 2LS will save the thread somewhere for restarting.  Later on,
-	 * we'll probably have a generic function for all sorts of waiting.
-	 */
-	sched_ops->thread_yield(uthread);
+	/* Do whatever the yielder wanted us to do */
+	assert(uthread->yield_func);
+	uthread->yield_func(uthread, uthread->yield_arg);
 
 	/* Leave the current vcore completely */
 	current_uthread = NULL;
@@ -166,18 +182,29 @@ __uthread_yield(void)
 	uthread_vcore_entry();
 }
 
-/* Calling thread yields.  TODO: combine similar code with uthread_exit() (done
- * like this to ease the transition to the 2LS-ops */
-void uthread_yield(bool save_state)
+/* Calling thread yields for some reason.  Set 'save_state' if you want to ever
+ * run the thread again.  Once in vcore context in __uthread_yield, yield_func
+ * will get called with the uthread and yield_arg passed to it.  This way, you
+ * can do whatever you want when you get into vcore context, which can be
+ * thread_blockon_sysc, unlocking mutexes, joining, whatever.
+ *
+ * If you do *not* pass a 2LS sched op or other 2LS function as yield_func,
+ * then you must also call uthread_has_blocked(flags), which will let the 2LS
+ * know a thread blocked beyond its control (and why). */
+void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
+                   void *yield_arg)
 {
-	assert(!in_vcore_context());
-
 	struct uthread *uthread = current_uthread;
+	volatile bool yielding = TRUE; /* signal to short circuit when restarting */
+	assert(!in_vcore_context());
+	/* Pass info to ourselves across the uth_yield -> __uth_yield transition. */
+	uthread->yield_func = yield_func;
+	uthread->yield_arg = yield_arg;
+
 	uint32_t vcoreid = vcore_id();
 	printd("[U] Uthread %p is yielding on vcore %d\n", uthread, vcoreid);
-
-	volatile bool yielding = TRUE; /* signal to short circuit when restarting */
 	cmb();
+
 	/* Take the current state and save it into uthread->uc when this pthread
 	 * restarts, it will continue from right after this, see yielding is false,
 	 * and short circuit the function. */
