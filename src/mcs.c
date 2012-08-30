@@ -19,10 +19,12 @@
  * See COPYING for details on the GNU General Public License.
  */
 
+#include <assert.h> // Remove once functions in place
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "atomic.h"
 #include "mcs.h"
@@ -37,6 +39,20 @@ static inline mcs_lock_qnode_t *mcs_qnode_swap(mcs_lock_qnode_t **addr,
                                                mcs_lock_qnode_t *val)
 {
 	return (mcs_lock_qnode_t*)atomic_exchange_acq((long*)addr,(long)val);
+}
+
+int mcs_lock_trylock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
+{
+	qnode->next = 0;
+	mcs_lock_qnode_t* predecessor = mcs_qnode_swap(&lock->lock,qnode);
+	if(predecessor)
+	{
+		qnode->locked = 1;
+		predecessor->next = qnode;
+		if(qnode->locked)
+          return EBUSY;
+	}
+    return 0;
 }
 
 void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
@@ -87,6 +103,21 @@ void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 	mcs_lock_unlock(lock, qnode);
 	if (!in_vcore_context())
 		enable_notifs(vcore_id());
+}
+
+void mcs_cond_init(mcs_cond_t *c)
+{
+  assert(0);
+}
+
+void mcs_cond_signal(mcs_cond_t *c)
+{
+  assert(0);
+}
+
+void mcs_cond_broadcast(mcs_cond_t *c)
+{
+  assert(0);
 }
 
 // MCS dissemination barrier!

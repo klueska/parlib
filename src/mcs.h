@@ -22,6 +22,9 @@
 #ifndef _MCS_H
 #define _MCS_H
 
+#include "vcore.h"
+#include "arch.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,8 +42,10 @@ typedef struct mcs_lock
 	mcs_lock_qnode_t* lock;
 } mcs_lock_t;
 
-#include "vcore.h"
-#include "arch.h"
+typedef struct mcs_cond
+{
+  // Put something in here!
+} mcs_cond_t;
 
 typedef struct
 {
@@ -58,18 +63,23 @@ typedef struct
 	size_t logp;
 } mcs_barrier_t;
 
-int mcs_barrier_init(mcs_barrier_t* b, size_t nprocs);
-void mcs_barrier_wait(mcs_barrier_t* b, size_t vcoreid);
-
 void mcs_lock_init(struct mcs_lock *lock);
 /* Caller needs to alloc (and zero) their own qnode to spin on.  The memory
  * should be on a cacheline that is 'per-thread'.  This could be on the stack,
  * in a thread control block, etc. */
+int mcs_lock_trylock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 /* If you lock the lock from vcore context, you must use these. */
 void mcs_lock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
+
+void mcs_cond_init(mcs_cond_t *c);
+void mcs_cond_signal(mcs_cond_t *c);
+void mcs_cond_broadcast(mcs_cond_t *c);
+
+int mcs_barrier_init(mcs_barrier_t* b, size_t nprocs);
+void mcs_barrier_wait(mcs_barrier_t* b, size_t vcoreid);
 
 #ifdef __cplusplus
 }
