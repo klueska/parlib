@@ -70,6 +70,7 @@ void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 
 void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 {
+	if(qnode == NULL) return;
 	if(qnode->next == 0)
 	{
 		mcs_lock_qnode_t* old_tail = mcs_qnode_swap(&lock->lock,0);
@@ -103,21 +104,6 @@ void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 	mcs_lock_unlock(lock, qnode);
 	if (!in_vcore_context())
 		enable_notifs(vcore_id());
-}
-
-void mcs_cond_init(mcs_cond_t *c)
-{
-  assert(0);
-}
-
-void mcs_cond_signal(mcs_cond_t *c)
-{
-  assert(0);
-}
-
-void mcs_cond_broadcast(mcs_cond_t *c)
-{
-  assert(0);
 }
 
 // MCS dissemination barrier!

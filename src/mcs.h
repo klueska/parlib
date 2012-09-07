@@ -42,11 +42,6 @@ typedef struct mcs_lock
 	mcs_lock_qnode_t* lock;
 } mcs_lock_t;
 
-typedef struct mcs_cond
-{
-  // Put something in here!
-} mcs_cond_t;
-
 typedef struct
 {
 	volatile int myflags[2][LOG2_MAX_VCORES];
@@ -73,10 +68,6 @@ void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 /* If you lock the lock from vcore context, you must use these. */
 void mcs_lock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
-
-void mcs_cond_init(mcs_cond_t *c);
-void mcs_cond_signal(mcs_cond_t *c);
-void mcs_cond_broadcast(mcs_cond_t *c);
 
 int mcs_barrier_init(mcs_barrier_t* b, size_t nprocs);
 void mcs_barrier_wait(mcs_barrier_t* b, size_t vcoreid);
