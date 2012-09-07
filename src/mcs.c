@@ -41,20 +41,6 @@ static inline mcs_lock_qnode_t *mcs_qnode_swap(mcs_lock_qnode_t **addr,
 	return (mcs_lock_qnode_t*)atomic_exchange_acq((long*)addr,(long)val);
 }
 
-int mcs_lock_trylock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
-{
-	qnode->next = 0;
-	mcs_lock_qnode_t* predecessor = mcs_qnode_swap(&lock->lock,qnode);
-	if(predecessor)
-	{
-		qnode->locked = 1;
-		predecessor->next = qnode;
-		if(qnode->locked)
-          return EBUSY;
-	}
-    return 0;
-}
-
 void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 {
 	qnode->next = 0;

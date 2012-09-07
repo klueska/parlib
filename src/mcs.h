@@ -62,7 +62,6 @@ void mcs_lock_init(struct mcs_lock *lock);
 /* Caller needs to alloc (and zero) their own qnode to spin on.  The memory
  * should be on a cacheline that is 'per-thread'.  This could be on the stack,
  * in a thread control block, etc. */
-int mcs_lock_trylock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 /* If you lock the lock from vcore context, you must use these. */
