@@ -27,8 +27,8 @@ extern "C" {
 #endif
 
 
-#define LOCKED (1)
-#define UNLOCKED (0)
+#define SPINLOCK_LOCKED (1)
+#define SPINLOCK_UNLOCKED (0)
 
 typedef int spinlock_t;
 

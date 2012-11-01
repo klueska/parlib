@@ -29,7 +29,7 @@
 
 #ifndef PARLIB_VCORE_AS_PTHREAD
 #include "spinlock.h"
-spinlock_t printf_lock = UNLOCKED;
+spinlock_t printf_lock = SPINLOCK_UNLOCKED;
 #define printf_safe(...)           \
 {                                  \
   spinlock_lock(&printf_lock);     \

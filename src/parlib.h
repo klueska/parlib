@@ -40,7 +40,6 @@
 #include "atomic.h"
 #include "arch.h"
 #include "vcore.h"
-#include "syscall.h"
 #include "uthread.h"
 #include "mcs.h"
 #include "tls.h"

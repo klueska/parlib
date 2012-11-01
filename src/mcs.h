@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #define MCS_LOCK_INIT {0}
+#define MCS_QNODE_INIT {0,0}
 
 typedef struct mcs_lock_qnode
 {

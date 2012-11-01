@@ -24,7 +24,6 @@
 
 #include "arch.h"
 #include "vcore.h"
-#include "syscall.h"
 
 /* Externally blocked thread reasons (for uthread_has_blocked()) */
 #define UTH_EXT_BLK_MUTEX         1
@@ -43,7 +42,6 @@ struct uthread {
     void *tls_desc;
 #endif
     int flags;
-    void *sysc;   /* syscall we're blocking on, if any */
     int state;
 };
 typedef struct uthread uthread_t;
@@ -86,9 +84,6 @@ void uthread_runnable(struct uthread *uthread);
 /* Function to yield a uthread - it can be made runnable again in the future */
 void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
                    void *yield_arg);
-
-/* Block the calling uthread on sysc until it makes progress or is done */
-void uthread_syscall_blockon(struct syscall *sysc);
 
 /* Helpers, which sched_entry() can call */
 void save_current_uthread(struct uthread *uthread);

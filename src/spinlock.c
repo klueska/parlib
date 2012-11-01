@@ -30,24 +30,24 @@
 void spinlock_init(spinlock_t *lock)
 {
   assert(lock);
-  *lock = UNLOCKED;
+  *lock = SPINLOCK_UNLOCKED;
 }
 
 
 int spinlock_trylock(spinlock_t *lock) 
 {
   assert(lock);
-  if (*lock == LOCKED)
-    return LOCKED;
+  if (*lock == SPINLOCK_LOCKED)
+    return SPINLOCK_LOCKED;
 
-  return cmpxchg(lock, LOCKED, UNLOCKED);
+  return cmpxchg(lock, SPINLOCK_LOCKED, SPINLOCK_UNLOCKED);
 }
 
 
 void spinlock_lock(spinlock_t *lock) 
 {
   assert(lock);
-  while (spinlock_trylock(lock) != UNLOCKED)
+  while (spinlock_trylock(lock) != SPINLOCK_UNLOCKED)
     cpu_relax();
 }
 
@@ -55,5 +55,5 @@ void spinlock_lock(spinlock_t *lock)
 void spinlock_unlock(spinlock_t *lock) 
 {
   assert(lock);
-  *lock = UNLOCKED;
+  *lock = SPINLOCK_UNLOCKED;
 }
