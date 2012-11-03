@@ -55,6 +55,7 @@ extern "C" {
 
 /* Array of vcores */
 struct vcore;
+typedef struct vcore vcore_t;
 extern struct vcore *__vcores;
 
 /**

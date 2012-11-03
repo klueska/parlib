@@ -129,6 +129,22 @@ extern void vcore_entry() __attribute__ ((weak, alias ("__vcore_entry")));
 void __vcore_entry_gate()
 {
   assert(__in_vcore_context);
+
+#ifndef PARLIB_VCORE_AS_PTHREAD
+  /* Set the proper affinity for this vcore */
+  /* Moved here so that we are assured we are fully on the vcore before doing
+   * any substantial work that makes any glibc library calls (like calling
+   * set_affinity(), which may call malloc underneath). */
+  cpu_set_t c;
+  CPU_ZERO(&c);
+  CPU_SET(vcoreid, &c);
+  if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
+    fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
+    exit(1);
+  }
+  sched_yield();
+#endif
+
   /* Cache a copy of vcoreid so we don't lose track of it over system call
    * invocations in which TLS might change out from under us. */
   int vcoreid = __vcore_id;
@@ -192,30 +208,17 @@ int
 __vcore_trampoline_entry(void *arg)
 {
   assert(sizeof(void *) == sizeof(long int));
-
   int vcoreid = (int) (long int) arg;
-
-#ifndef PARLIB_VCORE_AS_PTHREAD
-  /* Set the proper affinity for this vcore */
-  cpu_set_t c;
-  CPU_ZERO(&c);
-  CPU_SET(vcoreid, &c);
-  if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
-    fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
-    exit(1);
-  }
-  sched_yield();
-#endif
 
   /* Initialize the tls region to be used by this vcore */
   init_tls(vcoreid);
   set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
 
+  /* Set it that we are in vcore context */
+  __in_vcore_context = true;
+
   /* Assign the id to the tls variable */
   __vcore_id = vcoreid;
-
-  /* Set it that we are in ht context */
-  __in_vcore_context = true;
 
   /* If this is the first ht, set ht_saved_ucontext to the main_context in this
    * guys TLS region. MUST be done here, so in proper TLS */
