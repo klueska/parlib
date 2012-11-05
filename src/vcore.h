@@ -161,6 +161,12 @@ void enable_notifs(uint32_t vcoreid);
 void disable_notifs(uint32_t vcoreid);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
+  #define vcore_begin_access_tls_vars(vcore_id) \
+    begin_access_tls_vars(vcore_tls_descs[(vcore_id)])
+
+  #define vcore_end_access_tls_vars() \
+    end_access_tls_vars()
+
   #define vcore_set_tls_var(name, val)                                 \
   {                                                                    \
   	typeof(val) __val = val;                                           \
@@ -178,6 +184,9 @@ void disable_notifs(uint32_t vcoreid);
   	val;                                                               \
   })
 #else
+  #define vcore_begin_access_tls_vars(vcore_id)
+  #define vcore_end_access_tls_vars()
+
   #define vcore_set_tls_var(name, val)                                 \
   	name = val;                                                        \
   

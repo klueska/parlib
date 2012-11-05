@@ -101,6 +101,12 @@ init_uthread_tf(uthread_t *uth, void (*entry)(void),
 }
 
 #ifndef PARLIB_NO_UTHREAD_TLS
+  #define uthread_begin_access_tls_vars(uthread) \
+  	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc)
+
+  #define uthread_end_access_tls_vars() \
+    end_access_tls_vars()
+  
   #define uthread_set_tls_var(uthread, name, val)                        \
   {                                                                      \
   	typeof(val) __val = val;                                           \
@@ -118,13 +124,10 @@ init_uthread_tf(uthread_t *uth, void (*entry)(void),
   	val;                                                               \
   })
 #else
-  #define uthread_set_tls_var(uthread, name, val)                        \
-  {                                                                      \
-  }
-  
-  #define uthread_get_tls_var(uthread, name)                             \
-  ({                                                                     \
-  })
+  #define uthread_begin_access_tls_vars(uthread)
+  #define uthread_end_access_tls_vars()
+  #define uthread_set_tls_var(uthread, name, val)
+  #define uthread_get_tls_var(uthread, name) name
 #endif
 
 #endif /* _UTHREAD_H */
