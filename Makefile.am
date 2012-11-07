@@ -12,6 +12,7 @@ LIB_CFILES = \
   @SRCDIR@/spinlock.c \
   @SRCDIR@/mcs.c      \
   @SRCDIR@/tls.c      \
+  @SRCDIR@/pool.c     \
   @SRCDIR@/uthread.c  \
   @SRCDIR@/vcore.c
 
@@ -21,6 +22,7 @@ LIB_HFILES = \
   @SRCDIR@/spinlock.h  \
   @SRCDIR@/parlib.h    \
   @SRCDIR@/mcs.h       \
+  @SRCDIR@/pool.h      \
   @SRCDIR@/queue.h     \
   @SRCDIR@/tls.h       \
   @SRCDIR@/uthread.h   \
@@ -78,7 +80,7 @@ parlibincdir = $(includedir)/$(LIBNAME)
 dist_parlibinc_DATA = $(LIB_HFILES)
 
 # Setup parameters to build the test programs
-check_PROGRAMS = lock_test vcore_test
+check_PROGRAMS = lock_test vcore_test pool_test
 
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
 lock_test_CFLAGS = $(AM_CFLAGS)
@@ -91,6 +93,12 @@ vcore_test_CFLAGS = $(AM_CFLAGS)
 vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 vcore_test_LDFLAGS = -all-static
 vcore_test_LDADD = libparlib.la 
+
+pool_test_SOURCES =  @TESTSDIR@/pool_test.c
+pool_test_CFLAGS = $(AM_CFLAGS)
+pool_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
+pool_test_LDFLAGS = -all-static
+pool_test_LDADD = libparlib.la
 
 if SPHINX_BUILD
 man_MANS = \
