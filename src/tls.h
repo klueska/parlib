@@ -36,6 +36,7 @@ extern "C" {
 typedef struct dtls_key *dtls_key_t;
 typedef struct dtls_list dtls_list_t;
 typedef void (*dtls_dtor_t)(void*);
+#define DTLS_KEYS_MAX 500
 
 /* Reference to the main thread's tls descriptor */
 extern void *main_tls_desc;

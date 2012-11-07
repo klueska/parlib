@@ -26,6 +26,7 @@
 #include "atomic.h"
 #include "tls.h"
 #include "vcore.h"
+#include "pool.h"
 
 /* The current dymamic tls implementation uses a locked linked list
  * to find the key for a given thread. We should probably find a better way to
@@ -59,7 +60,23 @@ __thread void *current_tls_desc = NULL;
 __thread dtls_list_t *current_dtls_list;
 
 /* The list of dynamically allocatable tls regions itself */
-__thread dtls_list_t __dtls_list;
+static __thread dtls_list_t __dtls_list;
+
+/* A statically allocated buffer of dtls keys (global to all threads) */
+static struct dtls_key __dtls_keys[DTLS_KEYS_MAX];
+
+/* A statically allocated object queue and pool to manage the buffer of dtls keys */
+static void *__dtls_keys_queue[DTLS_KEYS_MAX];
+static pool_t __dtls_keys_pool;
+
+/* A per-thread buffer of dtls_list_elements for use when mapping a dtls_key to
+ * its per-thread value */
+static __thread struct dtls_list_element __dtls_list_elements[DTLS_KEYS_MAX];
+
+/* A per-thread object queue and pool to manage the per-thread buffer of
+ * dtls_list_elements */
+static __thread void *__dtls_list_elements_queue[DTLS_KEYS_MAX];
+static __thread pool_t __dtls_list_elements_pool;
 
 /* Get a TLS, returns 0 on failure.  Any thread created by a user-level
  * scheduler needs to create a TLS. */
@@ -113,6 +130,10 @@ int tls_lib_init()
 	/* Get a reference to the main program's TLS descriptor */
 	current_tls_desc = get_current_tls_base();
 	main_tls_desc = current_tls_desc;
+
+    /* Initialize the global pool of dtls_keys */
+    pool_init(&__dtls_keys_pool, __dtls_keys, __dtls_keys_queue,
+              DTLS_KEYS_MAX, sizeof(struct dtls_key));
 	return 0;
 }
 
@@ -182,15 +203,9 @@ void *get_tls_desc(uint32_t vcoreid)
 #endif
 }
 
-/* Make sure we use the libc versions of these calls, and not any custom ones.
- * Eventually I want to move away from using malloc at all, and pull from a
- * statically allocated pool. */
-extern typeof(malloc) __libc_malloc;
-extern typeof(free) __libc_free;
-
 dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 {
-  dtls_key_t key = __libc_malloc(sizeof(struct dtls_key));
+  dtls_key_t key = pool_alloc(&__dtls_keys_pool);
   assert(key);
 
   spinlock_init(&key->lock);
@@ -209,13 +224,16 @@ void dtls_key_delete(dtls_key_t key)
   key->ref_count--;
   spinlock_unlock(&key->lock);
   if(key->ref_count == 0)
-    __libc_free(key);
+    pool_free(&__dtls_keys_pool, key);
 }
 
 void set_dtls(dtls_key_t key, void *dtls)
 {
   assert(key);
   if(current_dtls_list == NULL) {
+    pool_init(&__dtls_list_elements_pool, __dtls_list_elements, 
+              __dtls_list_elements_queue, DTLS_KEYS_MAX,
+              sizeof(struct dtls_list_element));
     current_dtls_list = &__dtls_list;
     TAILQ_INIT(current_dtls_list);
   }
@@ -228,7 +246,7 @@ void set_dtls(dtls_key_t key, void *dtls)
   TAILQ_FOREACH(e, current_dtls_list, link)
     if(e->key == key) break;
   if(!e) {
-    e = __libc_malloc(sizeof(dtls_list_element_t));
+    e = pool_alloc(&__dtls_list_elements_pool);
     assert(e);
     e->key = key;
     TAILQ_INSERT_HEAD(current_dtls_list, e, link);
@@ -282,11 +300,11 @@ void destroy_dtls() {
     key->ref_count--;
     spinlock_unlock(&key->lock);
     if(key->ref_count == 0)
-      __libc_free(key);
+      pool_free(&__dtls_keys_pool, key);
 
     n = TAILQ_NEXT(e, link);
     TAILQ_REMOVE(current_dtls_list, e, link);
-    __libc_free(e);
+    pool_free(&__dtls_list_elements_pool, e);
     e = n;
   }
 }
