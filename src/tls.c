@@ -27,7 +27,7 @@
 #include "tls.h"
 #include "vcore.h"
 
-/* The current dymamic tls implementation currently uses a locked linked list
+/* The current dymamic tls implementation uses a locked linked list
  * to find the key for a given thread. We should probably find a better way to
  * do this based on a custom lock-free hash table or something. */
 #include <parlib/queue.h>
@@ -44,7 +44,7 @@ struct dtls_key {
 /* The definition of a dtls_key list and its elements */
 typedef struct dtls_list_element {
   TAILQ_ENTRY(dtls_list_element) link;
-  dtls_key_t *key;
+  dtls_key_t key;
   void *dtls;
 } dtls_list_element_t;
 TAILQ_HEAD(dtls_list, dtls_list_element);
@@ -188,9 +188,9 @@ void *get_tls_desc(uint32_t vcoreid)
 extern typeof(malloc) __libc_malloc;
 extern typeof(free) __libc_free;
 
-dtls_key_t *dtls_key_create(dtls_dtor_t dtor)
+dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 {
-  dtls_key_t *key = __libc_malloc(sizeof(dtls_key_t));
+  dtls_key_t key = __libc_malloc(sizeof(struct dtls_key));
   assert(key);
 
   spinlock_init(&key->lock);
@@ -200,7 +200,7 @@ dtls_key_t *dtls_key_create(dtls_dtor_t dtor)
   return key;
 }
 
-void dtls_key_delete(dtls_key_t *key)
+void dtls_key_delete(dtls_key_t key)
 {
   assert(key);
 
@@ -212,7 +212,7 @@ void dtls_key_delete(dtls_key_t *key)
     __libc_free(key);
 }
 
-void set_dtls(dtls_key_t *key, void *dtls)
+void set_dtls(dtls_key_t key, void *dtls)
 {
   assert(key);
   if(current_dtls_list == NULL) {
@@ -236,7 +236,7 @@ void set_dtls(dtls_key_t *key, void *dtls)
   e->dtls = dtls;
 }
 
-void *get_dtls(dtls_key_t *key)
+void *get_dtls(dtls_key_t key)
 {
   assert(key);
   if(current_dtls_list == NULL)
@@ -255,7 +255,7 @@ void destroy_dtls() {
   dtls_list_element_t *e,*n;
   e = TAILQ_FIRST(current_dtls_list);
   while(e != NULL) {
-    dtls_key_t *key = e->key;
+    dtls_key_t key = e->key;
     bool run_dtor = false;
   
     spinlock_lock(&key->lock);

@@ -33,9 +33,7 @@ extern "C" {
 #endif
 
 /* Declaration of types needed for dynamically allocatable tls */
-struct dtls_key;
-typedef struct dtls_key dtls_key_t;
-struct dtls_list;
+typedef struct dtls_key *dtls_key_t;
 typedef struct dtls_list dtls_list_t;
 typedef void (*dtls_dtor_t)(void*);
 
@@ -69,16 +67,16 @@ void *get_tls_desc(uint32_t vcoreid);
 
 /* Initialize a dtls_key for dynamically setting/getting uthread local storage
  * on a uthread or vcore. */
-dtls_key_t *dtls_key_create(dtls_dtor_t dtor);
+dtls_key_t dtls_key_create(dtls_dtor_t dtor);
 
 /* Destroy a dtls key. */
-void dtls_key_delete(dtls_key_t *key);
+void dtls_key_delete(dtls_key_t key);
 
 /* Set dtls storage for the provided dtls key on the current uthread or vcore. */
-void set_dtls(dtls_key_t *key, void *dtls);
+void set_dtls(dtls_key_t key, void *dtls);
 
 /* Get dtls storage for the provided dtls key on the current uthread or vcore. */
-void *get_dtls(dtls_key_t *key);
+void *get_dtls(dtls_key_t key);
 
 /* Destroy all dtls storage associated with the current uthread or vcore. */
 void destroy_dtls();
