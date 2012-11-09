@@ -121,8 +121,12 @@ void uthread_init(struct uthread *uthread)
 	else
 		assert(!__uthread_allocate_tls(uthread));
 
-	/* Set the thread's internal tls variable for current_uthread to itself */
-	uthread_set_tls_var(uthread, current_uthread, uthread);
+	/* Setup some thread local data for this newly initialized uthread */
+    extern void __ctype_init(void);
+    uthread_begin_access_tls_vars(uthread)
+	  __ctype_init();
+	  current_uthread = uthread;
+    uthread_end_access_tls_vars()
 #endif
 }
 
