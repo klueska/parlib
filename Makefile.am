@@ -85,19 +85,16 @@ check_PROGRAMS = lock_test vcore_test pool_test
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
 lock_test_CFLAGS = $(AM_CFLAGS)
 lock_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
-lock_test_LDFLAGS = -all-static
 lock_test_LDADD = libparlib.la
 
 vcore_test_SOURCES = @TESTSDIR@/vcore_test.c
 vcore_test_CFLAGS = $(AM_CFLAGS)
 vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
-vcore_test_LDFLAGS = -all-static
 vcore_test_LDADD = libparlib.la 
 
 pool_test_SOURCES =  @TESTSDIR@/pool_test.c
 pool_test_CFLAGS = $(AM_CFLAGS)
 pool_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
-pool_test_LDFLAGS = -all-static
 pool_test_LDADD = libparlib.la
 
 if SPHINX_BUILD
