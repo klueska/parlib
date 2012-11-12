@@ -31,8 +31,8 @@
 /* The current dymamic tls implementation uses a locked linked list
  * to find the key for a given thread. We should probably find a better way to
  * do this based on a custom lock-free hash table or something. */
-#include <parlib/queue.h>
-#include <parlib/spinlock.h>
+#include "queue.h"
+#include "spinlock.h"
 
 /* The dynamic tls key structure */
 struct dtls_key {
