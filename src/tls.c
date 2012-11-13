@@ -88,13 +88,6 @@ int tls_lib_init()
 	return 0;
 }
 
-/* Default callback after tls constructor has finished */
-static void __tls_ready()
-{
-	// Do nothing by default...
-}
-extern void tls_ready() __attribute__ ((weak, alias ("__tls_ready")));
-
 /* Initialize tls for use in this vcore */
 void init_tls(uint32_t vcoreid)
 {
