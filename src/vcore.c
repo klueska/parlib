@@ -415,11 +415,6 @@ static int __vcore_request(int k)
 
 int vcore_request(int k)
 {
-  if(!__max_vcores) {
-    fprintf(stderr, "vcore: __max_vcores == 0: Are you sure you called vcore_lib_init()?\n");
-    exit(1);
-  }
- 
   int vcores = 0;
   // Always access the qnode through the qnode_ptr variable.  The reasons are
   // made clearer below. In the normal path we will just acquire and release
@@ -480,10 +475,10 @@ int vcore_lib_init()
   /* Make sure this only runs once */
   static bool initialized = false;
   if (initialized)
-      return -1;
+      return 0;
   initialized = true;
 
-  /* Initialize the tls subsystem */
+  /* Make sure the vcore subsystem is up and running */
   assert(!tls_lib_init());
 
   /* Get the number of available vcores in the system */

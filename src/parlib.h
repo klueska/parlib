@@ -25,10 +25,8 @@
 // and is intended to be linked into all user-mode applications
 // (NOT the kernel or boot loader).
 
-#ifndef INC_PARLIB_H
-#define INC_PARLIB_H 1
-
-#ifndef __ASSEMBLER__
+#ifndef PARLIB_PARLIB_H
+#define PARLIB_PARLIB_H 1
 
 #include <stdint.h>
 #include <unistd.h>
@@ -43,6 +41,7 @@
 #include "uthread.h"
 #include "mcs.h"
 #include "tls.h"
+#include "dtls.h"
 #include "spinlock.h"
 
 enum {
@@ -55,6 +54,7 @@ enum {
 	TRUE
 };
 
-#endif	// !ASSEMBLER
+/* Constructor to set up the parlib library */
+int parlib_init(struct uthread *main_thread);
 
-#endif	// !INC_PARLIB_H
+#endif	// PARLIB_PARLIB_H

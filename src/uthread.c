@@ -48,14 +48,17 @@ static void __uthread_free_tls(struct uthread *uthread);
  * returns, you're in _M mode, still running thread0, on vcore0 */
 int uthread_lib_init(struct uthread* uthread)
 {
-	/* Only do this initialization once, every time after, just return 0 */
-	static bool first = TRUE;
-	if (!first) 
-		return 0;
-	first = FALSE;
+    /* Make sure this only runs once */
+    static bool initialized = false;
+    if (initialized)
+        return 0;
+    initialized = true;
 
-	/* Init the vcore system */
-	assert(!vcore_lib_init());
+    /* Make sure they passed in a valid uthread pointer */
+    assert(uthread);
+
+    /* Make sure the vcore subsystem is up and running */
+    assert(!vcore_lib_init());
 
 	/* Set current_uthread to the uthread passed in, so we have a place to
 	 * save the main thread's context when yielding */
@@ -206,6 +209,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	uthread->yield_arg = yield_arg;
 
 	uint32_t vcoreid = vcore_id();
+	assert(vcoreid >= 0);
 	printd("[U] Uthread %p is yielding on vcore %d\n", uthread, vcoreid);
 	cmb();
 

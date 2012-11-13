@@ -94,21 +94,15 @@ extern __thread void *vcore_saved_tls_desc;
 extern void vcore_entry() __attribute__((weak));
 
 /**
- * Initialization routine for the hrd threads subsystem.  Starts the process of
- * allocating vcore wrappers pinning them to cores, etc.
- */
-extern int vcore_lib_init();
-
-/**
  * Requests k additional vcores. Returns -1 if the request is impossible.
  * Otherwise, blocks calling vcore until the request is granted and returns 0.
 */
-int vcore_request(int k);
+extern int vcore_request(int k);
 
 /**
  * Relinquishes the calling vcore.
 */
-void vcore_yield();
+extern void vcore_yield();
 
 /**
  * Returns the id of the calling vcore.

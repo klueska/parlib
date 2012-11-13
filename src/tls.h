@@ -32,21 +32,12 @@
 extern "C" {
 #endif
 
-/* Declaration of types needed for dynamically allocatable tls */
-typedef struct dtls_key *dtls_key_t;
-typedef struct dtls_list dtls_list_t;
-typedef void (*dtls_dtor_t)(void*);
-#define DTLS_KEYS_MAX 500
-
 /* Reference to the main thread's tls descriptor */
 extern void *main_tls_desc;
 
 /* Current tls_desc for each running vcore, used when swapping uthreads onto a
  * vcore */
 extern __thread void *current_tls_desc;
-
-/* A pointer to a list of dynamically allocated tls regions */
-extern __thread dtls_list_t *current_dtls_list;
 
 /* Get a TLS, returns 0 on failure.  Any thread created by a user-level
  * scheduler needs to create a TLS. */
@@ -65,22 +56,6 @@ void set_tls_desc(void *tls_desc, uint32_t vcoreid);
 /* Get the tls descriptor currently set for a given vcore. This should
  * only ever be called once the vcore has been initialized */
 void *get_tls_desc(uint32_t vcoreid);
-
-/* Initialize a dtls_key for dynamically setting/getting uthread local storage
- * on a uthread or vcore. */
-dtls_key_t dtls_key_create(dtls_dtor_t dtor);
-
-/* Destroy a dtls key. */
-void dtls_key_delete(dtls_key_t key);
-
-/* Set dtls storage for the provided dtls key on the current uthread or vcore. */
-void set_dtls(dtls_key_t key, void *dtls);
-
-/* Get dtls storage for the provided dtls key on the current uthread or vcore. */
-void *get_dtls(dtls_key_t key);
-
-/* Destroy all dtls storage associated with the current uthread or vcore. */
-void destroy_dtls();
 
 #ifndef __PIC__
 

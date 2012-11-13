@@ -67,9 +67,6 @@ extern struct schedule_ops *sched_ops;
  * pthread_create(), which can wrap these with their own stuff (like attrs,
  * retvals, etc). */
 
-/* Initilization function for the uthread library */
-int uthread_lib_init();
-
 /* Initializes a uthread. */
 void uthread_init(struct uthread *uth);
 

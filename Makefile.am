@@ -11,8 +11,10 @@ LIB_CFILES = \
   @SRCDIR@/spinlock.c \
   @SRCDIR@/mcs.c      \
   @SRCDIR@/tls.c      \
+  @SRCDIR@/dtls.c     \
   @SRCDIR@/pool.c     \
   @SRCDIR@/uthread.c  \
+  @SRCDIR@/parlib.c   \
   @SRCDIR@/vcore.c
 
 LIB_HFILES = \
@@ -23,6 +25,7 @@ LIB_HFILES = \
   @SRCDIR@/pool.h      \
   @SRCDIR@/queue.h     \
   @SRCDIR@/tls.h       \
+  @SRCDIR@/dtls.h      \
   @SRCDIR@/uthread.h   \
   @SRCDIR@/vcore.h
 
@@ -32,6 +35,8 @@ LIB_INTERNAL_FILES = \
   @SRCDIR@/internal/futex.h \
   @SRCDIR@/internal/glibc-tls.h \
   @SRCDIR@/internal/tls.h \
+  @SRCDIR@/internal/dtls.h \
+  @SRCDIR@/internal/uthread.h \
   @SRCDIR@/internal/vcore.h
 
 if ARCH_i686
