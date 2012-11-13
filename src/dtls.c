@@ -56,20 +56,49 @@ static pool_t __dtls_keys_pool;
 /* A lock protecting access to the global pool of dtls keys */
 static mcs_lock_t __dtls_keys_pool_lock;
 
-/* A per-thread buffer of dtls_list_elements for use when mapping a dtls_key to
- * its per-thread value */
-static __thread struct dtls_list_element __dtls_list_elements[DTLS_KEYS_MAX];
+/* A struct containing all of the per thread (i.e. vcore or uthread) data
+ * associated with dtls */
+typedef struct dtls_data {
+  /* A per-thread list of dtls regions */
+  dtls_list_t list;
 
-/* A per-thread object queue and pool to manage the per-thread buffer of
- * dtls_list_elements */
-static __thread void *__dtls_list_elements_queue[DTLS_KEYS_MAX];
-static __thread pool_t __dtls_list_elements_pool;
+  /* A per-thread buffer of dtls_list_elements for use when mapping a dtls_key to
+   * its per-thread value */
+  struct dtls_list_element list_elements[DTLS_KEYS_MAX];
+  
+  /* A per-thread object queue and pool to manage the per-thread buffer of
+   * dtls_list_elements */
+  void *list_elements_queue[DTLS_KEYS_MAX];
+  pool_t list_elements_pool;
+  
+} dtls_data_t;
+static __thread dtls_data_t __dtls_data;
+static __thread bool __dtls_initialized = false;
 
-/* A per-thread list of dynamically allocatable tls regions */
-static __thread dtls_list_t __dtls_list;
+#ifdef PARLIB_NO_UTHREAD_TLS
+#include "uthread.h"
+#endif
 
-/* A per-thread pointer to the current list of dynamically allocatable tls regions */
-static __thread dtls_list_t *current_dtls_list;
+static dtls_key_t __alocate_dtls_key() 
+{
+  mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
+  mcs_lock_lock(&__dtls_keys_pool_lock, &qnode);
+  dtls_key_t key = pool_alloc(&__dtls_keys_pool);
+  assert(key);
+  key->ref_count = 1;
+  mcs_lock_unlock(&__dtls_keys_pool_lock, &qnode);
+  return key;
+}
+
+static void __maybe_free_dtls_key(dtls_key_t key)
+{
+  if(key->ref_count == 0) {
+    mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
+    mcs_lock_lock(&__dtls_keys_pool_lock, &qnode);
+    pool_free(&__dtls_keys_pool, key);
+    mcs_lock_unlock(&__dtls_keys_pool_lock, &qnode);
+  }
+}
 
 /* Constructor to get a reference to the main thread's TLS descriptor */
 int dtls_lib_init()
@@ -90,14 +119,8 @@ int dtls_lib_init()
 
 dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 {
-  mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-  mcs_lock_lock(&__dtls_keys_pool_lock, &qnode);
-  dtls_key_t key = pool_alloc(&__dtls_keys_pool);
-  mcs_lock_unlock(&__dtls_keys_pool_lock, &qnode);
-  assert(key);
-
+  dtls_key_t key = __alocate_dtls_key();
   spinlock_init(&key->lock);
-  key->ref_count = 1;
   key->valid = true;
   key->dtor = dtor;
   return key;
@@ -111,59 +134,43 @@ void dtls_key_delete(dtls_key_t key)
   key->valid = false;
   key->ref_count--;
   spinlock_unlock(&key->lock);
-  if(key->ref_count == 0) {
-    mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-    mcs_lock_lock(&__dtls_keys_pool_lock, &qnode);
-    pool_free(&__dtls_keys_pool, key);
-    mcs_lock_unlock(&__dtls_keys_pool_lock, &qnode);
-  }
+  __maybe_free_dtls_key(key);
 }
 
-void set_dtls(dtls_key_t key, void *dtls)
+void inline __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
 {
   assert(key);
-  if(current_dtls_list == NULL) {
-    pool_init(&__dtls_list_elements_pool, __dtls_list_elements, 
-              __dtls_list_elements_queue, DTLS_KEYS_MAX,
-              sizeof(struct dtls_list_element));
-    current_dtls_list = &__dtls_list;
-    TAILQ_INIT(current_dtls_list);
-  }
 
   spinlock_lock(&key->lock);
   key->ref_count++;
   spinlock_unlock(&key->lock);
 
   dtls_list_element_t *e = NULL;
-  TAILQ_FOREACH(e, current_dtls_list, link)
+  TAILQ_FOREACH(e, &dtls_data->list, link)
     if(e->key == key) break;
   if(!e) {
-    e = pool_alloc(&__dtls_list_elements_pool);
+    e = pool_alloc(&dtls_data->list_elements_pool);
     assert(e);
     e->key = key;
-    TAILQ_INSERT_HEAD(current_dtls_list, e, link);
+    TAILQ_INSERT_HEAD(&dtls_data->list, e, link);
   }
   e->dtls = dtls;
 }
 
-void *get_dtls(dtls_key_t key)
+static inline void *__get_dtls(dtls_data_t *dtls_data, dtls_key_t key)
 {
   assert(key);
-  if(current_dtls_list == NULL)
-    return NULL;
 
   dtls_list_element_t *e = NULL;
-  TAILQ_FOREACH(e, current_dtls_list, link)
+  TAILQ_FOREACH(e, &dtls_data->list, link)
     if(e->key == key) return e->dtls;
   return e;
 }
 
-void destroy_dtls() {
-  if(current_dtls_list == NULL)
-    return;
-
+static inline void __destroy_dtls(dtls_data_t *dtls_data)
+{
   dtls_list_element_t *e,*n;
-  e = TAILQ_FIRST(current_dtls_list);
+  e = TAILQ_FIRST(&dtls_data->list);
   while(e != NULL) {
     dtls_key_t key = e->key;
     bool run_dtor = false;
@@ -191,13 +198,83 @@ void destroy_dtls() {
     spinlock_lock(&key->lock);
     key->ref_count--;
     spinlock_unlock(&key->lock);
-    if(key->ref_count == 0)
-      pool_free(&__dtls_keys_pool, key);
+    __maybe_free_dtls_key(key);
 
     n = TAILQ_NEXT(e, link);
-    TAILQ_REMOVE(current_dtls_list, e, link);
-    pool_free(&__dtls_list_elements_pool, e);
+    TAILQ_REMOVE(&dtls_data->list, e, link);
+    pool_free(&dtls_data->list_elements_pool, e);
     e = n;
   }
+}
+
+void set_dtls(dtls_key_t key, void *dtls)
+{
+  bool initialized = true;
+  dtls_data_t *dtls_data = NULL;
+#ifdef PARLIB_NO_UTHREAD_TLS
+  if(!in_vcore_context()) {
+    if(current_uthread->dtls_data == NULL) {
+      current_uthread->dtls_data = malloc(sizeof(dtls_data_t));
+      initialized = false;
+    }
+    dtls_data = current_uthread->dtls_data;
+  }
+  else {
+#endif
+    if(!__dtls_initialized)
+      initialized = __dtls_initialized = true;
+    dtls_data = &__dtls_data;
+#ifdef PARLIB_NO_UTHREAD_TLS
+  }
+#endif
+  if(!initialized) {
+    pool_init(&dtls_data->list_elements_pool,
+              dtls_data->list_elements, 
+              dtls_data->list_elements_queue,
+              DTLS_KEYS_MAX,
+              sizeof(struct dtls_list_element));
+    TAILQ_INIT(&dtls_data->list);
+  }
+  __set_dtls(dtls_data, key, dtls);
+}
+
+void *get_dtls(dtls_key_t key)
+{
+  dtls_data_t *dtls_data = NULL;
+#ifdef PARLIB_NO_UTHREAD_TLS
+  if(!in_vcore_context()) {
+    if(current_uthread->dtls_data == NULL)
+      return NULL;
+    dtls_data = current_uthread->dtls_data;
+  }
+  else {
+#endif
+    if(!__dtls_initialized)
+      return NULL;
+    dtls_data = &__dtls_data;
+#ifdef PARLIB_NO_UTHREAD_TLS
+  }
+#endif
+  return __get_dtls(dtls_data, key);
+}
+
+void destroy_dtls()
+{
+  dtls_data_t *dtls_data = NULL;
+#ifdef PARLIB_NO_UTHREAD_TLS
+  if(!in_vcore_context()) {
+    if(current_uthread->dtls_data == NULL)
+      return;
+    dtls_data = current_uthread->dtls_data;
+  }
+  else {
+#endif
+    if(!__dtls_initialized)
+      return;
+    dtls_data = &__dtls_data;
+#ifdef PARLIB_NO_UTHREAD_TLS
+  }
+#endif
+  __destroy_dtls(dtls_data);
 }
 

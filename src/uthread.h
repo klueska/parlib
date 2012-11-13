@@ -38,11 +38,13 @@ struct uthread {
     uthread_context_t uc;
     void (*yield_func)(struct uthread*, void*);
     void *yield_arg;
-#ifndef PARLIB_NO_UTHREAD_TLS
-    void *tls_desc;
-#endif
     int flags;
     int state;
+#ifndef PARLIB_NO_UTHREAD_TLS
+    void *tls_desc;
+#else 
+    void *dtls_data;
+#endif
 };
 typedef struct uthread uthread_t;
 
