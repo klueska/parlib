@@ -148,6 +148,7 @@ void inline __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
   dtls_list_element_t *e = NULL;
   TAILQ_FOREACH(e, &dtls_data->list, link)
     if(e->key == key) break;
+
   if(!e) {
     e = pool_alloc(&dtls_data->list_elements_pool);
     assert(e);
@@ -221,8 +222,10 @@ void set_dtls(dtls_key_t key, void *dtls)
   }
   else {
 #endif
-    if(!__dtls_initialized)
-      initialized = __dtls_initialized = true;
+    if(!__dtls_initialized) {
+      initialized = false;
+      __dtls_initialized  = true;
+    }
     dtls_data = &__dtls_data;
 #ifdef PARLIB_NO_UTHREAD_TLS
   }
