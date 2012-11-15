@@ -94,6 +94,11 @@ extern __thread void *vcore_saved_tls_desc;
 extern void vcore_entry() __attribute__((weak));
 
 /**
+ * Function to reenter a vcore at the top of its stack stack.
+ */
+void vcore_reenter(void (*entry_func)(void));
+
+/**
  * Requests k additional vcores. Returns -1 if the request is impossible.
  * Otherwise, blocks calling vcore until the request is granted and returns 0.
 */

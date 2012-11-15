@@ -113,6 +113,9 @@ static mcs_lock_t __vcore_mutex = MCS_LOCK_INIT;
 /* Stack space to use when a vcore yields without a stack. */
 static __thread void *__vcore_stack = NULL;
 
+/* Per vcore entery function used when reentering at the top of a vcore's stack */
+static __thread void (*__vcore_reentry_func)(void) = NULL;
+
 /* Flag used to indicate if the original main thread has completely migrated
  * over to a vcore or not.  Required so as not to clobber the stack if
  * the "new" main thread is started on the vcore before the original one
@@ -126,6 +129,26 @@ static void __vcore_entry()
 }
 extern void vcore_entry() __attribute__ ((weak, alias ("__vcore_entry")));
 
+/* Helper functions used to reenter at the top of a vcore's stack for an
+ * arbitrary function */
+static void __attribute__((noinline, noreturn)) 
+__vcore_reenter()
+{
+  __vcore_reentry_func();
+}
+
+void vcore_reenter(void (*entry_func)(void))
+{
+  assert(in_vcore_context());
+
+  __vcore_reentry_func = entry_func;
+  set_stack_pointer(vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size);
+  cmb();
+  __vcore_reenter();
+  assert(0);
+}
+
+/* The entry gate of a vcore after it's initial creation. */
 void __vcore_entry_gate()
 {
   assert(__in_vcore_context);
@@ -139,6 +162,7 @@ void __vcore_entry_gate()
   CPU_ZERO(&c);
   CPU_SET(vcoreid, &c);
   if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
+2A
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
     exit(1);
   }
