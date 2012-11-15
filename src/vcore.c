@@ -90,9 +90,9 @@ __thread ucontext_t *vcore_saved_ucontext = NULL;
 __thread void *vcore_saved_tls_desc = NULL;
 
 /* Delineates whether the current context running on the vcore is the vcore
- * context or not.
- * itself */
-__thread bool __in_vcore_context = false;
+ * context or not. Default is false, so we don't have to set it whenever we
+ * create new contexts. */
+__thread bool __in_vcore_context = true;
 
 /* Number of currently allocated vcores. */
 volatile int __num_vcores = 0;
@@ -501,6 +501,9 @@ int vcore_lib_init()
   if (initialized)
       return 0;
   initialized = true;
+
+  /* Set this main thread to be in vcore context */
+  __in_vcore_context = true;
 
   /* Make sure the vcore subsystem is up and running */
   assert(!tls_lib_init());
