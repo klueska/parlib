@@ -275,6 +275,11 @@ void destroy_dtls()
 #ifdef PARLIB_NO_UTHREAD_TLS
   }
 #endif
+
   __destroy_dtls(dtls_data);
+
+#ifdef PARLIB_NO_UTHREAD_TLS
+  free(dtls_data);
+#endif
 }
 
