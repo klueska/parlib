@@ -92,7 +92,7 @@ __thread void *vcore_saved_tls_desc = NULL;
 /* Delineates whether the current context running on the vcore is the vcore
  * context or not. Default is false, so we don't have to set it whenever we
  * create new contexts. */
-__thread bool __in_vcore_context = true;
+__thread bool __in_vcore_context = false;
 
 /* Number of currently allocated vcores. */
 volatile int __num_vcores = 0;
@@ -453,6 +453,7 @@ int vcore_request(int k)
       /* If this is the first vcore requested, do something special */
       static int once = true;
       if(once) {
+        __in_vcore_context = false;
         getcontext(&main_context);
         cmb();
         if(once) {
@@ -502,7 +503,8 @@ int vcore_lib_init()
       return 0;
   initialized = true;
 
-  /* Set this main thread to be in vcore context */
+  /* Temporarily set this main thread to be in vcore context until we have
+   * created all of our real vcores and moved over to them. */
   __in_vcore_context = true;
 
   /* Make sure the vcore subsystem is up and running */
