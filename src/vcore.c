@@ -453,7 +453,7 @@ int vcore_request(int k)
       /* If this is the first vcore requested, do something special */
       static int once = true;
       if(once) {
-        __in_vcore_context = false;
+        cmb();
         getcontext(&main_context);
         cmb();
         if(once) {
@@ -503,8 +503,8 @@ int vcore_lib_init()
       return 0;
   initialized = true;
 
-  /* Temporarily set this main thread to be in vcore context until we have
-   * created all of our real vcores and moved over to them. */
+  /* Temporarily set this main thread to be in vcore context while we
+   * create all of our real vcores and move over to them. */
   __in_vcore_context = true;
 
   /* Make sure the vcore subsystem is up and running */
@@ -547,6 +547,8 @@ int vcore_lib_init()
     while (__vcores[i].running == true)
       cpu_relax();
   }
+  /* Reset __in_vcore_context to false */
+  __in_vcore_context = false;
   return 0;
 }
 
