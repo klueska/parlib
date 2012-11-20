@@ -42,11 +42,17 @@ LIB_INTERNAL_FILES = \
 if ARCH_i686
 SYSDEPDIR = $(srcdir)/@SYSDEPDIR_i686@
 
-LIB_SFILES += 
+LIB_SFILES += \
+  @SYSDEPDIR_i686@/swapcontext.S \
+  @SYSDEPDIR_i686@/setcontext.S  \
+  @SYSDEPDIR_i686@/getcontext.S
 
 LIB_HFILES += \
   @SYSDEPDIR_i686@/arch.h   \
   @SYSDEPDIR_i686@/atomic.h
+
+LIB_INTERNAL_FILES += \
+  @SYSDEPDIR_i686@/internal/ucontext_i.h
 
 endif
 
