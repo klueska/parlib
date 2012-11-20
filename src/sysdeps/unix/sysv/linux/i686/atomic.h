@@ -48,20 +48,52 @@
 #error "expecting __GNUC__ to be defined (are you using gcc?)"
 #endif
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Adding "memory" to keep the compiler from fucking with us */
+typedef void* atomic_t;
+
+static inline void atomic_init(atomic_t *number, long val)
+{
+    *(volatile long*)number = val;
+}
+
+static inline void *atomic_swap_ptr(void **addr, void *val)
+{
+    return __sync_lock_test_and_set(addr, val);
+}
+
+static inline long atomic_swap(atomic_t *addr, long val)
+{
+    return __sync_lock_test_and_set((long*)addr, val);
+}
+
+static inline uint32_t atomic_swap_u32(uint32_t *addr, uint32_t val)
+{
+    return __sync_lock_test_and_set(addr, val);
+}
+
+/* Full CPU memory barrier */
 #define mb() ({ asm volatile("mfence" ::: "memory"); })
-#define rmb() ({ asm volatile("lfence" ::: "memory"); })
-#define wmb() ({ asm volatile("" ::: "memory"); })
-/* Compiler memory barrier */
+/* Compiler memory barrier (optimization barrier) */
 #define cmb() ({ asm volatile("" ::: "memory"); })
-/* Force a wmb, used in cases where an IPI could beat a write, even though
- * write-orderings are respected.
- * TODO: this probably doesn't do what you want. */
-#define wmb_f() ({ asm volatile("sfence"); })
+/* Partial CPU memory barriers */
+#define rmb() cmb()
+#define wmb() cmb()
+#define wrmb() mb()
+#define rwmb() cmb()
+
+/* Forced barriers, used for string ops, SSE ops, dealing with hardware, or
+ * other places where you avoid 'normal' x86 read/writes (like having an IPI
+ * beat a write) */
+#define mb_f() ({ asm volatile("mfence" ::: "memory"); })
+#define rmb_f() ({ asm volatile("lfence" ::: "memory"); })
+#define wmb_f() ({ asm volatile("sfence" ::: "memory"); })
+#define wrmb_f() mb_f()
+#define rwmb_f() mb_f()
 
 #define atomic_read(number)                                 \
 ({                                                          \
