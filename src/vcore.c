@@ -162,7 +162,6 @@ void __vcore_entry_gate()
   CPU_ZERO(&c);
   CPU_SET(vcoreid, &c);
   if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
-2A
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
     exit(1);
   }
