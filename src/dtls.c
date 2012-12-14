@@ -45,16 +45,6 @@ struct dtls_value {
 }; 
 TAILQ_HEAD(dtls_list, dtls_value);
 
-/* A statically allocated buffer of dtls keys (global to all threads) */
-static struct kmem_cache *__dtls_keys_cache;
-
-/* A slab of values for use when mapping a dtls_key to
- * its per-thread value */
-struct kmem_cache *__dtls_values_cache;
-  
-/* A lock protecting access to the caches above */
-static mcs_lock_t __dtls_lock;
-
 /* A struct containing all of the per thread (i.e. vcore or uthread) data
  * associated with dtls */
 typedef struct dtls_data {
@@ -62,6 +52,19 @@ typedef struct dtls_data {
   struct dtls_list list;
 
 } dtls_data_t;
+
+/* A slab of dtls keys (global to all threads) */
+static struct kmem_cache *__dtls_keys_cache;
+
+/* A slab of values for use when mapping a dtls_key to its per-thread value */
+struct kmem_cache *__dtls_values_cache;
+  
+/* A slab of dtls data for per-thread management */
+struct kmem_cache *__dtls_data_cache;
+  
+/* A lock protecting access to the caches above */
+static mcs_lock_t __dtls_lock;
+
 static __thread dtls_data_t __dtls_data;
 static __thread bool __dtls_initialized = false;
 
@@ -105,6 +108,9 @@ int dtls_lib_init()
 
 	__dtls_values_cache = kmem_cache_create("dtls_values_cache", 
       sizeof(struct dtls_value), __alignof__(struct dtls_value), 0, NULL, NULL);
+
+	__dtls_data_cache = kmem_cache_create("dtls_data_cache", 
+      sizeof(struct dtls_data), __alignof__(struct dtls_data), 0, NULL, NULL);
 
     /* Initialize the lock that protects the cache */
     mcs_lock_init(&__dtls_lock);
@@ -209,7 +215,7 @@ void set_dtls(dtls_key_t key, void *dtls)
 #ifdef PARLIB_NO_UTHREAD_TLS
   if(!in_vcore_context()) {
     if(current_uthread->dtls_data == NULL) {
-      current_uthread->dtls_data = malloc(sizeof(dtls_data_t));
+      current_uthread->dtls_data = kmem_cache_alloc(__dtls_data_cache, 0);
       initialized = false;
     }
     dtls_data = current_uthread->dtls_data;
@@ -271,7 +277,7 @@ void destroy_dtls()
   __destroy_dtls(dtls_data);
 
 #ifdef PARLIB_NO_UTHREAD_TLS
-  free(dtls_data);
+  kmem_cache_free(__dtls_data_cache, dtls_data);
 #endif
 }
 
