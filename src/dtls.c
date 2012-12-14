@@ -135,7 +135,7 @@ void dtls_key_delete(dtls_key_t key)
   __maybe_free_dtls_key(key);
 }
 
-void inline __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
+static inline void __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
 {
   assert(key);
 
