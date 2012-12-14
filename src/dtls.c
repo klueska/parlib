@@ -20,7 +20,7 @@
 
 #include <stddef.h>
 #include "dtls.h"
-#include "mcs.h"
+#include "spinlock.h"
 #include "slab.h"
 
 /* The current dymamic tls implementation uses a locked linked list
@@ -63,7 +63,7 @@ struct kmem_cache *__dtls_values_cache;
 struct kmem_cache *__dtls_data_cache;
   
 /* A lock protecting access to the caches above */
-static mcs_lock_t __dtls_lock;
+static spinlock_t __dtls_lock;
 
 static __thread dtls_data_t __dtls_data;
 static __thread bool __dtls_initialized = false;
@@ -74,22 +74,20 @@ static __thread bool __dtls_initialized = false;
 
 static dtls_key_t __alocate_dtls_key() 
 {
-  mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-  mcs_lock_lock(&__dtls_lock, &qnode);
+  spinlock_lock(&__dtls_lock);
   dtls_key_t key = kmem_cache_alloc(__dtls_keys_cache, 0);
   assert(key);
   key->ref_count = 1;
-  mcs_lock_unlock(&__dtls_lock, &qnode);
+  spinlock_unlock(&__dtls_lock);
   return key;
 }
 
 static void __maybe_free_dtls_key(dtls_key_t key)
 {
   if(key->ref_count == 0) {
-    mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-    mcs_lock_lock(&__dtls_lock, &qnode);
+    spinlock_lock(&__dtls_lock);
     kmem_cache_free(__dtls_keys_cache, key);
-    mcs_lock_unlock(&__dtls_lock, &qnode);
+    spinlock_unlock(&__dtls_lock);
   }
 }
 
@@ -113,7 +111,7 @@ int dtls_lib_init()
       sizeof(struct dtls_data), __alignof__(struct dtls_data), 0, NULL, NULL);
 
     /* Initialize the lock that protects the cache */
-    mcs_lock_init(&__dtls_lock);
+    spinlock_init(&__dtls_lock);
 	return 0;
 }
 
