@@ -21,12 +21,12 @@
 #include <stddef.h>
 #include "dtls.h"
 #include "mcs.h"
-#include "pool.h"
+#include "slab.h"
 
 /* The current dymamic tls implementation uses a locked linked list
  * to find the key for a given thread. We should probably find a better way to
  * do this based on a custom lock-free hash table or something. */
-#include "queue.h"
+#include <sys/queue.h>
 #include "spinlock.h"
 
 /* The dynamic tls key structure */
@@ -47,14 +47,10 @@ TAILQ_HEAD(dtls_list, dtls_list_element);
 typedef struct dtls_list dtls_list_t;
 
 /* A statically allocated buffer of dtls keys (global to all threads) */
-static struct dtls_key __dtls_keys[DTLS_KEYS_MAX];
+static struct kmem_cache *__dtls_keys_cache;
 
-/* A statically allocated object queue and pool to manage the buffer of dtls keys */
-static void *__dtls_keys_queue[DTLS_KEYS_MAX];
-static pool_t __dtls_keys_pool;
-
-/* A lock protecting access to the global pool of dtls keys */
-static mcs_lock_t __dtls_keys_pool_lock;
+/* A lock protecting access to the global cache of dtls keys */
+static mcs_lock_t __dtls_keys_cache_lock;
 
 /* A struct containing all of the per thread (i.e. vcore or uthread) data
  * associated with dtls */
@@ -64,12 +60,7 @@ typedef struct dtls_data {
 
   /* A per-thread buffer of dtls_list_elements for use when mapping a dtls_key to
    * its per-thread value */
-  struct dtls_list_element list_elements[DTLS_KEYS_MAX];
-  
-  /* A per-thread object queue and pool to manage the per-thread buffer of
-   * dtls_list_elements */
-  void *list_elements_queue[DTLS_KEYS_MAX];
-  pool_t list_elements_pool;
+  struct kmem_cache *list_elements_cache;
   
 } dtls_data_t;
 static __thread dtls_data_t __dtls_data;
@@ -82,11 +73,11 @@ static __thread bool __dtls_initialized = false;
 static dtls_key_t __alocate_dtls_key() 
 {
   mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-  mcs_lock_lock(&__dtls_keys_pool_lock, &qnode);
-  dtls_key_t key = pool_alloc(&__dtls_keys_pool);
+  mcs_lock_lock(&__dtls_keys_cache_lock, &qnode);
+  dtls_key_t key = kmem_cache_alloc(__dtls_keys_cache, 0);
   assert(key);
   key->ref_count = 1;
-  mcs_lock_unlock(&__dtls_keys_pool_lock, &qnode);
+  mcs_lock_unlock(&__dtls_keys_cache_lock, &qnode);
   return key;
 }
 
@@ -94,9 +85,9 @@ static void __maybe_free_dtls_key(dtls_key_t key)
 {
   if(key->ref_count == 0) {
     mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-    mcs_lock_lock(&__dtls_keys_pool_lock, &qnode);
-    pool_free(&__dtls_keys_pool, key);
-    mcs_lock_unlock(&__dtls_keys_pool_lock, &qnode);
+    mcs_lock_lock(&__dtls_keys_cache_lock, &qnode);
+    kmem_cache_free(__dtls_keys_cache, key);
+    mcs_lock_unlock(&__dtls_keys_cache_lock, &qnode);
   }
 }
 
@@ -109,11 +100,12 @@ int dtls_lib_init()
 	    return 0;
 	initialized = true;
 	
-    /* Initialize the global pool of dtls_keys */
-    pool_init(&__dtls_keys_pool, __dtls_keys, __dtls_keys_queue,
-              DTLS_KEYS_MAX, sizeof(struct dtls_key));
-    /* Initialize the lock that protects the pool */
-    mcs_lock_init(&__dtls_keys_pool_lock);
+    /* Initialize the global cache of dtls_keys */
+	__dtls_keys_cache = kmem_cache_create("dtls_keys_cache", 
+      sizeof(struct dtls_key), __alignof__(struct dtls_key), 0, NULL, NULL);
+
+    /* Initialize the lock that protects the cache */
+    mcs_lock_init(&__dtls_keys_cache_lock);
 	return 0;
 }
 
@@ -150,7 +142,7 @@ void inline __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
     if(e->key == key) break;
 
   if(!e) {
-    e = pool_alloc(&dtls_data->list_elements_pool);
+    e = kmem_cache_alloc(dtls_data->list_elements_cache, 0);
     assert(e);
     e->key = key;
     TAILQ_INSERT_HEAD(&dtls_data->list, e, link);
@@ -203,7 +195,7 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
 
     n = TAILQ_NEXT(e, link);
     TAILQ_REMOVE(&dtls_data->list, e, link);
-    pool_free(&dtls_data->list_elements_pool, e);
+    kmem_cache_free(dtls_data->list_elements_cache, e);
     e = n;
   }
 }
@@ -231,11 +223,9 @@ void set_dtls(dtls_key_t key, void *dtls)
   }
 #endif
   if(!initialized) {
-    pool_init(&dtls_data->list_elements_pool,
-              dtls_data->list_elements, 
-              dtls_data->list_elements_queue,
-              DTLS_KEYS_MAX,
-              sizeof(struct dtls_list_element));
+	dtls_data->list_elements_cache = kmem_cache_create("dtls_list_elements_cache", 
+      sizeof(struct dtls_list_element), __alignof__(struct dtls_list_element),
+      0, NULL, NULL);
     TAILQ_INIT(&dtls_data->list);
   }
   __set_dtls(dtls_data, key, dtls);

@@ -35,7 +35,6 @@ extern "C" {
 /* Declaration of types needed for dynamically allocatable tls */
 typedef struct dtls_key *dtls_key_t;
 typedef void (*dtls_dtor_t)(void*);
-#define DTLS_KEYS_MAX 500
 
 /* Initialize a dtls_key for dynamically setting/getting uthread local storage
  * on a uthread or vcore. */
