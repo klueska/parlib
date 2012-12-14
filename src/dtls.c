@@ -148,7 +148,9 @@ void inline __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
     if(v->key == key) break;
 
   if(!v) {
+    spinlock_lock(&__dtls_lock);
     v = kmem_cache_alloc(__dtls_values_cache, 0);
+    spinlock_unlock(&__dtls_lock);
     assert(v);
     v->key = key;
     TAILQ_INSERT_HEAD(&dtls_data->list, v, link);
@@ -201,7 +203,9 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
 
     n = TAILQ_NEXT(v, link);
     TAILQ_REMOVE(&dtls_data->list, v, link);
+    spinlock_lock(&__dtls_lock);
     kmem_cache_free(__dtls_values_cache, v);
+    spinlock_unlock(&__dtls_lock);
     v = n;
   }
 }
@@ -213,7 +217,9 @@ void set_dtls(dtls_key_t key, void *dtls)
 #ifdef PARLIB_NO_UTHREAD_TLS
   if(!in_vcore_context()) {
     if(current_uthread->dtls_data == NULL) {
+      spinlock_lock(&__dtls_lock);
       current_uthread->dtls_data = kmem_cache_alloc(__dtls_data_cache, 0);
+      spinlock_unlock(&__dtls_lock);
       initialized = false;
     }
     dtls_data = current_uthread->dtls_data;
@@ -275,7 +281,9 @@ void destroy_dtls()
   __destroy_dtls(dtls_data);
 
 #ifdef PARLIB_NO_UTHREAD_TLS
+  spinlock_lock(&__dtls_lock);
   kmem_cache_free(__dtls_data_cache, dtls_data);
+  spinlock_unlock(&__dtls_lock);
 #endif
 }
 
