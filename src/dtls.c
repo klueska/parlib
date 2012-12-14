@@ -38,30 +38,29 @@ struct dtls_key {
 };
 
 /* The definition of a dtls_key list and its elements */
-typedef struct dtls_list_element {
-  TAILQ_ENTRY(dtls_list_element) link;
-  dtls_key_t key;
+struct dtls_value {
+  TAILQ_ENTRY(dtls_value) link;
+  struct dtls_key *key;
   void *dtls;
-} dtls_list_element_t;
-TAILQ_HEAD(dtls_list, dtls_list_element);
-typedef struct dtls_list dtls_list_t;
+}; 
+TAILQ_HEAD(dtls_list, dtls_value);
 
 /* A statically allocated buffer of dtls keys (global to all threads) */
 static struct kmem_cache *__dtls_keys_cache;
 
-/* A lock protecting access to the global cache of dtls keys */
-static mcs_lock_t __dtls_keys_cache_lock;
+/* A slab of values for use when mapping a dtls_key to
+ * its per-thread value */
+struct kmem_cache *__dtls_values_cache;
+  
+/* A lock protecting access to the caches above */
+static mcs_lock_t __dtls_lock;
 
 /* A struct containing all of the per thread (i.e. vcore or uthread) data
  * associated with dtls */
 typedef struct dtls_data {
   /* A per-thread list of dtls regions */
-  dtls_list_t list;
+  struct dtls_list list;
 
-  /* A per-thread buffer of dtls_list_elements for use when mapping a dtls_key to
-   * its per-thread value */
-  struct kmem_cache *list_elements_cache;
-  
 } dtls_data_t;
 static __thread dtls_data_t __dtls_data;
 static __thread bool __dtls_initialized = false;
@@ -73,11 +72,11 @@ static __thread bool __dtls_initialized = false;
 static dtls_key_t __alocate_dtls_key() 
 {
   mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-  mcs_lock_lock(&__dtls_keys_cache_lock, &qnode);
+  mcs_lock_lock(&__dtls_lock, &qnode);
   dtls_key_t key = kmem_cache_alloc(__dtls_keys_cache, 0);
   assert(key);
   key->ref_count = 1;
-  mcs_lock_unlock(&__dtls_keys_cache_lock, &qnode);
+  mcs_lock_unlock(&__dtls_lock, &qnode);
   return key;
 }
 
@@ -85,9 +84,9 @@ static void __maybe_free_dtls_key(dtls_key_t key)
 {
   if(key->ref_count == 0) {
     mcs_lock_qnode_t qnode = MCS_QNODE_INIT;
-    mcs_lock_lock(&__dtls_keys_cache_lock, &qnode);
+    mcs_lock_lock(&__dtls_lock, &qnode);
     kmem_cache_free(__dtls_keys_cache, key);
-    mcs_lock_unlock(&__dtls_keys_cache_lock, &qnode);
+    mcs_lock_unlock(&__dtls_lock, &qnode);
   }
 }
 
@@ -104,8 +103,11 @@ int dtls_lib_init()
 	__dtls_keys_cache = kmem_cache_create("dtls_keys_cache", 
       sizeof(struct dtls_key), __alignof__(struct dtls_key), 0, NULL, NULL);
 
+	__dtls_values_cache = kmem_cache_create("dtls_values_cache", 
+      sizeof(struct dtls_value), __alignof__(struct dtls_value), 0, NULL, NULL);
+
     /* Initialize the lock that protects the cache */
-    mcs_lock_init(&__dtls_keys_cache_lock);
+    mcs_lock_init(&__dtls_lock);
 	return 0;
 }
 
@@ -137,35 +139,35 @@ void inline __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
   key->ref_count++;
   spinlock_unlock(&key->lock);
 
-  dtls_list_element_t *e = NULL;
-  TAILQ_FOREACH(e, &dtls_data->list, link)
-    if(e->key == key) break;
+  struct dtls_value *v = NULL;
+  TAILQ_FOREACH(v, &dtls_data->list, link)
+    if(v->key == key) break;
 
-  if(!e) {
-    e = kmem_cache_alloc(dtls_data->list_elements_cache, 0);
-    assert(e);
-    e->key = key;
-    TAILQ_INSERT_HEAD(&dtls_data->list, e, link);
+  if(!v) {
+    v = kmem_cache_alloc(__dtls_values_cache, 0);
+    assert(v);
+    v->key = key;
+    TAILQ_INSERT_HEAD(&dtls_data->list, v, link);
   }
-  e->dtls = dtls;
+  v->dtls = dtls;
 }
 
 static inline void *__get_dtls(dtls_data_t *dtls_data, dtls_key_t key)
 {
   assert(key);
 
-  dtls_list_element_t *e = NULL;
-  TAILQ_FOREACH(e, &dtls_data->list, link)
-    if(e->key == key) return e->dtls;
-  return e;
+  struct dtls_value *v = NULL;
+  TAILQ_FOREACH(v, &dtls_data->list, link)
+    if(v->key == key) return v->dtls;
+  return v;
 }
 
 static inline void __destroy_dtls(dtls_data_t *dtls_data)
 {
-  dtls_list_element_t *e,*n;
-  e = TAILQ_FIRST(&dtls_data->list);
-  while(e != NULL) {
-    dtls_key_t key = e->key;
+ struct dtls_value *v,*n;
+  v = TAILQ_FIRST(&dtls_data->list);
+  while(v != NULL) {
+    dtls_key_t key = v->key;
     bool run_dtor = false;
   
     spinlock_lock(&key->lock);
@@ -183,8 +185,8 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
 	// of this interface should safeguard that a key is never destroyed before
 	// all of the threads that use it have exited anyway.
     if(run_dtor) {
-	  void *dtls = e->dtls;
-      e->dtls = NULL;
+	  void *dtls = v->dtls;
+      v->dtls = NULL;
       key->dtor(dtls);
     }
 
@@ -193,10 +195,10 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
     spinlock_unlock(&key->lock);
     __maybe_free_dtls_key(key);
 
-    n = TAILQ_NEXT(e, link);
-    TAILQ_REMOVE(&dtls_data->list, e, link);
-    kmem_cache_free(dtls_data->list_elements_cache, e);
-    e = n;
+    n = TAILQ_NEXT(v, link);
+    TAILQ_REMOVE(&dtls_data->list, v, link);
+    kmem_cache_free(__dtls_values_cache, v);
+    v = n;
   }
 }
 
@@ -223,9 +225,6 @@ void set_dtls(dtls_key_t key, void *dtls)
   }
 #endif
   if(!initialized) {
-	dtls_data->list_elements_cache = kmem_cache_create("dtls_list_elements_cache", 
-      sizeof(struct dtls_list_element), __alignof__(struct dtls_list_element),
-      0, NULL, NULL);
     TAILQ_INIT(&dtls_data->list);
   }
   __set_dtls(dtls_data, key, dtls);
