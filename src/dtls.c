@@ -117,6 +117,7 @@ int dtls_lib_init()
 
 dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 {
+  dtls_lib_init();
   dtls_key_t key = __alocate_dtls_key();
   spinlock_init(&key->lock);
   key->valid = true;
