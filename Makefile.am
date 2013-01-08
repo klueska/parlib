@@ -15,7 +15,6 @@ LIB_CFILES = \
   @SRCDIR@/dtls.c     \
   @SRCDIR@/pool.c     \
   @SRCDIR@/uthread.c  \
-  @SRCDIR@/parlib.c   \
   @SRCDIR@/vcore.c
 
 LIB_HFILES = \

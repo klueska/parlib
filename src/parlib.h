@@ -56,10 +56,6 @@
 #define FALSE	0
 #endif
 
-
-/* Constructor to set up the parlib library */
-int parlib_init(struct uthread *main_thread);
-
 enum {
 	PG_RDONLY = 4,
 	PG_RDWR   = 6,
