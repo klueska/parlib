@@ -95,24 +95,20 @@ static void __maybe_free_dtls_key(dtls_key_t key)
 int dtls_lib_init()
 {
 	/* Make sure this only runs once */
-	static bool initialized = false;
-	if (initialized)
-	    return 0;
-	initialized = true;
-	
-    /* Initialize the global cache of dtls_keys */
-	__dtls_keys_cache = kmem_cache_create("dtls_keys_cache", 
-      sizeof(struct dtls_key), __alignof__(struct dtls_key), 0, NULL, NULL);
+  run_once(
+      /* Initialize the global cache of dtls_keys */
+	  __dtls_keys_cache = kmem_cache_create("dtls_keys_cache", 
+        sizeof(struct dtls_key), __alignof__(struct dtls_key), 0, NULL, NULL);
 
-	__dtls_values_cache = kmem_cache_create("dtls_values_cache", 
-      sizeof(struct dtls_value), __alignof__(struct dtls_value), 0, NULL, NULL);
+	  __dtls_values_cache = kmem_cache_create("dtls_values_cache", 
+        sizeof(struct dtls_value), __alignof__(struct dtls_value), 0, NULL, NULL);
 
-	__dtls_data_cache = kmem_cache_create("dtls_data_cache", 
-      sizeof(struct dtls_data), __alignof__(struct dtls_data), 0, NULL, NULL);
+	  __dtls_data_cache = kmem_cache_create("dtls_data_cache", 
+        sizeof(struct dtls_data), __alignof__(struct dtls_data), 0, NULL, NULL);
 
     /* Initialize the lock that protects the cache */
     spinlock_init(&__dtls_lock);
-	return 0;
+  );
 }
 
 dtls_key_t dtls_key_create(dtls_dtor_t dtor)
