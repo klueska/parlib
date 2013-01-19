@@ -213,6 +213,7 @@ void set_dtls(dtls_key_t key, void *dtls)
   dtls_data_t *dtls_data = NULL;
 #ifdef PARLIB_NO_UTHREAD_TLS
   if(!in_vcore_context()) {
+    assert(current_uthread);
     if(current_uthread->dtls_data == NULL) {
       spinlock_lock(&__dtls_lock);
       current_uthread->dtls_data = kmem_cache_alloc(__dtls_data_cache, 0);
@@ -242,6 +243,7 @@ void *get_dtls(dtls_key_t key)
   dtls_data_t *dtls_data = NULL;
 #ifdef PARLIB_NO_UTHREAD_TLS
   if(!in_vcore_context()) {
+    assert(current_uthread);
     if(current_uthread->dtls_data == NULL)
       return NULL;
     dtls_data = current_uthread->dtls_data;
