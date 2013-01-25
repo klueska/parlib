@@ -24,7 +24,6 @@ LIB_HFILES = \
   @SRCDIR@/mcs.h       \
   @SRCDIR@/slab.h      \
   @SRCDIR@/pool.h      \
-  @SRCDIR@/queue.h     \
   @SRCDIR@/tls.h       \
   @SRCDIR@/dtls.h      \
   @SRCDIR@/uthread.h   \
