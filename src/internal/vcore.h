@@ -65,7 +65,4 @@ struct vcore {
 #endif
 };
 
-/* Initialization routine for the vcore subsystem. */
-extern int vcore_lib_init();
-
 #endif // VCORE_INTERNAL_H

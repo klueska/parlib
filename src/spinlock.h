@@ -26,17 +26,16 @@
 extern "C" {
 #endif
 
+#define SPINLOCK_INITIALIZER {0}
 
-#define SPINLOCK_LOCKED (1)
-#define SPINLOCK_UNLOCKED (0)
-
-typedef int spinlock_t;
+typedef struct spinlock {
+  int lock;
+} spinlock_t;
 
 void spinlock_init(spinlock_t *lock);
 int spinlock_trylock(spinlock_t *lock);
 void spinlock_lock(spinlock_t *lock);
 void spinlock_unlock(spinlock_t *lock);
-
 
 #ifdef __cplusplus
 }

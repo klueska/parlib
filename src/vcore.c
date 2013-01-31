@@ -72,7 +72,7 @@ struct vcore *__vcores = NULL;
 /* Array of TLS descriptors to use for each vcore. Separate from the vcore
  * array so that we can access it transparently, as an array, outside of
  * the vcore library. */
-void **vcore_tls_descs = NULL;
+void **__vcore_tls_descs = NULL;
 
 /* Id of the currently running vcore. */
 __thread int __vcore_id = -1;
@@ -235,7 +235,7 @@ __vcore_trampoline_entry(void *arg)
 
   /* Initialize the tls region to be used by this vcore */
   init_tls(vcoreid);
-  set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
+  set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
 
   /* Set it that we are in vcore context */
   __in_vcore_context = true;
@@ -485,7 +485,7 @@ void vcore_yield()
   vcore_saved_tls_desc = NULL;
 #ifndef PARLIB_NO_UTHREAD_TLS
   /* Restore the TLS associated with this vcore's context */
-  set_tls_desc(vcore_tls_descs[__vcore_id], __vcore_id);
+  set_tls_desc(__vcore_tls_descs[__vcore_id], __vcore_id);
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
@@ -522,9 +522,9 @@ int vcore_lib_init()
    * dies since vcores should be alive for the entire lifetime of the
    * program. */
   __vcores = malloc(sizeof(struct vcore) * __max_vcores);
-  vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
+  __vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
 
-  if (__vcores == NULL || vcore_tls_descs == NULL) {
+  if (__vcores == NULL || __vcore_tls_descs == NULL) {
     fprintf(stderr, "vcore: failed to initialize vcores\n");
     exit(1);
   }

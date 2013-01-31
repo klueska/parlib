@@ -93,10 +93,9 @@ void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 }
 
 // MCS dissemination barrier!
-int mcs_barrier_init(mcs_barrier_t* b, size_t np)
+void mcs_barrier_init(mcs_barrier_t* b, size_t np)
 {
-	if(np > max_vcores())
-		return -1;
+	assert(np <= max_vcores());
 	b->allnodes = (mcs_dissem_flags_t*)malloc(np*sizeof(mcs_dissem_flags_t));
 	memset(b->allnodes,0,np*sizeof(mcs_dissem_flags_t));
 	b->nprocs = np;
@@ -118,8 +117,6 @@ int mcs_barrier_init(mcs_barrier_t* b, size_t np)
 			b->allnodes[i].partnerflags[1][k] = &b->allnodes[j].myflags[1][k];
 		} 
 	}
-
-	return 0;
 }
 
 void mcs_barrier_wait(mcs_barrier_t* b, size_t pid)

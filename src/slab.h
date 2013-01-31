@@ -66,7 +66,7 @@ struct kmem_slab {
 TAILQ_HEAD(kmem_slab_list, kmem_slab);
 
 /* Actual cache */
-struct kmem_cache {
+typedef struct kmem_cache {
 	SLIST_ENTRY(kmem_cache) link;
 	spinlock_t cache_lock;
 	const char *name;
@@ -79,7 +79,7 @@ struct kmem_cache {
 	void (*ctor)(void *, size_t);
 	void (*dtor)(void *, size_t);
 	unsigned long nr_cur_alloc;
-};
+} kmem_cache_t;
 
 /* List of all kmem_caches, sorted in order of size */
 SLIST_HEAD(kmem_cache_list, kmem_cache);

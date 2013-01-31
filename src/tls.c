@@ -109,7 +109,7 @@ void init_tls(uint32_t vcoreid)
 #endif
 
 	/* Set the tls_desc in the tls_desc array */
-	vcore_tls_descs[vcoreid] = tcb;
+	__vcore_tls_descs[vcoreid] = tcb;
 }
 
 /* Passing in the vcoreid, since it'll be in TLS of the caller */

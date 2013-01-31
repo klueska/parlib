@@ -53,15 +53,17 @@
 extern "C" {
 #endif
 
-/* Array of vcores */
+/* The vcore type */
 struct vcore;
 typedef struct vcore vcore_t;
-extern struct vcore *__vcores;
+
+/* Array of vcores */
+extern vcore_t *__vcores;
 
 /**
  *  Array of pointers to TLS descriptors for each vcore.
  */
-extern void **vcore_tls_descs;
+extern void **__vcore_tls_descs;
 
 /**
  * Context associated with each vcore. Serves as the entry point to this vcore
@@ -92,6 +94,9 @@ extern __thread void *vcore_saved_tls_desc;
  * there.
  */
 extern void vcore_entry() __attribute__((weak));
+
+/* Initialization routine for the vcore subsystem. */
+int vcore_lib_init();
 
 /**
  * Function to reenter a vcore at the top of its stack stack.
@@ -161,7 +166,7 @@ void disable_notifs(uint32_t vcoreid);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
   #define vcore_begin_access_tls_vars(vcore_id) \
-    begin_access_tls_vars(vcore_tls_descs[(vcore_id)])
+    begin_access_tls_vars(__vcore_tls_descs[(vcore_id)])
 
   #define vcore_end_access_tls_vars() \
     end_access_tls_vars()
@@ -169,7 +174,7 @@ void disable_notifs(uint32_t vcoreid);
   #define vcore_set_tls_var(name, val)                                 \
   {                                                                    \
   	typeof(val) __val = val;                                           \
-  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);                \
+  	begin_access_tls_vars(__vcore_tls_descs[vcore_id()]);              \
   	name = __val;                                                      \
   	end_access_tls_vars();                                             \
   }
@@ -177,7 +182,7 @@ void disable_notifs(uint32_t vcoreid);
   #define vcore_get_tls_var(name)                                      \
   ({                                                                   \
   	typeof(name) val;                                                  \
-  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);                \
+  	begin_access_tls_vars(__vcore_tls_descs[vcore_id()]);              \
   	val = name;                                                        \
   	end_access_tls_vars();                                             \
   	val;                                                               \

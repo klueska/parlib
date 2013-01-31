@@ -32,7 +32,7 @@
 
 /* Which operations we'll call for the 2LS.  Will change a bit with Lithe.  For
  * now, there are no defaults.  2LSs can override sched_ops. */
-struct schedule_ops default_2ls_ops = {0};
+static struct schedule_ops default_2ls_ops = {0};
 struct schedule_ops *sched_ops __attribute__((weak)) = &default_2ls_ops;
 
 __thread struct uthread *current_uthread = 0;
@@ -73,7 +73,7 @@ int uthread_lib_init(struct uthread* uthread)
 	 * thread, so when vcore 0 comes up it will resume the main thread.
 	 * Note: there is no need to restore the original tls here, since we
 	 * are right about to transition onto vcore 0 anyway... */
-	set_tls_desc(vcore_tls_descs[0], 0);
+	set_tls_desc(__vcore_tls_descs[0], 0);
 	safe_set_tls_var(current_uthread, uthread);
 
 	/* Request some cores ! */
@@ -225,7 +225,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	yielding = FALSE; /* for when it starts back up */
 	/* Change to the transition context (both TLS and stack). */
 #ifndef PARLIB_NO_UTHREAD_TLS
-	set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
+	set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
 #else
 	extern __thread bool __in_vcore_context;
     __in_vcore_context = true;

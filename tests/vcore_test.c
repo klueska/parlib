@@ -29,7 +29,7 @@
 
 #ifndef PARLIB_VCORE_AS_PTHREAD
 #include "spinlock.h"
-spinlock_t printf_lock = SPINLOCK_UNLOCKED;
+spinlock_t printf_lock = SPINLOCK_INITIALIZER;
 #define printf_safe(...)           \
 {                                  \
   spinlock_lock(&printf_lock);     \
@@ -64,7 +64,7 @@ int main()
   vcore_lib_init();
   printf_safe("main, max_vcores: %ld\n", max_vcores());
   vcore_request(NUM_VCORES);
-  set_tls_desc(vcore_tls_descs[0], 0);
+  set_tls_desc(__vcore_tls_descs[0], 0);
   vcore_saved_ucontext = NULL;  
   vcore_entry();
 }

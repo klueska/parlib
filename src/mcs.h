@@ -43,7 +43,7 @@ typedef struct mcs_lock
 	mcs_lock_qnode_t* lock;
 } mcs_lock_t;
 
-typedef struct
+typedef struct mcs_dissem_flags
 {
 	volatile int myflags[2][LOG2_MAX_VCORES];
 	volatile int* partnerflags[2][LOG2_MAX_VCORES];
@@ -52,7 +52,7 @@ typedef struct
 	char pad[ARCH_CL_SIZE];
 } mcs_dissem_flags_t;
 
-typedef struct
+typedef struct mcs_barrier_t
 {
 	size_t nprocs;
 	mcs_dissem_flags_t* allnodes;
@@ -69,7 +69,7 @@ void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_lock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 
-int mcs_barrier_init(mcs_barrier_t* b, size_t nprocs);
+void mcs_barrier_init(mcs_barrier_t* b, size_t nprocs);
 void mcs_barrier_wait(mcs_barrier_t* b, size_t vcoreid);
 
 #ifdef __cplusplus
