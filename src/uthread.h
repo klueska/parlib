@@ -52,7 +52,7 @@ typedef struct uthread uthread_t;
 extern __thread uthread_t *current_uthread;
 
 /* 2L-Scheduler operations.  Can be 0.  Examples in pthread.c. */
-struct schedule_ops {
+typedef struct schedule_ops {
     /* Functions supporting thread ops */
     void (*sched_entry)(void);
     void (*thread_runnable)(struct uthread *);
@@ -62,7 +62,7 @@ struct schedule_ops {
     /* Functions event handling wants */
     void (*preempt_pending)(void);
     void (*spawn_thread)(uintptr_t pc_start, void *data);   /* don't run yet */
-};
+} schedule_ops_t;
 extern struct schedule_ops *sched_ops;
 
 /* Functions to make/manage uthreads.  Can be called by functions such as
