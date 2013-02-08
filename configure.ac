@@ -99,12 +99,12 @@ AC_PREPROC_IFELSE(
 [STATIC_ONLY=true])
 AM_CONDITIONAL([STATIC_ONLY], [test x$STATIC_ONLY = xtrue])
 
-# Allow us to disable TLS for Uthreads
+# Allow us to enable __thread TLS for Uthreads
 AC_ARG_WITH([uthread-tls],
-  [AS_HELP_STRING([--without-uthread-tls],
-    [disable tls support for uthreads])],
-  [],
-  [with_uthread_tls=yes])
+  [AS_HELP_STRING([--with-uthread-tls],
+    [enable __thread tls support for uthreads])],
+  [with_uthread_tls=yes],
+  [with_uthread_tls=no])
 
 if test "x$with_uthread_tls" != xyes; then
   AC_DEFINE([NO_UTHREAD_TLS], [1],
@@ -115,7 +115,7 @@ fi
 AC_ARG_WITH([vcore-as-pthread],
   [AS_HELP_STRING([--without-vcore-as-pthread],
     [disable creating vcores as pthreads, calling clone directly])],
-  [],
+  [with_vcore_as_pthread=no],
   [with_vcore_as_pthread=yes])
 
 if test "x$with_vcore_as_pthread" == xyes; then
