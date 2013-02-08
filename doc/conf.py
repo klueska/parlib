@@ -37,11 +37,11 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'sitemap'
 
 # General information about the project.
 project = u'Parlib'
-copyright = u'2011, Kevin Klues, Barret Rhoden'
+copyright = u'2013, The Regents of the University of California'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -183,7 +183,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Parlib.tex', u'Parlib Documentation',
+  ('sitemap', 'Parlib.tex', u'Parlib API Reference',
    u'Kevin Klues, Barret Rhoden', 'manual'),
 ]
 
@@ -213,7 +213,7 @@ latex_logo = "_static/logo.png"
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'parlib', u'Parlib Documentation',
+    ('sitemap', 'Parlib', u'Parlib API Reference',
      [u'Kevin Klues, Barret Rhoden'], 1)
 ]
 
@@ -227,8 +227,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Parlib', u'Parlib Documentation',
-   u'Kevin Klues, Barret Rhoden', 'Parlib', 'One line description of project.',
+  ('sitemap', 'Parlib', u'Parlib API reference',
+   u'Kevin Klues, Barret Rhoden', 'Parlib', 'Easing Cross-Platform Development of Next Generation Parallel Systems.',
    'Miscellaneous'),
 ]
 
