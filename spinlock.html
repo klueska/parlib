@@ -25,20 +25,23 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="up" title="API Reference" href="api_reference.html" />
+    <link rel="next" title="Dynamic Thread Local Storage" href="dtls.html" />
     <link rel="prev" title="MCS Locks" href="mcs.html" /> 
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -48,33 +51,43 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="dtls.html" title="Dynamic Thread Local Storage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
           <a href="mcs.html" title="MCS Locks"
              accesskey="P">previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" accesskey="U">API Reference</a> &raquo;</li> 
       </ul>
     </div>
 
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
+
+  <h3><a href="sitemap.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Spinlocks</a><ul>
+<li><a class="reference internal" href="#constants">Constants</a></li>
+<li><a class="reference internal" href="#types">Types</a></li>
+<li><a class="reference internal" href="#api-calls">API Calls</a></li>
+</ul>
+</li>
+</ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="mcs.html"
                         title="previous chapter">MCS Locks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dtls.html"
+                        title="next chapter">Dynamic Thread Local Storage</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/spinlock.txt"
@@ -104,11 +117,36 @@
             
   <div class="section" id="spinlocks">
 <h1>Spinlocks<a class="headerlink" href="#spinlocks" title="Permalink to this headline">¶</a></h1>
+<p>To access the spinlock API, include the following header file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#include &lt;parlib/spinlock.h&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="constants">
+<h2>Constants<a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#define SPINLOCK_INITIALIZER</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>struct spinlock;
+typedef struct spinlock spinlock_t;</pre>
+</div>
 <dl class="type">
+<dt id="spinlock">
+struct <tt class="descname">spinlock</tt><a class="headerlink" href="#spinlock" title="Permalink to this definition">¶</a></dt>
 <dt id="spinlock_t">
 <tt class="descname">spinlock_t</tt><a class="headerlink" href="#spinlock_t" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</div>
+<div class="section" id="api-calls">
+<h2>API Calls<a class="headerlink" href="#api-calls" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>void spinlock_init(spinlock_t *lock);
+int spinlock_trylock(spinlock_t *lock);
+void spinlock_lock(spinlock_t *lock);
+void spinlock_unlock(spinlock_t *lock);</pre>
+</div>
 <dl class="function">
 <dt id="spinlock_init">
 void <tt class="descname">spinlock_init</tt><big>(</big><a class="reference internal" href="#spinlock_t" title="spinlock_t">spinlock_t</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#spinlock_init" title="Permalink to this definition">¶</a></dt>
@@ -130,6 +168,7 @@ void <tt class="descname">spinlock_unlock</tt><big>(</big><a class="reference in
 <dd></dd></dl>
 
 </div>
+</div>
 
 
           </div>
@@ -144,20 +183,22 @@ void <tt class="descname">spinlock_unlock</tt><big>(</big><a class="reference in
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="dtls.html" title="Dynamic Thread Local Storage"
+             >next</a> |</li>
+        <li class="right" >
           <a href="mcs.html" title="MCS Locks"
              >previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" >API Reference</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

@@ -25,21 +25,23 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
-    <link rel="next" title="Thread Local Storage" href="tls.html" />
+    <link rel="up" title="API Reference" href="api_reference.html" />
+    <link rel="next" title="MCS Locks" href="mcs.html" />
     <link rel="prev" title="Vcores" href="vcore.html" /> 
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -49,39 +51,45 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tls.html" title="Thread Local Storage"
+          <a href="mcs.html" title="MCS Locks"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="vcore.html" title="Vcores"
              accesskey="P">previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" accesskey="U">API Reference</a> &raquo;</li> 
       </ul>
     </div>
 
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
+
+  <h3><a href="sitemap.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Uthreads</a><ul>
+<li><a class="reference internal" href="#constants">Constants</a></li>
+<li><a class="reference internal" href="#types">Types</a></li>
+<li><a class="reference internal" href="#external-symbols">External Symbols</a></li>
+<li><a class="reference internal" href="#global-variables">Global Variables</a></li>
+<li><a class="reference internal" href="#api-calls">API Calls</a></li>
+</ul>
+</li>
+</ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="vcore.html"
                         title="previous chapter">Vcores</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tls.html"
-                        title="next chapter">Thread Local Storage</a></p>
+  <p class="topless"><a href="mcs.html"
+                        title="next chapter">MCS Locks</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/uthread.txt"
@@ -111,44 +119,138 @@
             
   <div class="section" id="uthreads">
 <h1>Uthreads<a class="headerlink" href="#uthreads" title="Permalink to this headline">¶</a></h1>
+<p>To access the uthread API, include the following header file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#include &lt;parlib/uthread.h&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="constants">
+<h2>Constants<a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#define UTH_EXT_BLK_MUTEX</span>
+</pre></div>
+</div>
+<dl class="macro">
+<dt id="UTH_EXT_BLK_MUTEX">
+<tt class="descname">UTH_EXT_BLK_MUTEX</tt><a class="headerlink" href="#UTH_EXT_BLK_MUTEX" title="Permalink to this definition">¶</a></dt>
+<dd><p>One, of possibly many in the future, reasons that a uthread has blocked
+externally.  This is required for proper implementation of the
+<tt class="xref c c-func docutils literal"><span class="pre">uthread_has_blocked()</span></tt> API call.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>struct uthread;
+typedef struct uthread uthread_t;
+
+struct schedule_ops;
+typedef struct schedule_ops schedule_ops_t;</pre>
+</div>
 <dl class="type">
 <dt id="uthread">
 struct <tt class="descname">uthread</tt><a class="headerlink" href="#uthread" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="type">
 <dt id="uthread_t">
 <tt class="descname">uthread_t</tt><a class="headerlink" href="#uthread_t" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="type">
-<dt id="current_uthread">
-extern __thread <a class="reference internal" href="#uthread_t" title="uthread_t">uthread_t</a> *<tt class="descname">current_uthread</tt><a class="headerlink" href="#current_uthread" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>An opaque type used to reference and manage a user-level thread</p>
+</dd></dl>
 
 <dl class="type">
 <dt id="schedule_ops">
 struct <tt class="descname">schedule_ops</tt><a class="headerlink" href="#schedule_ops" title="Permalink to this definition">¶</a></dt>
+<dt id="schedule_ops_t">
+<tt class="descname">schedule_ops_t</tt><a class="headerlink" href="#schedule_ops_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>A struct containing the list of callbacks a user-level scheduler built on top
+of this uthread library needs to implement.</p>
+<div class="highlight-python"><pre>struct schedule_ops {
+    void (*sched_entry)(void);
+    void (*thread_runnable)(struct uthread *);
+    void (*thread_paused)(struct uthread *);
+    void (*thread_blockon_sysc)(struct uthread *, void *);
+    void (*thread_has_blocked)(struct uthread *, int);
+    void (*preempt_pending)(void);
+    void (*spawn_thread)(uintptr_t pc_start, void *data);
+};</pre>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="schedule_ops_t.sched_entry">
+void <tt class="descname">schedule_ops_t.sched_entry</tt><big>(</big><big>)</big><a class="headerlink" href="#schedule_ops_t.sched_entry" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="function">
+<dt id="schedule_ops_t.thread_runnable">
+void <tt class="descname">schedule_ops_t.thread_runnable</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*</em><big>)</big><a class="headerlink" href="#schedule_ops_t.thread_runnable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="schedule_ops_t.thread_paused">
+void <tt class="descname">schedule_ops_t.thread_paused</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*</em><big>)</big><a class="headerlink" href="#schedule_ops_t.thread_paused" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="schedule_ops_t.thread_blockon_sysc">
+void <tt class="descname">schedule_ops_t.thread_blockon_sysc</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*</em>, void<em>&nbsp;*</em><big>)</big><a class="headerlink" href="#schedule_ops_t.thread_blockon_sysc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="schedule_ops_t.thread_has_blocked">
+void <tt class="descname">schedule_ops_t.thread_has_blocked</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*</em>, int<big>)</big><a class="headerlink" href="#schedule_ops_t.thread_has_blocked" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="schedule_ops_t.preempt_pending">
+void <tt class="descname">schedule_ops_t.preempt_pending</tt><big>(</big><big>)</big><a class="headerlink" href="#schedule_ops_t.preempt_pending" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="schedule_ops_t.spawn_thread">
+void <tt class="descname">schedule_ops_t.spawn_thread</tt><big>(</big>uintptr_t<em>&nbsp;pc_start</em>, void<em>&nbsp;*data</em><big>)</big><a class="headerlink" href="#schedule_ops_t.spawn_thread" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="external-symbols">
+<h2>External Symbols<a class="headerlink" href="#external-symbols" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>extern struct schedule_ops *sched_ops;</pre>
+</div>
 <dl class="var">
 <dt id="sched_ops">
 extern struct <a class="reference internal" href="#schedule_ops" title="schedule_ops">schedule_ops</a> *<tt class="descname">sched_ops</tt><a class="headerlink" href="#sched_ops" title="Permalink to this definition">¶</a></dt>
+<dd><p>A reference to an externally defined variable which contains pointers to
+implementations of all the <a class="reference internal" href="#schedule_ops">schedule_ops</a> callbacks.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="global-variables">
+<h2>Global Variables<a class="headerlink" href="#global-variables" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>__thread uthread_t *current_uthread;</pre>
+</div>
+<dl class="var">
+<dt id="current_uthread">
+__thread <a class="reference internal" href="#uthread_t" title="uthread_t">uthread_t</a> *<tt class="descname">current_uthread</tt><a class="headerlink" href="#current_uthread" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="function">
-<dt id="uthread_vcore_entry">
-extern void <tt class="descname">uthread_vcore_entry</tt><big>(</big><big>)</big><a class="headerlink" href="#uthread_vcore_entry" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+</div>
+<div class="section" id="api-calls">
+<h2>API Calls<a class="headerlink" href="#api-calls" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>int uthread_lib_init();
+void uthread_cleanup(struct uthread *uthread);
+void uthread_runnable(struct uthread *uthread);
+void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*), void *yield_arg);
+void save_current_uthread(struct uthread *uthread);
+void highjack_current_uthread(struct uthread *uthread);
+void run_current_uthread(void);
+void run_uthread(struct uthread *uthread);
+void swap_uthreads(struct uthread *__old, struct uthread *__new);
+init_uthread_tf(uthread_t *uth, void (*entry)(void), void *stack_bottom, uint32_t size);
 
+#define uthread_begin_access_tls_vars(uthread)
+#define uthread_end_access_tls_vars()
+#define uthread_set_tls_var(uthread, name, val)
+#define uthread_get_tls_var(uthread, name)</pre>
+</div>
 <dl class="function">
 <dt id="uthread_lib_init">
 int <tt class="descname">uthread_lib_init</tt><big>(</big><big>)</big><a class="headerlink" href="#uthread_lib_init" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="uthread_init">
-void <tt class="descname">uthread_init</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uth</em><big>)</big><a class="headerlink" href="#uthread_init" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -163,12 +265,7 @@ void <tt class="descname">uthread_runnable</tt><big>(</big>struct <a class="refe
 
 <dl class="function">
 <dt id="uthread_yield">
-void <tt class="descname">uthread_yield</tt><big>(</big>bool<em>&nbsp;save_state</em><big>)</big><a class="headerlink" href="#uthread_yield" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="check_preempt_pending">
-bool <tt class="descname">check_preempt_pending</tt><big>(</big>uint32_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#check_preempt_pending" title="Permalink to this definition">¶</a></dt>
+void <tt class="descname">uthread_yield</tt><big>(</big>bool<em>&nbsp;save_state</em>, void (*yield_func)(struct<em>&nbsp;uthread*</em>, void*), void<em>&nbsp;*yield_arg</em><big>)</big><a class="headerlink" href="#uthread_yield" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -177,19 +274,21 @@ void <tt class="descname">save_current_uthread</tt><big>(</big>struct <a class="
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="set_current_uthread">
-void <tt class="descname">set_current_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#set_current_uthread" title="Permalink to this definition">¶</a></dt>
+<dt id="highjack_current_uthread">
+void <tt class="descname">highjack_current_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#highjack_current_uthread" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="run_current_uthread">
-void <tt class="descname">run_current_uthread</tt><big>(</big>void)<em>&nbsp;__attribute((noreturn)</em><big>)</big><a class="headerlink" href="#run_current_uthread" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+void <tt class="descname">run_current_uthread</tt><big>(</big>void<big>)</big><a class="headerlink" href="#run_current_uthread" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function does not return.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="run_uthread">
-void <tt class="descname">run_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a> *<a class="reference internal" href="#uthread" title="uthread">uthread</a>)<em>&nbsp;__attribute((noreturn)</em><big>)</big><a class="headerlink" href="#run_uthread" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+void <tt class="descname">run_uthread</tt><big>(</big>struct <a class="reference internal" href="#uthread" title="uthread">uthread</a><em>&nbsp;*uthread</em><big>)</big><a class="headerlink" href="#run_uthread" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function does not return.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="swap_uthreads">
@@ -198,7 +297,17 @@ void <tt class="descname">swap_uthreads</tt><big>(</big>struct <a class="referen
 
 <dl class="function">
 <dt id="init_uthread_tf">
-void <tt class="descname">init_uthread_tf</tt><big>(</big><a class="reference internal" href="#uthread_t" title="uthread_t">uthread_t</a><em>&nbsp;*uth</em>, void<em>&nbsp;(*entry)(void)</em>, void<em>&nbsp;*stack_bottom</em>, uint32_t<em>&nbsp;size</em><big>)</big><a class="headerlink" href="#init_uthread_tf" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">init_uthread_tf</tt><big>(</big><a class="reference internal" href="#uthread_t" title="uthread_t">uthread_t</a><em>&nbsp;*uth</em>, void<em>&nbsp;(*entry)(void)</em>, void<em>&nbsp;*stack_bottom</em>, uint32_t<em>&nbsp;size</em><big>)</big><a class="headerlink" href="#init_uthread_tf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_begin_access_tls_vars">
+#define <tt class="descname">uthread_begin_access_tls_vars</tt><big>(</big><a class="reference internal" href="#uthread" title="uthread">uthread</a><big>)</big><a class="headerlink" href="#uthread_begin_access_tls_vars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="uthread_end_access_tls_vars">
+#define <tt class="descname">uthread_end_access_tls_vars</tt><big>(</big><big>)</big><a class="headerlink" href="#uthread_end_access_tls_vars" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
@@ -211,6 +320,7 @@ void <tt class="descname">init_uthread_tf</tt><big>(</big><a class="reference in
 #define <tt class="descname">uthread_get_tls_var</tt><big>(</big><a class="reference internal" href="#uthread" title="uthread">uthread</a>, name<big>)</big><a class="headerlink" href="#uthread_get_tls_var" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</div>
 </div>
 
 
@@ -226,23 +336,22 @@ void <tt class="descname">init_uthread_tf</tt><big>(</big><a class="reference in
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tls.html" title="Thread Local Storage"
+          <a href="mcs.html" title="MCS Locks"
              >next</a> |</li>
         <li class="right" >
           <a href="vcore.html" title="Vcores"
              >previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" >API Reference</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

@@ -25,21 +25,23 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="up" title="API Reference" href="api_reference.html" />
     <link rel="next" title="Uthreads" href="uthread.html" />
-    <link rel="prev" title="Welcome to Parlib’s documentation!" href="index.html" /> 
+    <link rel="prev" title="API Reference" href="api_reference.html" /> 
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -52,33 +54,39 @@
           <a href="uthread.html" title="Uthreads"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to Parlib’s documentation!"
+          <a href="api_reference.html" title="API Reference"
              accesskey="P">previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" accesskey="U">API Reference</a> &raquo;</li> 
       </ul>
     </div>
 
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
 
+  <h3><a href="sitemap.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Vcores</a><ul>
+<li><a class="reference internal" href="#constants">Constants</a></li>
+<li><a class="reference internal" href="#types">Types</a></li>
+<li><a class="reference internal" href="#external-symbols">External Symbols</a></li>
+<li><a class="reference internal" href="#global-variables">Global Variables</a></li>
+<li><a class="reference internal" href="#api-calls">API Calls</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to Parlib&#8217;s documentation!</a></p>
+  <p class="topless"><a href="api_reference.html"
+                        title="previous chapter">API Reference</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="uthread.html"
                         title="next chapter">Uthreads</a></p>
@@ -111,106 +119,231 @@
             
   <div class="section" id="vcores">
 <h1>Vcores<a class="headerlink" href="#vcores" title="Permalink to this headline">¶</a></h1>
-<dl class="var">
+<p>The vcore abstraction gives user-space an abstraction of a physical core
+(within a virtual namespace) on top of which it can schedule its user-level
+threads. When running code associated with a vcore, we speak of being in
+<strong>vcore context</strong>.</p>
+<p>Vcore context is analogous to the interrupt context in a traditional OS. Vcore
+context consists of a stack, a TLS, and a set of registers, much like a basic
+thread.  It is the context in which a user-level scheduler makes its decisions
+and handles signals.  Once a process leaves vcore context, usually by starting
+a user-level thread, any subsequent entrances to vcore context will be at the
+top of the stack at <a class="reference internal" href="#vcore_entry" title="vcore_entry"><tt class="xref c c-func docutils literal"><span class="pre">vcore_entry()</span></tt></a>.</p>
+<p>The vcore abstraction allows an application to manage its cores, schedule its
+threads, and get the best performance it possibly can from the hardware.</p>
+<p>To access the vcore API, include the following header file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#include &lt;parlib/vcore.h&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="constants">
+<h2>Constants<a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#define LOG2_MAX_VCORES</span>
+<span class="c">#define MAX_VCORES</span>
+</pre></div>
+</div>
+<dl class="macro">
+<dt id="LOG2_MAX_VCORES">
+<tt class="descname">LOG2_MAX_VCORES</tt><a class="headerlink" href="#LOG2_MAX_VCORES" title="Permalink to this definition">¶</a></dt>
+<dd><p>The log-base-2 of the maximum number of vcores supported on this platform</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="MAX_VCORES">
+<tt class="descname">MAX_VCORES</tt><a class="headerlink" href="#MAX_VCORES" title="Permalink to this definition">¶</a></dt>
+<dd><p>The maximum number of vcores supported on this platform</p>
+</dd></dl>
+
+</div>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>struct vcore;
+typedef struct vcore vcore_t;</pre>
+</div>
+<dl class="type">
 <dt id="vcore">
 struct <tt class="descname">vcore</tt><a class="headerlink" href="#vcore" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="vcore_t">
+<tt class="descname">vcore_t</tt><a class="headerlink" href="#vcore_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>An opaque type used to maintain state associated with a vcore</p>
+</dd></dl>
 
+</div>
+<div class="section" id="external-symbols">
+<h2>External Symbols<a class="headerlink" href="#external-symbols" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>extern void vcore_entry();</pre>
+</div>
+<dl class="function">
+<dt id="vcore_entry">
+extern void <tt class="descname">vcore_entry</tt><big>(</big><big>)</big><a class="headerlink" href="#vcore_entry" title="Permalink to this definition">¶</a></dt>
+<dd><p>User defined entry point for each vcore.  If <a class="reference internal" href="#vcore_saved_ucontext">vcore_saved_ucontext</a> is
+set, this function should just restore it, otherwise, it is user defined.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="global-variables">
+<h2>Global Variables<a class="headerlink" href="#global-variables" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>vcore_t *__vcores;
+void **__vcore_tls_descs;
+__thread ucontext_t vcore_context;
+__thread ucontext_t *vcore_saved_ucontext;
+__thread void *vcore_saved_tls_desc;</pre>
+</div>
 <dl class="var">
 <dt id="__vcores">
-extern struct <a class="reference internal" href="#vcore" title="vcore">vcore</a> *<tt class="descname">__vcores</tt><a class="headerlink" href="#__vcores" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<a class="reference internal" href="#vcore_t" title="vcore_t">vcore_t</a> *<tt class="descname">__vcores</tt><a class="headerlink" href="#__vcores" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of all of the vcores available to this application</p>
+</dd></dl>
 
 <dl class="var">
-<dt id="vcore_tls_descs">
-extern void **<tt class="descname">vcore_tls_descs</tt><a class="headerlink" href="#vcore_tls_descs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="__vcore_tls_descs">
+void **<tt class="descname">__vcore_tls_descs</tt><a class="headerlink" href="#__vcore_tls_descs" title="Permalink to this definition">¶</a></dt>
+<dd><p>An array of pointers to the TLS descriptor for each vcore.</p>
+</dd></dl>
 
 <dl class="var">
 <dt id="vcore_context">
-extern __thread ucontext_t <tt class="descname">vcore_context</tt><a class="headerlink" href="#vcore_context" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+__thread ucontext_t <tt class="descname">vcore_context</tt><a class="headerlink" href="#vcore_context" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context associated with each vcore. Serves as the entry point to this vcore
+whenever the vcore is first brough up, a usercontext yields on it, or a
+signal / async I/O notification is to be handled.</p>
+</dd></dl>
 
 <dl class="var">
 <dt id="vcore_saved_ucontext">
-extern __thread ucontext_t *<tt class="descname">vcore_saved_ucontext</tt><a class="headerlink" href="#vcore_saved_ucontext" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+__thread ucontext_t *<tt class="descname">vcore_saved_ucontext</tt><a class="headerlink" href="#vcore_saved_ucontext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current user context running on each vcore, used when interrupting a
+user context because of async I/O or signal handling. Vcore 0&#8217;s
+<a class="reference internal" href="#vcore_saved_ucontext">vcore_saved_ucontext</a> is initialized to the continuation of the main thread&#8217;s
+context the first time it&#8217;s <a class="reference internal" href="#vcore_entry" title="vcore_entry"><tt class="xref c c-func docutils literal"><span class="pre">vcore_entry()</span></tt></a> function is invoked.</p>
+</dd></dl>
 
 <dl class="var">
 <dt id="vcore_saved_tls_desc">
-extern __thread void *<tt class="descname">vcore_saved_tls_desc</tt><a class="headerlink" href="#vcore_saved_tls_desc" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+__thread void *<tt class="descname">vcore_saved_tls_desc</tt><a class="headerlink" href="#vcore_saved_tls_desc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current tls_desc of the user context running on each vcore, used when
+interrupting a user context because of async I/O or signal handling. Hard
+Thread 0&#8217;s <a class="reference internal" href="#vcore_saved_tls_desc">vcore_saved_tls_desc</a> is initialized to the tls descriptor of the
+main thread&#8217;s context the first time it&#8217;s <a class="reference internal" href="#vcore_entry" title="vcore_entry"><tt class="xref c c-func docutils literal"><span class="pre">vcore_entry()</span></tt></a> function is invoked.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="api-calls">
+<h2>API Calls<a class="headerlink" href="#api-calls" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>int vcore_lib_init();
+void vcore_reenter(void (*entry_func)(void));
+int vcore_request(int k);
+void vcore_yield();
+int vcore_id(void);
+size_t num_vcores(void);
+size_t max_vcores(void);
+bool in_vcore_context();
+void clear_notif_pending(uint32_t vcoreid);
+void enable_notifs(uint32_t vcoreid);
+void disable_notifs(uint32_t vcoreid);
+
+#define vcore_begin_access_tls_vars(vcoreid)
+#define vcore_end_access_tls_vars()
+#define vcore_set_tls_var(name, val)
+#define vcore_get_tls_var(name)</pre>
+</div>
+<dl class="function">
+<dt id="vcore_lib_init">
+int <tt class="descname">vcore_lib_init</tt><big>(</big><big>)</big><a class="headerlink" href="#vcore_lib_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialization routine for the vcore subsystem.</p>
+</dd></dl>
 
 <dl class="function">
-<dt id="vcore_entry">
-extern void <tt class="descname">vcore_entry</tt><big>(</big>)<em>&nbsp;__attribute__((weak)</em><big>)</big><a class="headerlink" href="#vcore_entry" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="vcore_reenter">
+void <tt class="descname">vcore_reenter</tt><big>(</big>void<em>&nbsp;(*entry_func)(void)</em><big>)</big><a class="headerlink" href="#vcore_reenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to reenter a vcore at the top of its stack.</p>
+</dd></dl>
 
 <dl class="function">
-<dt>
-<tt class="descname">extern int vcore_lib_init();</tt></dt>
-<dd></dd></dl>
+<dt id="vcore_request">
+int <tt class="descname">vcore_request</tt><big>(</big>int<em>&nbsp;k</em><big>)</big><a class="headerlink" href="#vcore_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requests k additional vcores. Returns -1 if the request is impossible.
+Otherwise, blocks the calling vcore until the request is granted and returns
+0.</p>
+</dd></dl>
 
 <dl class="function">
-<dt>
-<tt class="descname">int vcore_request(int k);</tt></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt>
-<tt class="descname">void vcore_yield();</tt></dt>
-<dd></dd></dl>
+<dt id="vcore_yield">
+void <tt class="descname">vcore_yield</tt><big>(</big><big>)</big><a class="headerlink" href="#vcore_yield" title="Permalink to this definition">¶</a></dt>
+<dd><p>Relinquishes the calling vcore.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="vcore_id">
 int <tt class="descname">vcore_id</tt><big>(</big>void<big>)</big><a class="headerlink" href="#vcore_id" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns the id of the calling vcore.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="num_vcores">
 size_t <tt class="descname">num_vcores</tt><big>(</big>void<big>)</big><a class="headerlink" href="#num_vcores" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns the current number of vcores allocated.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="max_vcores">
 size_t <tt class="descname">max_vcores</tt><big>(</big>void<big>)</big><a class="headerlink" href="#max_vcores" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="limit_vcores">
-size_t <tt class="descname">limit_vcores</tt><big>(</big>void<big>)</big><a class="headerlink" href="#limit_vcores" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns the maximum number of allocatable vcores.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="in_vcore_context">
 bool <tt class="descname">in_vcore_context</tt><big>(</big><big>)</big><a class="headerlink" href="#in_vcore_context" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns whether you are currently running in vcore context or not.</p>
+</dd></dl>
 
 <dl class="function">
-<dt>
-<tt class="descname">void clear_notif_pending(uint32_t vcoreid);</tt></dt>
-<dd></dd></dl>
+<dt id="clear_notif_pending">
+void <tt class="descname">clear_notif_pending</tt><big>(</big>uint32_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#clear_notif_pending" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the flag for pending notifications</p>
+</dd></dl>
 
 <dl class="function">
-<dt>
-<tt class="descname">void enable_notifs(uint32_t vcoreid);</tt></dt>
-<dd></dd></dl>
+<dt id="enable_notifs">
+void <tt class="descname">enable_notifs</tt><big>(</big>uint32_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#enable_notifs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable Notifications</p>
+</dd></dl>
 
 <dl class="function">
-<dt>
-<tt class="descname">void disable_notifs(uint32_t vcoreid);</tt></dt>
-<dd></dd></dl>
+<dt id="disable_notifs">
+void <tt class="descname">disable_notifs</tt><big>(</big>uint32_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#disable_notifs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disable Notifications</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vcore_begin_access_tls_vars">
+#define <tt class="descname">vcore_begin_access_tls_vars</tt><big>(</big>vcoreid<big>)</big><a class="headerlink" href="#vcore_begin_access_tls_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Begin accessing TLS variables associated with a specific vcore (possibly a
+different from the current one). Matched one-to-one with a following call to
+<a class="reference internal" href="#vcore_end_access_tls_vars" title="vcore_end_access_tls_vars"><tt class="xref c c-func docutils literal"><span class="pre">vcore_end_access_tls_vars()</span></tt></a> within the same function.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vcore_end_access_tls_vars">
+#define <tt class="descname">vcore_end_access_tls_vars</tt><big>(</big><big>)</big><a class="headerlink" href="#vcore_end_access_tls_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>End access to a vcore&#8217;s TLS variables. Matched one-to-one with a previous
+call to <a class="reference internal" href="#vcore_begin_access_tls_vars" title="vcore_begin_access_tls_vars"><tt class="xref c c-func docutils literal"><span class="pre">vcore_begin_access_tls_vars()</span></tt></a> within the same function.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="vcore_set_tls_var">
 #define <tt class="descname">vcore_set_tls_var</tt><big>(</big>name, val<big>)</big><a class="headerlink" href="#vcore_set_tls_var" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Set a single variable in the TLS of the current vcore. Mostly useful when
+running in uthread context and want to set something vcore specific.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="vcore_get_tls_var">
 #define <tt class="descname">vcore_get_tls_var</tt><big>(</big>name<big>)</big><a class="headerlink" href="#vcore_get_tls_var" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Get a single variable from the TLS of the current vcore. Mostly useful when
+running in uthread context and want to get something vcore specific.</p>
+</dd></dl>
 
+</div>
 </div>
 
 
@@ -229,20 +362,19 @@ bool <tt class="descname">in_vcore_context</tt><big>(</big><big>)</big><a class=
           <a href="uthread.html" title="Uthreads"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to Parlib’s documentation!"
+          <a href="api_reference.html" title="API Reference"
              >previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" >API Reference</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

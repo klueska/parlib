@@ -25,21 +25,23 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="up" title="API Reference" href="api_reference.html" />
     <link rel="next" title="Spinlocks" href="spinlock.html" />
-    <link rel="prev" title="Thread Local Storage" href="tls.html" /> 
+    <link rel="prev" title="Uthreads" href="uthread.html" /> 
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -52,33 +54,37 @@
           <a href="spinlock.html" title="Spinlocks"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tls.html" title="Thread Local Storage"
+          <a href="uthread.html" title="Uthreads"
              accesskey="P">previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" accesskey="U">API Reference</a> &raquo;</li> 
       </ul>
     </div>
 
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
 
+  <h3><a href="sitemap.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">MCS Locks</a><ul>
+<li><a class="reference internal" href="#constants">Constants</a></li>
+<li><a class="reference internal" href="#types">Types</a></li>
+<li><a class="reference internal" href="#api-calls">API Calls</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
-  <p class="topless"><a href="tls.html"
-                        title="previous chapter">Thread Local Storage</a></p>
+  <p class="topless"><a href="uthread.html"
+                        title="previous chapter">Uthreads</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="spinlock.html"
                         title="next chapter">Spinlocks</a></p>
@@ -111,61 +117,144 @@
             
   <div class="section" id="mcs-locks">
 <h1>MCS Locks<a class="headerlink" href="#mcs-locks" title="Permalink to this headline">¶</a></h1>
+<p>MCS locks are a spinlock style lock designed for more efficient execution on
+multicore processors. They are designed to mitigate cache clobbering and TLB
+shootdowns by having each call site spin on a core-local lock variable, rather
+than the single lock variable used by traditional spinlocks. These locks should
+really only be used while running in vcore context.</p>
+<p>To access the mcs lock API, include the following header file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#include &lt;parlib/mcs.h&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="constants">
+<h2>Constants<a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#define MCS_LOCK_INIT</span>
+<span class="c">#define MCS_QNODE_INIT</span>
+</pre></div>
+</div>
+<dl class="macro">
+<dt id="MCS_LOCK_INIT">
+<tt class="descname">MCS_LOCK_INIT</tt><a class="headerlink" href="#MCS_LOCK_INIT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static initializer for an <a class="reference internal" href="#mcs_lock_t">mcs_lock_t</a></p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="MCS_QNODE_INIT">
+<tt class="descname">MCS_QNODE_INIT</tt><a class="headerlink" href="#MCS_QNODE_INIT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static initializer for an <a class="reference internal" href="#mcs_lock_qnode_t">mcs_lock_qnode_t</a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>struct mcs_lock_qnode;
+typedef struct mcs_lock_qnode mcs_lock_qnode_t;
+
+struct mcs_lock;
+typedef struct mcs_lock mcs_lock_t;
+
+struct mcs_dissem_flags;
+typedef struct mcs_dissem_flags mcs_dissem_flags_t;
+
+struct mcs_barrier;
+typedef struct mcs_barrier mcs_barrier_t;</pre>
+</div>
 <dl class="type">
 <dt id="mcs_lock_qnode">
 struct <tt class="descname">mcs_lock_qnode</tt><a class="headerlink" href="#mcs_lock_qnode" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="mcs_lock_qnode_t">
+<tt class="descname">mcs_lock_qnode_t</tt><a class="headerlink" href="#mcs_lock_qnode_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>An MCS lock qnode.  MCS locks are maintained as a queue of MCS qnode
+pointers, and locks are granted in order of request, using the qnode
+pointer passed at each <a class="reference internal" href="#mcs_lock_lock" title="mcs_lock_lock"><tt class="xref c c-func docutils literal"><span class="pre">mcs_lock_lock()</span></tt></a> call.</p>
+</dd></dl>
 
 <dl class="type">
 <dt id="mcs_lock">
 struct <tt class="descname">mcs_lock</tt><a class="headerlink" href="#mcs_lock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="mcs_lock_t">
+<tt class="descname">mcs_lock_t</tt><a class="headerlink" href="#mcs_lock_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>An MCS lock itself. This data type keeps track of whether the lock is
+currently held or not, as well as the list of qnode pointers described above.</p>
+</dd></dl>
 
 <dl class="type">
+<dt id="mcs_dissem_flags">
+struct <tt class="descname">mcs_dissem_flags</tt><a class="headerlink" href="#mcs_dissem_flags" title="Permalink to this definition">¶</a></dt>
 <dt id="mcs_dissem_flags_t">
 <tt class="descname">mcs_dissem_flags_t</tt><a class="headerlink" href="#mcs_dissem_flags_t" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Dissemmenation flags used by the MCS barriers described below. This data type
+should never normally be accessed by an external library.  They are used
+internally by the MCS barrier implementation, but exist as part of the API
+because the mcs_barrier struct contains them.</p>
+</dd></dl>
 
 <dl class="type">
+<dt id="mcs_barrier">
+struct <tt class="descname">mcs_barrier</tt><a class="headerlink" href="#mcs_barrier" title="Permalink to this definition">¶</a></dt>
 <dt id="mcs_barrier_t">
 <tt class="descname">mcs_barrier_t</tt><a class="headerlink" href="#mcs_barrier_t" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>An MCS barrier. This data type is used to reference an MCS barrier across the
+various MCS barrier API Calls.</p>
+</dd></dl>
 
-<dl class="function">
-<dt id="mcs_barrier_init">
-int <tt class="descname">mcs_barrier_init</tt><big>(</big><a class="reference internal" href="#mcs_barrier_t" title="mcs_barrier_t">mcs_barrier_t</a>*<em>&nbsp;b</em>, size_t<em>&nbsp;nprocs</em><big>)</big><a class="headerlink" href="#mcs_barrier_init" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="mcs_barrier_wait">
-void <tt class="descname">mcs_barrier_wait</tt><big>(</big><a class="reference internal" href="#mcs_barrier_t" title="mcs_barrier_t">mcs_barrier_t</a>*<em>&nbsp;b</em>, size_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#mcs_barrier_wait" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
+</div>
+<div class="section" id="api-calls">
+<h2>API Calls<a class="headerlink" href="#api-calls" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>void mcs_lock_init(struct mcs_lock *lock);
+void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
+void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
+void mcs_lock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
+void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
+void mcs_barrier_init(mcs_barrier_t* b, size_t num_vcores);
+void mcs_barrier_wait(mcs_barrier_t* b, size_t vcoreid);</pre>
+</div>
 <dl class="function">
 <dt id="mcs_lock_init">
 void <tt class="descname">mcs_lock_init</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em><big>)</big><a class="headerlink" href="#mcs_lock_init" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initializes an MCS lock.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="mcs_lock_lock">
 void <tt class="descname">mcs_lock_lock</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_lock_lock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Locks an MCS lock, associating a call-site specific qnode with the lock in the process.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="mcs_lock_unlock">
 void <tt class="descname">mcs_lock_unlock</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_lock_unlock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Unlocks an MCS lock, releasing the call-site specific qnode associated with
+the current lock holder.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="mcs_lock_notifsafe">
 void <tt class="descname">mcs_lock_notifsafe</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_lock_notifsafe" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A signal-safe implementation of <a class="reference internal" href="#mcs_lock_lock" title="mcs_lock_lock"><tt class="xref c c-func docutils literal"><span class="pre">mcs_lock_lock()</span></tt></a>.  While the lock is held, the
+lockholder will not be interrrupted to run any signal handlers.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="mcs_unlock_notifsafe">
 void <tt class="descname">mcs_unlock_notifsafe</tt><big>(</big>struct <a class="reference internal" href="#mcs_lock" title="mcs_lock">mcs_lock</a><em>&nbsp;*lock</em>, struct <a class="reference internal" href="#mcs_lock_qnode" title="mcs_lock_qnode">mcs_lock_qnode</a><em>&nbsp;*qnode</em><big>)</big><a class="headerlink" href="#mcs_unlock_notifsafe" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The <a class="reference internal" href="#mcs_lock_unlock" title="mcs_lock_unlock"><tt class="xref c c-func docutils literal"><span class="pre">mcs_lock_unlock()</span></tt></a> counterpart to <a class="reference internal" href="#mcs_lock_notifsafe" title="mcs_lock_notifsafe"><tt class="xref c c-func docutils literal"><span class="pre">mcs_lock_notifsafe()</span></tt></a>. After releasing
+the lock, signals may be processed again.</p>
+</dd></dl>
 
+<dl class="function">
+<dt id="mcs_barrier_init">
+void <tt class="descname">mcs_barrier_init</tt><big>(</big><a class="reference internal" href="#mcs_barrier_t" title="mcs_barrier_t">mcs_barrier_t</a>*<em>&nbsp;b</em>, size_t<em>&nbsp;num_vcores</em><big>)</big><a class="headerlink" href="#mcs_barrier_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an MCS barrier with the number of vcores associated with the barrier.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mcs_barrier_wait">
+void <tt class="descname">mcs_barrier_wait</tt><big>(</big><a class="reference internal" href="#mcs_barrier_t" title="mcs_barrier_t">mcs_barrier_t</a>*<em>&nbsp;b</em>, size_t<em>&nbsp;vcoreid</em><big>)</big><a class="headerlink" href="#mcs_barrier_wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Waits on an MCS barrier for the specified vcoreid.</p>
+</dd></dl>
+
+</div>
 </div>
 
 
@@ -184,20 +273,19 @@ void <tt class="descname">mcs_unlock_notifsafe</tt><big>(</big>struct <a class="
           <a href="spinlock.html" title="Spinlocks"
              >next</a> |</li>
         <li class="right" >
-          <a href="tls.html" title="Thread Local Storage"
+          <a href="uthread.html" title="Uthreads"
              >previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" >API Reference</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

@@ -25,21 +25,23 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
-    <link rel="next" title="MCS Locks" href="mcs.html" />
-    <link rel="prev" title="Uthreads" href="uthread.html" /> 
+    <link rel="up" title="API Reference" href="api_reference.html" />
+    <link rel="next" title="Memory Pools" href="pool.html" />
+    <link rel="prev" title="Dynamic Thread Local Storage" href="dtls.html" /> 
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -49,39 +51,42 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="mcs.html" title="MCS Locks"
+          <a href="pool.html" title="Memory Pools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="uthread.html" title="Uthreads"
+          <a href="dtls.html" title="Dynamic Thread Local Storage"
              accesskey="P">previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" accesskey="U">API Reference</a> &raquo;</li> 
       </ul>
     </div>
 
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
 
+  <h3><a href="sitemap.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Thread Local Storage</a><ul>
+<li><a class="reference internal" href="#global-variables">Global Variables</a></li>
+<li><a class="reference internal" href="#api-calls">API Calls</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
-  <p class="topless"><a href="uthread.html"
-                        title="previous chapter">Uthreads</a></p>
+  <p class="topless"><a href="dtls.html"
+                        title="previous chapter">Dynamic Thread Local Storage</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="mcs.html"
-                        title="next chapter">MCS Locks</a></p>
+  <p class="topless"><a href="pool.html"
+                        title="next chapter">Memory Pools</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/tls.txt"
@@ -111,16 +116,34 @@
             
   <div class="section" id="thread-local-storage">
 <h1>Thread Local Storage<a class="headerlink" href="#thread-local-storage" title="Permalink to this headline">¶</a></h1>
+<p>To access the thread local storage API, include the following header file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#include &lt;parlib/tls.h&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="global-variables">
+<h2>Global Variables<a class="headerlink" href="#global-variables" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>void *main_tls_desc;
+__thread void *current_tls_desc;</pre>
+</div>
 <dl class="var">
 <dt id="main_tls_desc">
-extern void *<tt class="descname">main_tls_desc</tt><a class="headerlink" href="#main_tls_desc" title="Permalink to this definition">¶</a></dt>
+void *<tt class="descname">main_tls_desc</tt><a class="headerlink" href="#main_tls_desc" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="var">
 <dt id="current_tls_desc">
-extern __thread void *<tt class="descname">current_tls_desc</tt><a class="headerlink" href="#current_tls_desc" title="Permalink to this definition">¶</a></dt>
+__thread void *<tt class="descname">current_tls_desc</tt><a class="headerlink" href="#current_tls_desc" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</div>
+<div class="section" id="api-calls">
+<h2>API Calls<a class="headerlink" href="#api-calls" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>void *allocate_tls(void);
+void *reinit_tls(void *tcb);
+void free_tls(void *tcb);
+void set_tls_desc(void *tls_desc, uint32_t vcoreid);
+void *get_tls_desc(uint32_t vcoreid);</pre>
+</div>
 <dl class="function">
 <dt id="allocate_tls">
 void *<tt class="descname">allocate_tls</tt><big>(</big>void<big>)</big><a class="headerlink" href="#allocate_tls" title="Permalink to this definition">¶</a></dt>
@@ -147,6 +170,7 @@ void *<tt class="descname">get_tls_desc</tt><big>(</big>uint32_t<em>&nbsp;vcorei
 <dd></dd></dl>
 
 </div>
+</div>
 
 
           </div>
@@ -161,23 +185,22 @@ void *<tt class="descname">get_tls_desc</tt><big>(</big>uint32_t<em>&nbsp;vcorei
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="mcs.html" title="MCS Locks"
+          <a href="pool.html" title="Memory Pools"
              >next</a> |</li>
         <li class="right" >
-          <a href="uthread.html" title="Uthreads"
+          <a href="dtls.html" title="Dynamic Thread Local Storage"
              >previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
- 
+
+          <li><a href="api_reference.html" >API Reference</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
