@@ -54,13 +54,13 @@ typedef struct dtls_data {
 } dtls_data_t;
 
 /* A slab of dtls keys (global to all threads) */
-static struct kmem_cache *__dtls_keys_cache;
+static struct slab_cache *__dtls_keys_cache;
 
 /* A slab of values for use when mapping a dtls_key to its per-thread value */
-struct kmem_cache *__dtls_values_cache;
+struct slab_cache *__dtls_values_cache;
   
 /* A slab of dtls data for per-thread management */
-struct kmem_cache *__dtls_data_cache;
+struct slab_cache *__dtls_data_cache;
   
 /* A lock protecting access to the caches above */
 static spinlock_t __dtls_lock;
@@ -75,7 +75,7 @@ static __thread bool __dtls_initialized = false;
 static dtls_key_t __alocate_dtls_key() 
 {
   spinlock_lock(&__dtls_lock);
-  dtls_key_t key = kmem_cache_alloc(__dtls_keys_cache, 0);
+  dtls_key_t key = slab_cache_alloc(__dtls_keys_cache, 0);
   assert(key);
   key->ref_count = 1;
   spinlock_unlock(&__dtls_lock);
@@ -86,7 +86,7 @@ static void __maybe_free_dtls_key(dtls_key_t key)
 {
   if(key->ref_count == 0) {
     spinlock_lock(&__dtls_lock);
-    kmem_cache_free(__dtls_keys_cache, key);
+    slab_cache_free(__dtls_keys_cache, key);
     spinlock_unlock(&__dtls_lock);
   }
 }
@@ -97,13 +97,13 @@ int dtls_lib_init()
 	/* Make sure this only runs once */
   run_once(
       /* Initialize the global cache of dtls_keys */
-	  __dtls_keys_cache = kmem_cache_create("dtls_keys_cache", 
+	  __dtls_keys_cache = slab_cache_create("dtls_keys_cache", 
         sizeof(struct dtls_key), __alignof__(struct dtls_key), 0, NULL, NULL);
 
-	  __dtls_values_cache = kmem_cache_create("dtls_values_cache", 
+	  __dtls_values_cache = slab_cache_create("dtls_values_cache", 
         sizeof(struct dtls_value), __alignof__(struct dtls_value), 0, NULL, NULL);
 
-	  __dtls_data_cache = kmem_cache_create("dtls_data_cache", 
+	  __dtls_data_cache = slab_cache_create("dtls_data_cache", 
         sizeof(struct dtls_data), __alignof__(struct dtls_data), 0, NULL, NULL);
 
     /* Initialize the lock that protects the cache */
@@ -146,7 +146,7 @@ static inline void __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls
 
   if(!v) {
     spinlock_lock(&__dtls_lock);
-    v = kmem_cache_alloc(__dtls_values_cache, 0);
+    v = slab_cache_alloc(__dtls_values_cache, 0);
     spinlock_unlock(&__dtls_lock);
     assert(v);
     v->key = key;
@@ -201,7 +201,7 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
     n = TAILQ_NEXT(v, link);
     TAILQ_REMOVE(&dtls_data->list, v, link);
     spinlock_lock(&__dtls_lock);
-    kmem_cache_free(__dtls_values_cache, v);
+    slab_cache_free(__dtls_values_cache, v);
     spinlock_unlock(&__dtls_lock);
     v = n;
   }
@@ -216,7 +216,7 @@ void set_dtls(dtls_key_t key, void *dtls)
     assert(current_uthread);
     if(current_uthread->dtls_data == NULL) {
       spinlock_lock(&__dtls_lock);
-      current_uthread->dtls_data = kmem_cache_alloc(__dtls_data_cache, 0);
+      current_uthread->dtls_data = slab_cache_alloc(__dtls_data_cache, 0);
       spinlock_unlock(&__dtls_lock);
       initialized = false;
     }
@@ -281,7 +281,7 @@ void destroy_dtls()
 
 #ifdef PARLIB_NO_UTHREAD_TLS
   spinlock_lock(&__dtls_lock);
-  kmem_cache_free(__dtls_data_cache, dtls_data);
+  slab_cache_free(__dtls_data_cache, dtls_data);
   spinlock_unlock(&__dtls_lock);
 #endif
 }

@@ -6,11 +6,11 @@
  *
  * Slab allocator, based on the SunOS 5.4 allocator paper.
  *
- * There is a list of kmem_cache, which are the caches of objects of a given
- * size.  This list is sorted in order of size.  Each kmem_cache has three
+ * There is a list of slab_cache, which are the caches of objects of a given
+ * size.  This list is sorted in order of size.  Each slab_cache has three
  * lists of slabs: full, partial, and empty.  
  *
- * For large objects, the kmem_slabs point to bufctls, which have the address
+ * For large objects, the slabs point to bufctls, which have the address
  * of their large buffers.  These slabs can consist of more than one contiguous
  * page.
  *
@@ -39,67 +39,68 @@
 #define NUM_BUF_PER_SLAB 8
 #define SLAB_LARGE_CUTOFF (PGSIZE / NUM_BUF_PER_SLAB)
 
-struct kmem_slab;
+struct slab;
+typedef struct slab slab_t;
 
 /* Control block for buffers for large-object slabs */
-struct kmem_bufctl {
-	TAILQ_ENTRY(kmem_bufctl) link;
+struct slab_bufctl {
+	TAILQ_ENTRY(slab_bufctl) link;
 	void *buf_addr;
-	struct kmem_slab *my_slab;
+	struct slab *my_slab;
 };
-TAILQ_HEAD(kmem_bufctl_list, kmem_bufctl);
+TAILQ_HEAD(slab_bufctl_list, slab_bufctl);
 
 /* Slabs contain the objects.  Can be either full, partial, or empty,
  * determined by checking the number of objects busy vs total.  For large
  * slabs, the bufctl list is used to find a free buffer.  For small, the void*
  * is used instead.*/
-struct kmem_slab {
-	TAILQ_ENTRY(kmem_slab) link;
+struct slab {
+	TAILQ_ENTRY(slab) link;
 	size_t obj_size;
 	size_t num_busy_obj;
 	size_t num_total_obj;
 	union {
-		struct kmem_bufctl_list bufctl_freelist;
+		struct slab_bufctl_list bufctl_freelist;
 		void *free_small_obj;
 	};
 };
-TAILQ_HEAD(kmem_slab_list, kmem_slab);
+TAILQ_HEAD(slab_list, slab);
 
 /* Actual cache */
-typedef struct kmem_cache {
-	SLIST_ENTRY(kmem_cache) link;
+typedef struct slab_cache {
+	SLIST_ENTRY(slab_cache) link;
 	spinlock_t cache_lock;
 	const char *name;
 	size_t obj_size;
 	int align;
 	int flags;
-	struct kmem_slab_list full_slab_list;
-	struct kmem_slab_list partial_slab_list;
-	struct kmem_slab_list empty_slab_list;
+	struct slab_list full_slab_list;
+	struct slab_list partial_slab_list;
+	struct slab_list empty_slab_list;
 	void (*ctor)(void *, size_t);
 	void (*dtor)(void *, size_t);
 	unsigned long nr_cur_alloc;
-} kmem_cache_t;
+} slab_cache_t;
 
-/* List of all kmem_caches, sorted in order of size */
-SLIST_HEAD(kmem_cache_list, kmem_cache);
-extern struct kmem_cache_list kmem_caches;
+/* List of all slab_caches, sorted in order of size */
+SLIST_HEAD(slab_cache_list, slab_cache);
+extern struct slab_cache_list slab_caches;
 
 /* Cache management */
-struct kmem_cache *kmem_cache_create(const char *name, size_t obj_size,
+struct slab_cache *slab_cache_create(const char *name, size_t obj_size,
                                      int align, int flags,
                                      void (*ctor)(void *, size_t),
                                      void (*dtor)(void *, size_t));
-void kmem_cache_destroy(struct kmem_cache *cp);
+void slab_cache_destroy(struct slab_cache *cp);
 /* Front end: clients of caches use these */
-void *kmem_cache_alloc(struct kmem_cache *cp, int flags);
-void kmem_cache_free(struct kmem_cache *cp, void *buf);
+void *slab_cache_alloc(struct slab_cache *cp, int flags);
+void slab_cache_free(struct slab_cache *cp, void *buf);
 /* Back end: internal functions */
-void kmem_cache_init(void);
-void kmem_cache_reap(struct kmem_cache *cp);
+void slab_cache_init(void);
+void slab_cache_reap(struct slab_cache *cp);
 
 /* Debug */
-void print_kmem_cache(struct kmem_cache *kc);
-void print_kmem_slab(struct kmem_slab *slab);
+void print_slab_cache(struct slab_cache *kc);
+void print_slab(struct slab *slab);
 
 #endif /* PARLIB_SLAB_H */
