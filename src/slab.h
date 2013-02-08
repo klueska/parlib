@@ -42,6 +42,9 @@
 struct slab;
 typedef struct slab slab_t;
 
+typedef void (*slab_cache_ctor_t)(void *, size_t);
+typedef void (*slab_cache_dtor_t)(void *, size_t);
+
 /* Control block for buffers for large-object slabs */
 struct slab_bufctl {
 	TAILQ_ENTRY(slab_bufctl) link;
@@ -77,8 +80,8 @@ typedef struct slab_cache {
 	struct slab_list full_slab_list;
 	struct slab_list partial_slab_list;
 	struct slab_list empty_slab_list;
-	void (*ctor)(void *, size_t);
-	void (*dtor)(void *, size_t);
+	slab_cache_ctor_t ctor;
+	slab_cache_dtor_t dtor;
 	unsigned long nr_cur_alloc;
 } slab_cache_t;
 
@@ -89,8 +92,8 @@ extern struct slab_cache_list slab_caches;
 /* Cache management */
 struct slab_cache *slab_cache_create(const char *name, size_t obj_size,
                                      int align, int flags,
-                                     void (*ctor)(void *, size_t),
-                                     void (*dtor)(void *, size_t));
+                                     slab_cache_ctor_t ctor,
+                                     slab_cache_dtor_t dtor);
 void slab_cache_destroy(struct slab_cache *cp);
 /* Front end: clients of caches use these */
 void *slab_cache_alloc(struct slab_cache *cp, int flags);
