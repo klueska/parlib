@@ -1,0 +1,220 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Memory Pools &mdash; Parlib 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="up" title="API Reference" href="api_reference.html" />
+    <link rel="next" title="Slab Memory Allocator" href="slab.html" />
+    <link rel="prev" title="Thread Local Storage" href="tls.html" /> 
+  </head>
+  <body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
+</div>
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="slab.html" title="Slab Memory Allocator"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tls.html" title="Thread Local Storage"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
+
+          <li><a href="api_reference.html" accesskey="U">API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
+  
+
+  <h3><a href="sitemap.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Memory Pools</a><ul>
+<li><a class="reference internal" href="#types">Types</a></li>
+<li><a class="reference internal" href="#api-calls">API Calls</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tls.html"
+                        title="previous chapter">Thread Local Storage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="slab.html"
+                        title="next chapter">Slab Memory Allocator</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/pool.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="memory-pools">
+<h1>Memory Pools<a class="headerlink" href="#memory-pools" title="Permalink to this headline">¶</a></h1>
+<p>Memory pools are designed for efficient dynamic memory management when
+you have a fixed number of fixed size objects you need to manage. A large
+chunk of memory must first be allocated by traditional means before passing
+it to the pool API.  Once received however, the memory is managed according to
+the restrictions described above, without worrying about fragmentation or other
+traditional dynamic memory management concerns.</p>
+<p>To access the pool API, include the following header file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#include &lt;parlib/pool.h&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>struct pool;
+typedef struct pool pool_t;</pre>
+</div>
+<dl class="type">
+<dt id="pool">
+struct <tt class="descname">pool</tt><a class="headerlink" href="#pool" title="Permalink to this definition">¶</a></dt>
+<dt id="pool_t">
+<tt class="descname">pool_t</tt><a class="headerlink" href="#pool_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opaque type used to reference and manage a pool</p>
+</dd></dl>
+
+</div>
+<div class="section" id="api-calls">
+<h2>API Calls<a class="headerlink" href="#api-calls" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><pre>void pool_init(pool_t *pool, void* buffer, void **object_queue,
+               size_t num_objects, size_t object_size);
+size_t pool_size(pool_t *pool);
+size_t pool_available(pool_t *pool);
+void* pool_alloc(pool_t *pool);
+int pool_free(pool_t* pool, void *object);</pre>
+</div>
+<dl class="function">
+<dt id="pool_init">
+void <tt class="descname">pool_init</tt><big>(</big><a class="reference internal" href="#pool_t" title="pool_t">pool_t</a><em>&nbsp;*pool</em>, void*<em>&nbsp;buffer</em>, void<em>&nbsp;**object_queue</em>, size_t<em>&nbsp;num_objects</em>, size_t<em>&nbsp;object_size</em><big>)</big><a class="headerlink" href="#pool_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a pool.  All memory MUST be allocated externally.  The pool
+implementation simply manages the objects contained in the buffer passed to
+this function.  This allows us to use the same pool implementation for both
+statically and dynamically allocated memory.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pool_size">
+size_t <tt class="descname">pool_size</tt><big>(</big><a class="reference internal" href="#pool_t" title="pool_t">pool_t</a><em>&nbsp;*pool</em><big>)</big><a class="headerlink" href="#pool_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check how many objects the pool is able to hold</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pool_available">
+size_t <tt class="descname">pool_available</tt><big>(</big><a class="reference internal" href="#pool_t" title="pool_t">pool_t</a><em>&nbsp;*pool</em><big>)</big><a class="headerlink" href="#pool_available" title="Permalink to this definition">¶</a></dt>
+<dd><p>See how many objects are currently available for allocation from the pool.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pool_alloc">
+void* <tt class="descname">pool_alloc</tt><big>(</big><a class="reference internal" href="#pool_t" title="pool_t">pool_t</a><em>&nbsp;*pool</em><big>)</big><a class="headerlink" href="#pool_alloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an object from the pool</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pool_free">
+int <tt class="descname">pool_free</tt><big>(</big><a class="reference internal" href="#pool_t" title="pool_t">pool_t</a>*<em>&nbsp;pool</em>, void<em>&nbsp;*object</em><big>)</big><a class="headerlink" href="#pool_free" title="Permalink to this definition">¶</a></dt>
+<dd><p>Put an object into the pool</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="slab.html" title="Slab Memory Allocator"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tls.html" title="Thread Local Storage"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a>|&nbsp;</li>
+  <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
+  <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
+  <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
+
+          <li><a href="api_reference.html" >API Reference</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, The Regents of the University of California.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

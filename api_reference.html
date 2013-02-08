@@ -25,19 +25,22 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Parlib 1.0 documentation" href="index.html" /> 
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="top" title="Parlib 1.0 documentation" href="index.html" />
+    <link rel="next" title="Vcores" href="vcore.html" />
+    <link rel="prev" title="Welcome to Parlib’s API Reference!" href="index.html" /> 
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -46,12 +49,16 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="vcore.html" title="Vcores"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Parlib’s API Reference!"
+             accesskey="P">previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="#">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
  
       </ul>
@@ -60,14 +67,15 @@
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Parlib&#8217;s API Reference!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vcore.html"
+                        title="next chapter">Vcores</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/api_reference.txt"
@@ -101,9 +109,13 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="vcore.html">Vcores</a></li>
 <li class="toctree-l1"><a class="reference internal" href="uthread.html">Uthreads</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tls.html">Thread Local Storage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="mcs.html">MCS Locks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spinlock.html">Spinlocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dtls.html">Dynamic Thread Local Storage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tls.html">Thread Local Storage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pool.html">Memory Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slab.html">Slab Memory Allocator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="atomic.html">Atomic Memory Operations</a></li>
 </ul>
 </div>
 </div>
@@ -120,18 +132,22 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="vcore.html" title="Vcores"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Parlib’s API Reference!"
+             >previous</a> |</li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="#">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
  
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>

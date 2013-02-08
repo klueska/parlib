@@ -32,15 +32,15 @@
   </head>
   <body>
 <div style="background-color: white; text-align: left; padding: 10px 10px 0px 10px">
-<div style="float:left;">
-<a href="index.html">
-  <img src="_static/logo.png" border="0" alt="Parlib"/>
-</a>
-</div>
-<div style="position:relative; top:115px; float:right; font-size:20px;">
-<i>Efficient User-Level Threading for 2-Level Scheduling</i>
-</div>
-<div style="clear:both"></div>
+  <div style="float:left">
+    <a href="index.html">
+      <img src="_static/logo.png" border="0" alt="Parlib"/>
+    </a>
+  </div>
+  <div style="position:relative; top:115px; float:right; font-size:20px;">
+    <i>Easing Cross-Platform Development of Next Generation Parallel Systems</i>
+  </div>
+  <div style="clear:both"></div>
 </div>
 
     <div class="related">
@@ -50,11 +50,9 @@
           <a href="#" title="General Index"
              accesskey="I">index</a></li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
  
       </ul>
@@ -63,12 +61,7 @@
   
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <a href="http://amplab.cs.berkeley.edu">
-    <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
-  </a>
-  <a href="http://parlab.eecs.berkeley.edu">
-    <img src="_static/parlab.png" width=100% border="0" alt="Amplab"/>
-  </a>
+  <img src="_static/amplab.png" width=100% border="0" alt="Amplab"/>
   
 
 
@@ -103,20 +96,31 @@
  <a href="#_"><strong>_</strong></a>
  | <a href="#A"><strong>A</strong></a>
  | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  
 </div>
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="vcore.html#__vcore_tls_descs">__vcore_tls_descs (C variable)</a>
+  </dt>
+
+  </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="vcore.html#__vcores">__vcores (C variable)</a>
@@ -132,6 +136,28 @@
   <dt><a href="tls.html#allocate_tls">allocate_tls (C function)</a>
   </dt>
 
+      
+  <dt><a href="atomic.html#atomic_init">atomic_init (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#atomic_swap">atomic_swap (C function)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="atomic.html#atomic_swap_ptr">atomic_swap_ptr (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#atomic_swap_u32">atomic_swap_u32 (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#atomic_t">atomic_t (C type)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -139,17 +165,67 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="uthread.html#check_preempt_pending">check_preempt_pending (C function)</a>
+  <dt><a href="vcore.html#clear_notif_pending">clear_notif_pending (C function)</a>
   </dt>
 
       
-  <dt><a href="tls.html#current_tls_desc">current_tls_desc (C variable)</a>
+  <dt><a href="atomic.html#cmb">cmb (C function)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="uthread.html#current_uthread">current_uthread (C type)</a>
+  <dt><a href="tls.html#current_tls_desc">current_tls_desc (C variable)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#current_uthread">current_uthread (C variable)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="dtls.html#destroy_dtls">destroy_dtls (C function)</a>
+  </dt>
+
+      
+  <dt><a href="vcore.html#disable_notifs">disable_notifs (C function)</a>
+  </dt>
+
+      
+  <dt><a href="dtls.html#dtls_dtor_t">dtls_dtor_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="dtls.html#dtls_key">dtls_key (C type)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="dtls.html#dtls_key_create">dtls_key_create (C function)</a>
+  </dt>
+
+      
+  <dt><a href="dtls.html#dtls_key_delete">dtls_key_delete (C function)</a>
+  </dt>
+
+      
+  <dt><a href="dtls.html#dtls_key_t">dtls_key_t (C type)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="vcore.html#enable_notifs">enable_notifs (C function)</a>
   </dt>
 
   </dl></td>
@@ -169,7 +245,23 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="dtls.html#get_dtls">get_dtls (C function)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
   <dt><a href="tls.html#get_tls_desc">get_tls_desc (C function)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="uthread.html#highjack_current_uthread">highjack_current_uthread (C function)</a>
   </dt>
 
   </dl></td>
@@ -195,7 +287,7 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="vcore.html#limit_vcores">limit_vcores (C function)</a>
+  <dt><a href="vcore.html#LOG2_MAX_VCORES">LOG2_MAX_VCORES (C macro)</a>
   </dt>
 
   </dl></td>
@@ -213,6 +305,22 @@
   </dt>
 
       
+  <dt><a href="vcore.html#MAX_VCORES">MAX_VCORES (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#mb">mb (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#mb_f">mb_f (C function)</a>
+  </dt>
+
+      
+  <dt><a href="mcs.html#mcs_barrier">mcs_barrier (C type)</a>
+  </dt>
+
+      
   <dt><a href="mcs.html#mcs_barrier_init">mcs_barrier_init (C function)</a>
   </dt>
 
@@ -225,17 +333,25 @@
   </dt>
 
       
-  <dt><a href="mcs.html#mcs_dissem_flags_t">mcs_dissem_flags_t (C type)</a>
+  <dt><a href="mcs.html#mcs_dissem_flags">mcs_dissem_flags (C type)</a>
   </dt>
 
       
-  <dt><a href="mcs.html#mcs_lock">mcs_lock (C type)</a>
+  <dt><a href="mcs.html#mcs_dissem_flags_t">mcs_dissem_flags_t (C type)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="mcs.html#mcs_lock">mcs_lock (C type)</a>
+  </dt>
+
+      
   <dt><a href="mcs.html#mcs_lock_init">mcs_lock_init (C function)</a>
+  </dt>
+
+      
+  <dt><a href="mcs.html#MCS_LOCK_INIT">MCS_LOCK_INIT (C macro)</a>
   </dt>
 
       
@@ -251,7 +367,19 @@
   </dt>
 
       
+  <dt><a href="mcs.html#mcs_lock_qnode_t">mcs_lock_qnode_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="mcs.html#mcs_lock_t">mcs_lock_t (C type)</a>
+  </dt>
+
+      
   <dt><a href="mcs.html#mcs_lock_unlock">mcs_lock_unlock (C function)</a>
+  </dt>
+
+      
+  <dt><a href="mcs.html#MCS_QNODE_INIT">MCS_QNODE_INIT (C macro)</a>
   </dt>
 
       
@@ -271,11 +399,55 @@
   </dl></td>
 </tr></table>
 
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="pool.html#pool">pool (C type)</a>
+  </dt>
+
+      
+  <dt><a href="pool.html#pool_alloc">pool_alloc (C function)</a>
+  </dt>
+
+      
+  <dt><a href="pool.html#pool_available">pool_available (C function)</a>
+  </dt>
+
+      
+  <dt><a href="pool.html#pool_free">pool_free (C function)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="pool.html#pool_init">pool_init (C function)</a>
+  </dt>
+
+      
+  <dt><a href="pool.html#pool_size">pool_size (C function)</a>
+  </dt>
+
+      
+  <dt><a href="pool.html#pool_t">pool_t (C type)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="tls.html#reinit_tls">reinit_tls (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#rmb">rmb (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#rmb_f">rmb_f (C function)</a>
   </dt>
 
       
@@ -286,6 +458,14 @@
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="uthread.html#run_uthread">run_uthread (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#rwmb">rwmb (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#rwmb_f">rwmb_f (C function)</a>
   </dt>
 
   </dl></td>
@@ -307,7 +487,39 @@
   </dt>
 
       
-  <dt><a href="uthread.html#set_current_uthread">set_current_uthread (C function)</a>
+  <dt><a href="uthread.html#schedule_ops_t">schedule_ops_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.preempt_pending">schedule_ops_t.preempt_pending (C function)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.sched_entry">schedule_ops_t.sched_entry (C function)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.spawn_thread">schedule_ops_t.spawn_thread (C function)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.thread_blockon_sysc">schedule_ops_t.thread_blockon_sysc (C function)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.thread_has_blocked">schedule_ops_t.thread_has_blocked (C function)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.thread_paused">schedule_ops_t.thread_paused (C function)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#schedule_ops_t.thread_runnable">schedule_ops_t.thread_runnable (C function)</a>
+  </dt>
+
+      
+  <dt><a href="dtls.html#set_dtls">set_dtls (C function)</a>
   </dt>
 
       
@@ -315,11 +527,47 @@
   </dt>
 
       
-  <dt><a href="spinlock.html#spinlock_init">spinlock_init (C function)</a>
+  <dt><a href="slab.html#slab_cache">slab_cache (C type)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="slab.html#slab_cache_alloc">slab_cache_alloc (C function)</a>
+  </dt>
+
+      
+  <dt><a href="slab.html#slab_cache_create">slab_cache_create (C function)</a>
+  </dt>
+
+      
+  <dt><a href="slab.html#slab_cache_ctor_t">slab_cache_ctor_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="slab.html#slab_cache_destroy">slab_cache_destroy (C function)</a>
+  </dt>
+
+      
+  <dt><a href="slab.html#slab_cache_dtor_t">slab_cache_dtor_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="slab.html#slab_cache_free">slab_cache_free (C function)</a>
+  </dt>
+
+      
+  <dt><a href="slab.html#slab_cache_t">slab_cache_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="spinlock.html#spinlock">spinlock (C type)</a>
+  </dt>
+
+      
+  <dt><a href="spinlock.html#spinlock_init">spinlock_init (C function)</a>
+  </dt>
+
       
   <dt><a href="spinlock.html#spinlock_lock">spinlock_lock (C function)</a>
   </dt>
@@ -347,7 +595,15 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="uthread.html#UTH_EXT_BLK_MUTEX">UTH_EXT_BLK_MUTEX (C macro)</a>
+  </dt>
+
+      
   <dt><a href="uthread.html#uthread">uthread (C type)</a>
+  </dt>
+
+      
+  <dt><a href="uthread.html#uthread_begin_access_tls_vars">uthread_begin_access_tls_vars (C function)</a>
   </dt>
 
       
@@ -355,19 +611,19 @@
   </dt>
 
       
+  <dt><a href="uthread.html#uthread_end_access_tls_vars">uthread_end_access_tls_vars (C function)</a>
+  </dt>
+
+      
   <dt><a href="uthread.html#uthread_get_tls_var">uthread_get_tls_var (C function)</a>
-  </dt>
-
-      
-  <dt><a href="uthread.html#uthread_init">uthread_init (C function)</a>
-  </dt>
-
-      
-  <dt><a href="uthread.html#uthread_lib_init">uthread_lib_init (C function)</a>
   </dt>
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="uthread.html#uthread_lib_init">uthread_lib_init (C function)</a>
+  </dt>
+
       
   <dt><a href="uthread.html#uthread_runnable">uthread_runnable (C function)</a>
   </dt>
@@ -381,10 +637,6 @@
   </dt>
 
       
-  <dt><a href="uthread.html#uthread_vcore_entry">uthread_vcore_entry (C function)</a>
-  </dt>
-
-      
   <dt><a href="uthread.html#uthread_yield">uthread_yield (C function)</a>
   </dt>
 
@@ -395,11 +647,19 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="vcore.html#vcore">vcore (C variable)</a>
+  <dt><a href="vcore.html#vcore">vcore (C type)</a>
+  </dt>
+
+      
+  <dt><a href="vcore.html#vcore_begin_access_tls_vars">vcore_begin_access_tls_vars (C function)</a>
   </dt>
 
       
   <dt><a href="vcore.html#vcore_context">vcore_context (C variable)</a>
+  </dt>
+
+      
+  <dt><a href="vcore.html#vcore_end_access_tls_vars">vcore_end_access_tls_vars (C function)</a>
   </dt>
 
       
@@ -414,8 +674,20 @@
   <dt><a href="vcore.html#vcore_id">vcore_id (C function)</a>
   </dt>
 
+      
+  <dt><a href="vcore.html#vcore_lib_init">vcore_lib_init (C function)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="vcore.html#vcore_reenter">vcore_reenter (C function)</a>
+  </dt>
+
+      
+  <dt><a href="vcore.html#vcore_request">vcore_request (C function)</a>
+  </dt>
+
       
   <dt><a href="vcore.html#vcore_saved_tls_desc">vcore_saved_tls_desc (C variable)</a>
   </dt>
@@ -429,7 +701,35 @@
   </dt>
 
       
-  <dt><a href="vcore.html#vcore_tls_descs">vcore_tls_descs (C variable)</a>
+  <dt><a href="vcore.html#vcore_t">vcore_t (C type)</a>
+  </dt>
+
+      
+  <dt><a href="vcore.html#vcore_yield">vcore_yield (C function)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="atomic.html#wmb">wmb (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#wmb_f">wmb_f (C function)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="atomic.html#wrmb">wrmb (C function)</a>
+  </dt>
+
+      
+  <dt><a href="atomic.html#wrmb_f">wrmb_f (C function)</a>
   </dt>
 
   </dl></td>
@@ -449,17 +749,15 @@
           <a href="#" title="General Index"
              >index</a></li>
   <li><a href="index.html">Home</a>|&nbsp;</li>
-  <li><a href="download.html">Download</a>|&nbsp;</li>
-  <li><a href="tutorials.html">Tutorials</a>|&nbsp;</li>
   <li><a href="api_reference.html">API Reference</a>|&nbsp;</li>
-  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="search.html">Search</a>|&nbsp;</li>
+  <li><a href="about.html">About</a>|&nbsp;</li>
   <li><a href="sitemap.html">Sitemap</a>&raquo;</li>
  
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kevin Klues, Barret Rhoden.
+        &copy; Copyright 2013, The Regents of the University of California.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
