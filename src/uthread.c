@@ -217,7 +217,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	 * restarts, it will continue from right after this, see yielding is false,
 	 * and short circuit the function. */
 	if(save_state) {
-		int ret = getcontext(&uthread->uc);
+		int ret = parlib_getcontext(&uthread->uc);
 		assert(ret == 0);
 	}
 	if (!yielding)
@@ -249,7 +249,7 @@ yield_return_path:
 /* Saves the state of the current uthread from the point at which it is called */
 void save_current_uthread(struct uthread *uthread)
 {
-	int ret = getcontext(&uthread->uc);
+	int ret = parlib_getcontext(&uthread->uc);
 	assert(ret == 0);
 }
 
@@ -277,15 +277,15 @@ void run_current_uthread(void)
 {
 	assert(current_uthread);
 
-	uint32_t vcoreid = vcore_id();
 	struct ucontext *uc = &current_uthread->uc;
 #ifndef PARLIB_NO_UTHREAD_TLS
+	uint32_t vcoreid = vcore_id();
 	set_tls_desc(current_uthread->tls_desc, vcoreid);
 #else
 	extern __thread bool __in_vcore_context;
     __in_vcore_context = false;
 #endif
-	setcontext(uc);
+	parlib_setcontext(uc);
 	assert(0);
 }
 
@@ -293,7 +293,7 @@ void run_current_uthread(void)
 void run_uthread(struct uthread *uthread)
 {
 	highjack_current_uthread(uthread);
-	setcontext(&uthread->uc);
+	parlib_setcontext(&uthread->uc);
 	assert(0);
 }
 
@@ -306,7 +306,7 @@ void swap_uthreads(struct uthread *__old, struct uthread *__new)
   void *tls_desc = get_tls_desc(vcore_id());
 #endif
   ucontext_t uc;
-  getcontext(&uc);
+  parlib_getcontext(&uc);
   cmb();
   if(swap) {
     swap = false;

@@ -49,7 +49,7 @@ void vcore_entry(void)
 	assert(in_vcore_context());
 
 	if(vcore_saved_ucontext) {
-      setcontext(vcore_saved_ucontext);
+      parlib_setcontext(vcore_saved_ucontext);
 	}
 
 	/* Test the locks forever.  Should never dead lock */

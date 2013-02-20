@@ -49,7 +49,8 @@ LIB_SFILES += \
 
 LIB_HFILES += \
   @SYSDEPDIR_i686@/arch.h   \
-  @SYSDEPDIR_i686@/atomic.h
+  @SYSDEPDIR_i686@/atomic.h \
+  @SYSDEPDIR_i686@/context.h
 
 LIB_INTERNAL_FILES += \
   @SYSDEPDIR_i686@/internal/ucontext_i.h
@@ -66,7 +67,8 @@ LIB_SFILES += \
 
 LIB_HFILES += \
   @SYSDEPDIR_x86_64@/arch.h   \
-  @SYSDEPDIR_x86_64@/atomic.h
+  @SYSDEPDIR_x86_64@/atomic.h \
+  @SYSDEPDIR_x86_64@/context.h
 
 LIB_INTERNAL_FILES += \
   @SYSDEPDIR_x86_64@/internal/ucontext_i.h

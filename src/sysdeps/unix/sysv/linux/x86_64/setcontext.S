@@ -3,42 +3,25 @@
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de>, 2002.
 
-   The GNU C Library is free software ;  you can redistribute it and/or
+   The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation	;  either
+   License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
 
    The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY ;  without even the implied warranty of
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library	;  if not, write to the Free
+   License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
 #include "internal/ucontext_i.h"
 
-#  define cfi_startproc
-#  define cfi_endproc
-#  define cfi_def_cfa(reg, off)
-#  define cfi_def_cfa_register(reg)
-#  define cfi_def_cfa_offset(off)
-#  define cfi_adjust_cfa_offset(off)
-#  define cfi_offset(reg, off)
-#  define cfi_rel_offset(reg, off)
-#  define cfi_register(r1, r2)
-#  define cfi_return_column(reg)
-#  define cfi_restore(reg)
-#  define cfi_same_value(reg)
-#  define cfi_undefined(reg)
-#  define cfi_remember_state
-#  define cfi_restore_state
-#  define cfi_window_save
 
-
-/*  int __setcontext (const ucontext_t *ucp)
+/*  int __parlib_setcontext (const ucontext_t *ucp)
 
   Restores the machine context in UCP and thereby resumes execution
   in that context.
@@ -47,16 +30,30 @@
   switches only.  Therefore, it does not have to restore anything
   other than the PRESERVED state.  */
 
-.text
-	.align 4
-.globl setcontext
-	.type setcontext, @function
-setcontext:
+ENTRY(__parlib_setcontext)
+	/* Save argument since syscall will destroy it.  */
+	pushq	%rdi
+	cfi_adjust_cfa_offset(8)
+
+	/* Set the signal mask with
+	   rt_sigprocmask (SIG_SETMASK, mask, NULL, _NSIG/8).  */
+#	leaq	oSIGMASK(%rdi), %rsi
+#	xorl	%edx, %edx
+#	movl	$SIG_SETMASK, %edi
+#	movl	$_NSIG8,%r10d
+#	movl	$__NR_rt_sigprocmask, %eax
+#	syscall
+#	popq	%rdi			/* Reload %rdi, adjust stack.  */
+#	cfi_adjust_cfa_offset(-8)
+#	cmpq	$-4095, %rax		/* Check %rax for error.  */
+#	jae	SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
+
 	/* Restore the floating-point context.  Not the registers, only the
 	   rest.  */
 	movq	oFPREGS(%rdi), %rcx
 	fldenv	(%rcx)
 	ldmxcsr oMXCSR(%rdi)
+
 
 	/* Load the new stack pointer, the preserved registers and
 	   registers used for passing args.  */
@@ -99,4 +96,9 @@ setcontext:
 	/* Clear rax to indicate success.  */
 	xorl	%eax, %eax
 
+L(pseudo_end):
 	ret
+SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
+PSEUDO_END(__parlib_setcontext)
+
+weak_alias (__parlib_setcontext, parlib_setcontext)

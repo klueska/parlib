@@ -20,7 +20,7 @@
 
 #include "internal/ucontext_i.h"
 
-ENTRY(__setcontext)
+ENTRY(__parlib_setcontext)
 	/* Load address of the context data structure.  */
 	movl	4(%esp), %eax
 
@@ -89,6 +89,6 @@ ENTRY(__setcontext)
 
 L(pseudo_end):
 	ret
-PSEUDO_END(__setcontext)
+PSEUDO_END(__parlib_setcontext)
 
-weak_alias (__setcontext, setcontext)
+weak_alias (__parlib_setcontext, parlib_setcontext)

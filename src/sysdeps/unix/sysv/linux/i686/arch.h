@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <ucontext.h>
+#include "context.h"
 typedef struct ucontext uthread_context_t;
 
 #ifdef __i386__
@@ -85,14 +85,14 @@ read_pmc(uint32_t index)
 #define init_uthread_stack_ARCH(uth, stack_top, size)   \
 {                                                       \
 	ucontext_t *uc = &(uth)->uc;                        \
-	int ret = getcontext(uc);                           \
+	int ret = parlib_getcontext(uc);                           \
 	assert(ret == 0);                                   \
 	uc->uc_stack.ss_sp = (void*)(stack_top);            \
 	uc->uc_stack.ss_size = (uint32_t)(size);            \
 }
 
 #define init_uthread_entry_ARCH(uth, entry) \
-  makecontext(&(uth)->uc, (entry), 0)
+  parlib_makecontext(&(uth)->uc, (entry), 0)
 
 #else // !__linux__
   #error "Your architecture is not yet supported by parlib!"

@@ -1,39 +1,36 @@
 /* Save current context.
-   Copyright (C) 2002, 2005 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2005, 2011 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de>, 2002.
 
-   The GNU C Library is free software ;  you can redistribute it and/or
+   The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation	;  either
+   License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
 
    The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY ;  without even the implied warranty of
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library	;  if not, write to the Free
+   License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
 #include "internal/ucontext_i.h"
 
-/*  int __getcontext (ucontext_t *ucp)
+/*  int __parlib_getcontext (ucontext_t *ucp)
 
   Saves the machine context in UCP such that when it is activated,
-  it appears as if __getcontext() returned again.
+  it appears as if __parlib_getcontext() returned again.
 
   This implementation is intended to be used for *synchronous* context
   switches only.  Therefore, it does not have to save anything
   other than the PRESERVED state.  */
 
-.text
-	.align 4
-.globl getcontext
-	.type getcontext, @function
-getcontext:
+
+ENTRY(__parlib_getcontext)
 	/* Save the preserved registers, the registers used for passing
 	   args, and the return address.  */
 	movq	%rbx, oRBX(%rdi)
@@ -58,12 +55,34 @@ getcontext:
 	/* We have separate floating-point register content memory on the
 	   stack.  We use the __fpregs_mem block in the context.  Set the
 	   links up correctly.  */
+
 	leaq	oFPREGSMEM(%rdi), %rcx
 	movq	%rcx, oFPREGS(%rdi)
 	/* Save the floating-point environment.  */
 	fnstenv	(%rcx)
+	fldenv	(%rcx)
 	stmxcsr oMXCSR(%rdi)
+
+	/* Save the current signal mask with
+	   rt_sigprocmask (SIG_BLOCK, NULL, set,_NSIG/8).  */
+#	leaq	oSIGMASK(%rdi), %rdx
+#	xorl	%esi,%esi
+##if SIG_BLOCK == 0
+#	xorl	%edi, %edi
+##else
+#	movl	$SIG_BLOCK, %edi
+##endif
+#	movl	$_NSIG8,%r10d
+#	movl	$__NR_rt_sigprocmask, %eax
+#	syscall
+#	cmpq	$-4095, %rax		/* Check %rax for error.  */
+#	jae	SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
 
 	/* All done, return 0 for success.  */
 	xorl	%eax, %eax
+L(pseudo_end):
 	ret
+SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
+PSEUDO_END(__parlib_getcontext)
+
+weak_alias (__parlib_getcontext, parlib_getcontext)

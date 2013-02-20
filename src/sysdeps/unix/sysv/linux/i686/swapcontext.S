@@ -19,11 +19,11 @@
 
 #include "internal/ucontext_i.h"
 
-ENTRY(__swapcontext)
+ENTRY(__parlib_swapcontext)
 	/* Load address of the context data structure we save in.  */
 	movl	4(%esp), %eax
 
-	/* Return value of swapcontext.  EAX is the only register whose
+	/* Return value of parlib_swapcontext.  EAX is the only register whose
 	   value is not preserved.  */
 	movl	$0, oEAX(%eax)
 
@@ -103,6 +103,6 @@ ENTRY(__swapcontext)
 
 L(pseudo_end):
 	ret
-PSEUDO_END(__swapcontext)
+PSEUDO_END(__parlib_swapcontext)
 
-weak_alias (__swapcontext, swapcontext)
+weak_alias (__parlib_swapcontext, parlib_swapcontext)

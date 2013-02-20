@@ -3,28 +3,28 @@
    This file is part of the GNU C Library.
    Contributed by Andreas Jaeger <aj@suse.de>, 2002.
 
-   The GNU C Library is free software ;  you can redistribute it and/or
+   The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation	;  either
+   License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
 
    The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY ;  without even the implied warranty of
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library	;  if not, write to the Free
+   License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
 #include "internal/ucontext_i.h"
 
 
-/* int __swapcontext (ucontext_t *oucp, const ucontext_t *ucp)
+/* int __parlib_swapcontext (ucontext_t *oucp, const ucontext_t *ucp);
 
   Saves the machine context in oucp such that when it is activated,
-  it appears as if __swapcontextt() returned again, restores the
+  it appears as if __parlib_swapcontextt() returned again, restores the
   machine context in ucp and thereby resumes execution in that
   context.
 
@@ -32,12 +32,7 @@
   switches only.  Therefore, it does not have to save anything
   other than the PRESERVED state.  */
 
-.text
-	.align 4
-.globl swapcontext
-	.type swapcontext, @function
-swapcontext:
-
+ENTRY(__parlib_swapcontext)
 	/* Save the preserved registers, the registers used for passing args,
 	   and the return address.  */
 	movq	%rbx, oRBX(%rdi)
@@ -68,6 +63,23 @@ swapcontext:
 	fnstenv	(%rcx)
 	stmxcsr oMXCSR(%rdi)
 
+
+	/* The syscall destroys some registers, save them.  */
+#	movq	%rsi, %r12
+#
+#	/* Save the current signal mask and install the new one with
+#	   rt_sigprocmask (SIG_BLOCK, newset, oldset,_NSIG/8).  */
+#	leaq	oSIGMASK(%rdi), %rdx
+#	leaq	oSIGMASK(%rsi), %rsi
+#	movl	$SIG_SETMASK, %edi
+#	movl	$_NSIG8,%r10d
+#	movl	$__NR_rt_sigprocmask, %eax
+#	syscall
+#	cmpq	$-4095, %rax		/* Check %rax for error.  */
+#	jae	SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
+#
+#	/* Restore destroyed registers.  */
+#	movq	%r12, %rsi
 
 	/* Restore the floating-point context.  Not the registers, only the
 	   rest.  */
@@ -102,4 +114,9 @@ swapcontext:
 	/* Clear rax to indicate success.  */
 	xorl	%eax, %eax
 
+L(pseudo_end):
 	ret
+SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
+PSEUDO_END(__parlib_swapcontext)
+
+weak_alias (__parlib_swapcontext, parlib_swapcontext)

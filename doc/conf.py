@@ -213,7 +213,7 @@ latex_logo = "_static/logo.png"
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('sitemap', 'Parlib', u'Parlib API Reference',
+    ('sitemap', 'parlib', u'Parlib API Reference',
      [u'Kevin Klues, Barret Rhoden'], 1)
 ]
 

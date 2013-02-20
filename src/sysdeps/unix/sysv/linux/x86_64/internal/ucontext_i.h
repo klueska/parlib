@@ -18,30 +18,49 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
-#define SIG_BLOCK	0
-#define SIG_SETMASK	2
+/* My own defines for stuff found in the *context.S files */
+#define ENTRY(__func) \
+  .globl __func; .type __func,@function; .align 1<<4; __func: cfi_startproc;
+#define SYSCALL_ERROR() \
+  movq __libc_errno@GOTTPOFF(%rip), %rcx; xorl %edx, %edx; subq %rax, %rdx; movl %edx, %fs:(%rcx); orq $-1, %rax; jmp L(pseudo_end); 
+#define PSEUDO_END(__func) \
+ cfi_endproc; .size __func,.-##__func;
+#define weak_alias(__orig, __func) \
+  .weak __func ; __func = __orig
+#define L(__name) .L##__name
+#define cfi_adjust_cfa_offset(__value) \
+  .cfi_adjust_cfa_offset __value
+#define cfi_def_cfa(__reg, __value) \
+  .cfi_def_cfa __reg, __value
+#define cfi_offset(__reg, __value) \
+  .cfi_offset __reg, __value
+#define cfi_startproc .cfi_startproc
+#define cfi_endproc   .cfi_endproc
 
-/* Since we cannot include a header to define _NSIG/8, we define it
-   here.  */
-#define _NSIG8		8
+/* Signal mask defines */
+#define SIG_BLOCK   0
+#define SIG_SETMASK 2
+
+#define _NSIG8               8
+#define __NR_rt_sigprocmask 14
 
 /* Offsets of the fields in the ucontext_t structure.  */
-#define oRBP		120
-#define oRSP		160
-#define oRBX		128
-#define oR8		40
-#define oR9		48
-#define oR12		72
-#define oR13		80
-#define oR14		88
-#define oR15		96
-#define oRDI		104
-#define oRSI		112
-#define oRDX		136
-#define oRAX		144
-#define oRCX		152
-#define oRIP		168
-#define oFPREGS		208
-#define oSIGMASK	280
-#define oFPREGSMEM	408
-#define oMXCSR		432
+#define oRBX        128
+#define oRBP        120
+#define oR12         72
+#define oR13         80
+#define oR14         88
+#define oR15         96
+#define oRDI        104
+#define oRSI        112
+#define oRDX        136
+#define oRCX        152
+#define oR8          40
+#define oR9          48
+#define oRIP        168
+#define oRSP        160
+#define oFPREGSMEM  424
+#define oFPREGS     224
+#define oMXCSR      448
+#define oSIGMASK    296
+

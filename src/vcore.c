@@ -47,7 +47,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ucontext.h>
 #include <unistd.h>
 #include <sys/sysinfo.h>
 #include <sys/wait.h>
@@ -55,6 +54,7 @@
 #include "internal/vcore.h"
 #include "internal/tls.h"
 #include "internal/futex.h"
+#include "context.h"
 #include "atomic.h"
 #include "tls.h"
 #include "vcore.h"
@@ -135,6 +135,7 @@ static void __attribute__((noinline, noreturn))
 __vcore_reenter()
 {
   __vcore_reentry_func();
+  assert(0);
 }
 
 void vcore_reenter(void (*entry_func)(void))
@@ -269,7 +270,7 @@ __vcore_trampoline_entry(void *arg)
    * original stack (maybe because certain things are placed on the stack like
    * cleanup functions).
    */
-  if (getcontext(&vcore_context) < 0) {
+  if (parlib_getcontext(&vcore_context) < 0) {
     fprintf(stderr, "vcore: could not get context\n");
     exit(1);
   }
@@ -282,8 +283,8 @@ __vcore_trampoline_entry(void *arg)
   vcore_context.uc_stack.ss_size = getpagesize();
   vcore_context.uc_link = 0;
 
-  makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);
-  setcontext(&vcore_context);
+  parlib_makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);
+  parlib_setcontext(&vcore_context);
 
   /* We never exit a vcore ... we always park them and therefore
    * we never exit them. If we did we would need to take care not to
@@ -453,7 +454,7 @@ int vcore_request(int k)
       static int once = true;
       if(once) {
         cmb();
-        getcontext(&main_context);
+        parlib_getcontext(&main_context);
         cmb();
         if(once) {
           once = false;
@@ -491,7 +492,7 @@ void vcore_yield()
    * stack. This is only used very quickly so we can run the setcontext code */
   set_stack_pointer(__vcore_stack);
   /* Go back to the ht entry gate */
-  setcontext(&vcore_context);
+  parlib_setcontext(&vcore_context);
 }
 
 int vcore_lib_init()

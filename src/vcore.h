@@ -41,13 +41,13 @@
 #include <sys/param.h>
 #include <string.h>
 #include <assert.h>
-#include <ucontext.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "tls.h"
 #include "atomic.h"
 #include "parlib-config.h"
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {

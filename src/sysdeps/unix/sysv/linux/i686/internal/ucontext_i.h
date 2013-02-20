@@ -1,5 +1,5 @@
 /* Offsets and other constants needed in the *context() function
-   implementation for Linux/x86-64.
+   implementation for Linux/i686
    Copyright (C) 2002 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -49,7 +49,7 @@
 #define SYSCALL_ERROR_LABEL __syscall_error
 #define __NR_sigprocmask 126
 
-/* Signal maks defines */
+/* Signal mask defines */
 #define SIG_BLOCK 0
 #define SIG_SETMASK 2
 

@@ -21,11 +21,11 @@
 
 #include "internal/ucontext_i.h"
 
-ENTRY(__getcontext)
+ENTRY(__parlib_getcontext)
 	/* Load address of the context data structure.  */
 	movl	4(%esp), %eax
 
-	/* Return value of getcontext.  EAX is the only register whose
+	/* Return value of parlib_getcontext.  EAX is the only register whose
 	   value is not preserved.  */
 	movl	$0, oEAX(%eax)
 
@@ -78,6 +78,6 @@ ENTRY(__getcontext)
 	xorl	%eax, %eax
 L(pseudo_end):
 	ret
-PSEUDO_END(__getcontext)
+PSEUDO_END(__parlib_getcontext)
 
-weak_alias (__getcontext, getcontext)
+weak_alias (__parlib_getcontext, parlib_getcontext)
