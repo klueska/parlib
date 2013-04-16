@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include "context.h"
 typedef struct ucontext uthread_context_t;
@@ -62,9 +63,27 @@ breakpoint(void)
 static __inline uint64_t
 read_tsc(void)
 {
-	uint64_t tsc;
-	__asm __volatile("rdtsc" : "=A" (tsc));
-	return tsc;
+  uint32_t lo, hi;
+  /* We cannot use "=A", since this would use %rax on x86_64 */
+  asm volatile("lfence;rdtsc" : "=a" (lo), "=d" (hi));
+  return (uint64_t)hi << 32 | lo;
+}
+
+static __inline uint64_t
+get_tsc_freq()
+{
+  struct timeval prev;
+  struct timeval curr;
+  uint64_t beg = read_tsc();
+  gettimeofday(&prev, NULL);
+  while(1) {
+    gettimeofday(&curr, NULL);
+    if(curr.tv_sec > (prev.tv_sec+1) ||
+       (curr.tv_sec > prev.tv_sec && curr.tv_usec > prev.tv_usec))
+      break;
+  }
+  uint64_t end = read_tsc();
+  return end-beg;
 }
 
 static __inline void
