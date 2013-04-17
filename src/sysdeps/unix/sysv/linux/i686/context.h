@@ -32,7 +32,7 @@ extern "C" {
 extern int parlib_getcontext (ucontext_t *__ucp) __THROWNL;
 
 /* Set user context from information of variable pointed to by UCP.  */
-extern int parlib_setcontext (__const ucontext_t *__ucp) __THROWNL;
+extern int parlib_setcontext (__const ucontext_t *__ucp) __THROWNL __attribute__((noreturn));
 
 /* Save current context in context variable pointed to by OUCP and set
    context from variable pointed to by UCP.  */
