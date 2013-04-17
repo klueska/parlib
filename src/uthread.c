@@ -27,6 +27,7 @@
 #include "atomic.h"
 #include "arch.h"
 #include "tls.h"
+#include "internal/assert.h"
 
 #define printd(...)
 
@@ -107,7 +108,7 @@ void __attribute__((noreturn)) uthread_vcore_entry(void)
 	assert(sched_ops->sched_entry);
 	sched_ops->sched_entry();
 	/* 2LS sched_entry should never return */
-	assert(0);
+	__builtin_unreachable();
 }
 
 void uthread_init(struct uthread *uthread)

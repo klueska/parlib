@@ -21,7 +21,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
+#include "internal/assert.h"
 
 #include "spinlock.h"
 #include "atomic.h"

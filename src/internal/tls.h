@@ -22,7 +22,7 @@
 #define PARLIB_TLS_INTERNAL_H
 
 #include <stdio.h>
-#include <assert.h>
+#include "assert.h"
 #include <unistd.h>
 #include <sys/syscall.h>
 

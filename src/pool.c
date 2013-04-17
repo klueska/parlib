@@ -18,7 +18,7 @@
  */
 
 #include <stddef.h>
-#include <assert.h>
+#include "internal/assert.h"
 #include "pool.h"
 
 void pool_init(pool_t *pool, void* buffer, void **object_queue,

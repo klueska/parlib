@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include "internal/assert.h"
 
 #include "atomic.h"
 #include "tls.h"

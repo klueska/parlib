@@ -103,8 +103,7 @@ read_pmc(uint32_t index)
 #define init_uthread_stack_ARCH(uth, stack_top, size)   \
 {                                                       \
 	ucontext_t *uc = &(uth)->uc;                        \
-	int ret = parlib_getcontext(uc);                           \
-	assert(ret == 0);                                   \
+	parlib_getcontext(uc);                              \
 	uc->uc_stack.ss_sp = (void*)(stack_top);            \
 	uc->uc_stack.ss_size = (uint32_t)(size);            \
 }

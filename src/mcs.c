@@ -19,11 +19,10 @@
  * See COPYING for details on the GNU General Public License.
  */
 
-#include <assert.h> // Remove once functions in place
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
+#include "internal/assert.h"
 #include <errno.h>
 
 #include "atomic.h"

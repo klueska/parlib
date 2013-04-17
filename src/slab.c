@@ -13,7 +13,7 @@
  * Ported directly from the Akaros kernel's slab allocator. */
 
 #include <stdio.h>
-#include <assert.h>
+#include "internal/assert.h"
 #include <sys/mman.h>
 #include "slab.h"
 

@@ -22,6 +22,7 @@
 #include "dtls.h"
 #include "spinlock.h"
 #include "slab.h"
+#include "internal/assert.h"
 
 /* The current dymamic tls implementation uses a locked linked list
  * to find the key for a given thread. We should probably find a better way to

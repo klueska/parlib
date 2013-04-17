@@ -42,7 +42,7 @@
 
 #define _GNU_SOURCE
 
-#include <assert.h>
+#include "internal/assert.h"
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>

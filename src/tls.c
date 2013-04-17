@@ -23,6 +23,7 @@
 
 #include "internal/vcore.h"
 #include "internal/tls.h"
+#include "internal/assert.h"
 #include "atomic.h"
 #include "tls.h"
 #include "vcore.h"

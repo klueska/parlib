@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <sys/param.h>
 #include <string.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 

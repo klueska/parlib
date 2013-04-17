@@ -32,7 +32,6 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <sys/time.h>
-#include <assert.h>
 
 #include "parlib-config.h"
 #include "atomic.h"
