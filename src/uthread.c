@@ -47,46 +47,40 @@ static void __uthread_free_tls(struct uthread *uthread);
 
 /* The real 2LS calls this, passing in a uthread representing thread0.  When it
  * returns, you're in _M mode, still running thread0, on vcore0 */
-int uthread_lib_init(struct uthread* uthread)
+void uthread_lib_init(struct uthread* uthread)
 {
-    /* Make sure this only runs once */
-    static bool initialized = false;
-    if (initialized)
-        return 0;
-    initialized = true;
-
-    /* Make sure they passed in a valid uthread pointer */
-    assert(uthread);
-
-    /* Make sure the vcore subsystem is up and running */
-    assert(!vcore_lib_init());
-
-	/* Set current_uthread to the uthread passed in, so we have a place to
-	 * save the main thread's context when yielding */
-	current_uthread = uthread;
-
+	run_once(
+		/* Make sure they passed in a valid uthread pointer */
+		assert(uthread);
+	
+		/* Make sure the vcore subsystem is up and running */
+		assert(!vcore_lib_init());
+	
+		/* Set current_uthread to the uthread passed in, so we have a place to
+		 * save the main thread's context when yielding */
+		current_uthread = uthread;
+	
 #ifndef PARLIB_NO_UTHREAD_TLS
-	/* Associate the main thread's tls with the current tls as well */
-	current_uthread->tls_desc = current_tls_desc;
+		/* Associate the main thread's tls with the current tls as well */
+		current_uthread->tls_desc = current_tls_desc;
 #endif
 
-	/* Finally, switch to vcore 0's tls and set current_uthread to be the main
-	 * thread, so when vcore 0 comes up it will resume the main thread.
-	 * Note: there is no need to restore the original tls here, since we
-	 * are right about to transition onto vcore 0 anyway... */
-	set_tls_desc(__vcore_tls_descs[0], 0);
-	safe_set_tls_var(current_uthread, uthread);
+		/* Finally, switch to vcore 0's tls and set current_uthread to be the main
+		 * thread, so when vcore 0 comes up it will resume the main thread.
+		 * Note: there is no need to restore the original tls here, since we
+		 * are right about to transition onto vcore 0 anyway... */
+		set_tls_desc(__vcore_tls_descs[0], 0);
+		safe_set_tls_var(current_uthread, uthread);
 
-	/* Request some cores ! */
-	while (num_vcores() < 1) {
-		/* Ask for a core -- this will transition the main thread onto
-                 * vcore 0 once successful */
-		vcore_request(1);
-		cpu_relax();
-	}
+		/* Request some cores ! */
+		while (num_vcores() < 1) {
+		  /* Ask for a core -- this will transition the main thread onto
+					   * vcore 0 once successful */
+		  vcore_request(1);
+		  cpu_relax();
+		}
+	);
 	/* We are now running on vcore 0 */
-
-	return 0;
 }
 
 void __attribute__((noreturn)) uthread_vcore_entry(void);
