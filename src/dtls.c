@@ -92,7 +92,7 @@ static void __maybe_free_dtls_key(dtls_key_t key)
 }
 
 /* Constructor to get a reference to the main thread's TLS descriptor */
-int dtls_lib_init()
+static void dtls_lib_init()
 {
 	/* Make sure this only runs once */
   run_once(
