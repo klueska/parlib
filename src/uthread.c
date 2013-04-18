@@ -249,47 +249,48 @@ void save_current_uthread(struct uthread *uthread)
 }
 
 /* Simply sets current uthread to be whatever the value of uthread is.  This
- * can be called from outside of sched_entry() to highjack the current context,
+ * can be called from outside of sched_entry() to hijack the current context,
  * and make sure that the new uthread struct is used to store this context upon
  * yielding, etc. USE WITH EXTREME CAUTION!
 */
-void highjack_current_uthread(struct uthread *uthread)
+void hijack_current_uthread(struct uthread *uthread)
 {
 	assert(uthread != current_uthread);
-	vcore_set_tls_var(current_uthread, uthread);
 
-#ifndef PARLIB_NO_UTHREAD_TLS
-	assert(uthread->tls_desc);
-	set_tls_desc(uthread->tls_desc, vcore_id());
+#ifdef PARLIB_NO_UTHREAD_TLS
+    uthread->dtls_data = current_uthread->dtls_data;
 #else
-	extern __thread bool __in_vcore_context;
-    __in_vcore_context = false;
+    uthread->tls_desc = current_uthread->tls_desc;
+    current_uthread = uthread;
 #endif
+	vcore_set_tls_var(current_uthread, uthread);
 }
 
 /* Runs whatever thread is vcore's current_uthread */
 void run_current_uthread(void)
 {
+	assert(in_vcore_context());
 	assert(current_uthread);
 
-	struct ucontext *uc = &current_uthread->uc;
 #ifndef PARLIB_NO_UTHREAD_TLS
-	uint32_t vcoreid = vcore_id();
-	set_tls_desc(current_uthread->tls_desc, vcoreid);
+	assert(current_uthread->tls_desc);
+	set_tls_desc(current_uthread->tls_desc, vcore_id());
 #else
 	extern __thread bool __in_vcore_context;
     __in_vcore_context = false;
 #endif
-	parlib_setcontext(uc);
+	parlib_setcontext(&current_uthread->uc);
 	assert(0);
 }
 
 /* Launches the uthread on the vcore.  Don't call this on current_uthread. */
 void run_uthread(struct uthread *uthread)
 {
-	highjack_current_uthread(uthread);
-	parlib_setcontext(&uthread->uc);
-	assert(0);
+	assert(in_vcore_context());
+	assert(uthread != current_uthread);
+
+	current_uthread = uthread;
+	run_current_uthread();
 }
 
 /* Swaps the currently running uthread for a new one, saving the state of the

@@ -89,7 +89,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 
 /* Helpers, which sched_entry() can call */
 void save_current_uthread(struct uthread *uthread);
-void highjack_current_uthread(struct uthread *uthread);
+void hijack_current_uthread(struct uthread *uthread);
 void run_current_uthread(void) __attribute((noreturn));
 void run_uthread(struct uthread *uthread) __attribute((noreturn));
 void swap_uthreads(struct uthread *__old, struct uthread *__new);
