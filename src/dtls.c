@@ -32,7 +32,6 @@
 
 /* The dynamic tls key structure */
 struct dtls_key {
-  spinlock_t lock;
   int ref_count;
   bool valid;
   void (*dtor)(void*);
@@ -115,7 +114,6 @@ static void dtls_lib_init()
 dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 {
   dtls_lib_init();
-  spinlock_init(&key->lock);
   dtls_key_t key = __allocate_dtls_key();
   key->valid = true;
   key->dtor = dtor;
@@ -125,21 +123,15 @@ dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 void dtls_key_delete(dtls_key_t key)
 {
   assert(key);
-
-  spinlock_lock(&key->lock);
+  __sync_fetch_and_add(&key->ref_count, -1);
   key->valid = false;
-  key->ref_count--;
-  spinlock_unlock(&key->lock);
   __maybe_free_dtls_key(key);
 }
 
 static inline void __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls)
 {
   assert(key);
-
-  spinlock_lock(&key->lock);
-  key->ref_count++;
-  spinlock_unlock(&key->lock);
+  __sync_fetch_and_add(&key->ref_count, 1);
 
   struct dtls_value *v = NULL;
   TAILQ_FOREACH(v, &dtls_data->list, link)
@@ -172,31 +164,20 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
   v = TAILQ_FIRST(&dtls_data->list);
   while(v != NULL) {
     dtls_key_t key = v->key;
-    bool run_dtor = false;
   
-    spinlock_lock(&key->lock);
-    if(key->valid)
-      if(key->dtor)
-        run_dtor = true;
-    spinlock_unlock(&key->lock);
-
-	// MUST run the dtor outside the spinlock if we want it to be able to call
-	// code that may deschedule it for a while (i.e. a mutex). Probably a
-	// good idea anyway since it can be arbitrarily long and is written by the
-	// user. Note, there is a small race here on the valid field, whereby we
-	// may run a destructor on an invalid key. At least the keys memory wont
-	// be deleted though, as protected by the ref count. Any reasonable usage
-	// of this interface should safeguard that a key is never destroyed before
-	// all of the threads that use it have exited anyway.
-    if(run_dtor) {
-	  void *dtls = v->dtls;
-      v->dtls = NULL;
-      key->dtor(dtls);
+    /* Note, there is a small race here on the valid field, whereby we may run
+     * a destructor on an invalid key. At least the keys memory wont be deleted
+     * though, as protected by the ref count. Any reasonable usage of this
+     * interface should safeguard that a key is never destroyed before all of the
+     * threads that use it have exited anyway. */
+    if(key->dtor) {
+      if(key->valid) {
+        void *dtls = v->dtls;
+        v->dtls = NULL;
+        key->dtor(dtls);
+      }
     }
-
-    spinlock_lock(&key->lock);
-    key->ref_count--;
-    spinlock_unlock(&key->lock);
+    __sync_fetch_and_add(&key->ref_count, -1);
     __maybe_free_dtls_key(key);
 
     n = TAILQ_NEXT(v, link);
