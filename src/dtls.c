@@ -73,7 +73,7 @@ static __thread bool __dtls_initialized = false;
 #include "uthread.h"
 #endif
 
-static dtls_key_t __alocate_dtls_key() 
+static dtls_key_t __allocate_dtls_key() 
 {
   spinlock_lock(&__slab_lock);
   dtls_key_t key = slab_cache_alloc(__dtls_keys_cache, 0);
@@ -115,8 +115,8 @@ static void dtls_lib_init()
 dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 {
   dtls_lib_init();
-  dtls_key_t key = __alocate_dtls_key();
   spinlock_init(&key->lock);
+  dtls_key_t key = __allocate_dtls_key();
   key->valid = true;
   key->dtor = dtor;
   return key;
