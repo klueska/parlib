@@ -80,6 +80,9 @@ void uthread_init(struct uthread *uth);
  * uthreads. */
 void uthread_cleanup(struct uthread *uthread);
 
+/* Function indicating an external event has blocked the uthread. */
+void uthread_has_blocked(struct uthread *uthread, int flags);
+
 /* Function forcing a uthread to become runnable */
 void uthread_runnable(struct uthread *uthread);
 
