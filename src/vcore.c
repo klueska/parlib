@@ -50,6 +50,7 @@
 #include <unistd.h>
 #include <sys/sysinfo.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
 
 #include "internal/vcore.h"
 #include "internal/tls.h"
@@ -342,7 +343,11 @@ static void __create_vcore(int i)
 #else 
   struct vcore *cvcore = &__vcores[i];
   cvcore->stack_size = VCORE_MIN_STACK_SIZE;
-  if((cvcore->stack_bottom = malloc(cvcore->stack_size)) == NULL) {
+
+  cvcore->stack_bottom = mmap(0, cvcore->stack_size,
+                              PROT_READ|PROT_WRITE|PROT_EXEC,
+                              MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  if(cvcore->stack_bottom == MAP_FAILED) {
     fprintf(stderr, "vcore: could not set stack size of underlying vcore\n");
     exit(1);
   }
