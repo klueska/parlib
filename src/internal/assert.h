@@ -6,7 +6,7 @@
 //#define PARLIB_DEBUG
 #ifndef PARLIB_DEBUG
 # undef assert
-# define assert(x) (x)
+# define assert(x) (__builtin_constant_p(x) && (x) == 0 ? __builtin_unreachable() : (x))
 #endif
 
 #endif
