@@ -37,6 +37,8 @@
 #include <errno.h>
 #include <limits.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef __linux__
 #error "expecting __linux__ (for now, this library only runs on Linux)"
