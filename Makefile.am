@@ -15,6 +15,7 @@ LIB_CFILES = \
   @SRCDIR@/dtls.c     \
   @SRCDIR@/pool.c     \
   @SRCDIR@/uthread.c  \
+  @SRCDIR@/syscall.c  \
   @SRCDIR@/vcore.c
 
 LIB_HFILES = \
@@ -27,6 +28,7 @@ LIB_HFILES = \
   @SRCDIR@/tls.h       \
   @SRCDIR@/dtls.h      \
   @SRCDIR@/uthread.h   \
+  @SRCDIR@/syscall.h   \
   @SRCDIR@/vcore.h
 
 LIB_SFILES = 
@@ -37,6 +39,7 @@ LIB_INTERNAL_FILES = \
   @SRCDIR@/internal/tls.h \
   @SRCDIR@/internal/dtls.h \
   @SRCDIR@/internal/uthread.h \
+  @SRCDIR@/internal/syscall.h \
   @SRCDIR@/internal/vcore.h
 
 if ARCH_i686
