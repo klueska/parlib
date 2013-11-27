@@ -17,7 +17,8 @@ ssize_t __read(int, void*, size_t);
 ssize_t __write(int, const void*, size_t);
 #endif
 
-#include <parlib/uthread.h>
+#include "../pthread_pool.h"
+#include "../uthread.h"
 #include <sys/mman.h>
 
 #define uthread_blocking_call(__func, ...) \
@@ -33,21 +34,10 @@ ssize_t __write(int, const void*, size_t);
   ret; \
 })
 
-static pthread_t __uthread_blocking_call_start(struct uthread* uthread,
-                                               void *func, bool detached) {
-  pthread_t handle;
-  pthread_attr_t attr;
-  pthread_attr_init(&attr);
-  if(detached)
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  pthread_create(&handle, &attr, func, uthread);
-  return handle;
-}
-
 static void __uthread_yield_callback(struct uthread *uthread, void *func) {
   printf("uthread in yield cb %p\n", uthread);
   async_syscall_start(uthread);
-  (void)__uthread_blocking_call_start(uthread, func, true);
+  pooled_pthread_start(func, uthread);
 }
 
 #endif // __INTERNAL_ASYNC_WRAPPERS__
