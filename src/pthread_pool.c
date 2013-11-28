@@ -1,12 +1,12 @@
-#include "pthread_pool.h"
 #include "slab.h"
+#include "spinlock.h"
 #include "internal/futex.h"
 #include "internal/assert.h"
+#include "internal/pthread_pool.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/queue.h>
-#include <parlib/spinlock.h>
 
 struct job {
   SIMPLEQ_ENTRY(job) link;

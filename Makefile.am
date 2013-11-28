@@ -26,7 +26,6 @@ LIB_HFILES = \
   @SRCDIR@/mcs.h       \
   @SRCDIR@/slab.h      \
   @SRCDIR@/pool.h      \
-  @SRCDIR@/pthread_pool.h \
   @SRCDIR@/tls.h       \
   @SRCDIR@/dtls.h      \
   @SRCDIR@/uthread.h   \
@@ -40,6 +39,7 @@ LIB_INTERNAL_FILES = \
   @SRCDIR@/internal/glibc-tls.h \
   @SRCDIR@/internal/tls.h \
   @SRCDIR@/internal/dtls.h \
+  @SRCDIR@/internal/pthread_pool.h \
   @SRCDIR@/internal/uthread.h \
   @SRCDIR@/internal/syscall.h \
   @SRCDIR@/internal/vcore.h

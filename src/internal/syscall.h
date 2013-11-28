@@ -17,8 +17,8 @@ ssize_t __read(int, void*, size_t);
 ssize_t __write(int, const void*, size_t);
 #endif
 
-#include "../pthread_pool.h"
 #include "../uthread.h"
+#include "pthread_pool.h"
 #include <sys/mman.h>
 
 #define uthread_blocking_call(__func, ...) \

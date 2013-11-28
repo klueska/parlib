@@ -1,8 +1,8 @@
-#include "pthread_pool.h"
+#include "internal/pthread_pool.h"
+#include "spinlock.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <parlib/spinlock.h>
 
 static spinlock_t lock = SPINLOCK_INITIALIZER;
 
