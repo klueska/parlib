@@ -25,6 +25,7 @@
 #ifdef __linux__
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
