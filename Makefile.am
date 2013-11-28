@@ -42,6 +42,7 @@ LIB_INTERNAL_FILES = \
   @SRCDIR@/internal/pthread_pool.h \
   @SRCDIR@/internal/uthread.h \
   @SRCDIR@/internal/syscall.h \
+  @SRCDIR@/internal/time.h \
   @SRCDIR@/internal/vcore.h
 
 if ARCH_i686
@@ -86,7 +87,7 @@ lib_LTLIBRARIES = libparlib.la
 libparlib_la_CFLAGS = $(AM_CFLAGS)
 libparlib_la_CFLAGS += -I$(SYSDEPDIR)
 libparlib_la_SOURCES = $(LIB_FILES)
-libparlib_la_LIBADD = -lpthread
+libparlib_la_LIBADD = -lpthread -lrt
 if STATIC_ONLY
 libparlib_la_LDFLAGS = -all-static
 endif
