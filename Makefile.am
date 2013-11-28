@@ -17,6 +17,7 @@ LIB_CFILES = \
   @SRCDIR@/pthread_pool.c \
   @SRCDIR@/uthread.c  \
   @SRCDIR@/syscall.c  \
+  @SRCDIR@/alarm.c    \
   @SRCDIR@/vcore.c
 
 LIB_HFILES = \
@@ -30,6 +31,7 @@ LIB_HFILES = \
   @SRCDIR@/dtls.h      \
   @SRCDIR@/uthread.h   \
   @SRCDIR@/syscall.h   \
+  @SRCDIR@/alarm.h     \
   @SRCDIR@/vcore.h
 
 LIB_SFILES = 
@@ -97,7 +99,7 @@ parlibincdir = $(includedir)/$(LIBNAME)
 dist_parlibinc_DATA = $(LIB_HFILES)
 
 # Setup parameters to build the test programs
-check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test
+check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test alarm_test
 
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
 lock_test_CFLAGS = $(AM_CFLAGS)
@@ -123,6 +125,11 @@ pthread_pool_test_SOURCES =  @TESTSDIR@/pthread_pool_test.c
 pthread_pool_test_CFLAGS = $(AM_CFLAGS)
 pthread_pool_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 pthread_pool_test_LDADD = libparlib.la
+
+alarm_test_SOURCES =  @TESTSDIR@/alarm_test.c
+alarm_test_CFLAGS = $(AM_CFLAGS)
+alarm_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
+alarm_test_LDADD = libparlib.la
 
 if SPHINX_BUILD
 man_MANS = \
