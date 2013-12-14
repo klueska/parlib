@@ -49,6 +49,9 @@ static void *__thread_wrapper(void *arg)
   struct job_queue *q = (struct job_queue*)arg;
   struct job job, *jobp = NULL;
 
+  extern __thread bool __in_vcore_context;
+  __in_vcore_context = true;
+
   while(1) {
     spinlock_lock(&lock);
       if (jobp != NULL)
