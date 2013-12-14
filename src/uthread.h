@@ -45,6 +45,7 @@ struct uthread {
 #else 
     void *dtls_data;
 #endif
+    struct syscall *sysc;
 };
 typedef struct uthread uthread_t;
 

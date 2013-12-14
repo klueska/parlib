@@ -5,9 +5,7 @@
 #include "syscall.h"
 #include "internal/syscall.h"
 
-/* Callbacks surrounding our syscalls (run in vcore context) */
-void (*async_syscall_start)(struct uthread*);
-void (*async_syscall_done)(struct uthread*);
+handle_event_t ev_handlers[MAX_NR_EVENT];
 
 #ifdef __SUPPORTED_C_LIBRARY__
 
