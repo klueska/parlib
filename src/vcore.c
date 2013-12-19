@@ -46,6 +46,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/sysinfo.h>
@@ -74,6 +75,10 @@ struct vcore *__vcores = NULL;
  * array so that we can access it transparently, as an array, outside of
  * the vcore library. */
 void **__vcore_tls_descs = NULL;
+
+/* A map of the currently allocated vcores for this process to their underlying
+ * "hardware context" (i.e. pthread_self() id on linux) */
+long __vcore_map[MAX_VCORES];
 
 /* Id of the currently running vcore. */
 __thread int __vcore_id = -1;
@@ -195,6 +200,11 @@ void __vcore_entry_gate()
   }
   mcs_lock_unlock(&__vcore_mutex, &qnode);
 
+#ifdef PARLIB_VCORE_AS_PTHREAD
+  /* Set the entry in the vcore_map to the sentinel value */
+  __vcore_map[vcoreid] = VCORE_UNMAPPED;
+#endif
+
   /* Wait for this vcore to get woken up. */
   futex_wait(&(__vcores[vcoreid].running), false);
 
@@ -207,9 +217,16 @@ entry:
    * ht_entry(). */
   while(!original_main_done) 
     cpu_relax();
+
   /* Use cached value of vcoreid in case TLS changed out from under us while
    * waiting for this vcore to get woken up. */
   assert(__vcores[vcoreid].running == true);
+
+#ifdef PARLIB_VCORE_AS_PTHREAD
+  /* Set the entry in the vcore_map to the pthread_self() id */
+  __vcore_map[vcoreid] = pthread_self();
+#endif
+
   /* Jump to the vcore's entry point */
   vcore_entry();
 
@@ -281,6 +298,15 @@ __vcore_trampoline_entry(void *arg)
     exit(1);
   }
 
+#ifdef PARLIB_VCORE_AS_PTHREAD
+  /* Set up a singal handler for sending a signal to a vcore */
+  struct sigaction act;
+  act.sa_handler = vcore_sigentry;
+  act.sa_flags = SA_NODEFER;
+  sigemptyset(&act.sa_mask);
+  sigaction(SIGUSR1, &act, NULL);
+#endif
+
   vcore_context.uc_stack.ss_size = getpagesize();
   vcore_context.uc_link = 0;
 
@@ -296,6 +322,12 @@ __vcore_trampoline_entry(void *arg)
    */
   fprintf(stderr, "vcore: failed to invoke vcore_yield\n");
   exit(1);
+}
+
+void vcore_signal(int vcoreid) {
+#ifdef PARLIB_VCORE_AS_PTHREAD
+	pthread_kill(__vcore_map[vcoreid], SIGUSR1);
+#endif
 }
 
 static void __create_vcore(int i)
@@ -552,6 +584,11 @@ int vcore_lib_init()
     while (__vcores[i].running == true)
       cpu_relax();
   }
+
+  /* Initialize the vcore_map to a sentinel value */
+  for (int i=0; i < MAX_VCORES; i++)
+    __vcore_map[i] = VCORE_UNMAPPED;
+
   /* Reset __in_vcore_context to false */
   __in_vcore_context = false;
   return 0;

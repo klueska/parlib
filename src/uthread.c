@@ -83,7 +83,16 @@ void uthread_lib_init(struct uthread* uthread)
 	/* We are now running on vcore 0 */
 }
 
-void __attribute__((noreturn)) uthread_vcore_entry(void);
+/* 2LSs shouldn't call uthread_vcore_entry directly */
+void __attribute__((noreturn)) uthread_vcore_entry(void)
+{
+	assert(in_vcore_context());
+	assert(sched_ops->sched_entry);
+	sched_ops->sched_entry();
+	/* 2LS sched_entry should never return */
+	__builtin_unreachable();
+}
+
 void vcore_entry() {
 	if(vcore_saved_ucontext) {
 		assert(current_uthread);
@@ -95,14 +104,27 @@ void vcore_entry() {
 	uthread_vcore_entry();
 }
 
-/* 2LSs shouldn't call uthread_vcore_entry directly */
-void __attribute__((noreturn)) uthread_vcore_entry(void)
+void vcore_sigentry(int sig)
 {
-	assert(in_vcore_context());
-	assert(sched_ops->sched_entry);
-	sched_ops->sched_entry();
-	/* 2LS sched_entry should never return */
-	__builtin_unreachable();
+	assert(sig == SIGUSR1);
+
+	if (in_vcore_context())
+		return;
+
+	static __thread uint32_t in_signal_handler = 0;
+	if (atomic_swap_u32(&in_signal_handler, 1) == 1)
+		return;
+
+	void cb(struct uthread *uthread, void *arg)
+	{
+		in_signal_handler = 0;
+
+		assert(sched_ops->thread_paused);
+		assert(sched_ops->sched_entry);
+		sched_ops->thread_paused(uthread);
+	}
+
+	uthread_yield(true, cb, NULL);
 }
 
 void uthread_init(struct uthread *uthread)
@@ -362,4 +384,3 @@ static void __uthread_free_tls(struct uthread *uthread)
 	uthread->tls_desc = NULL;
 }
 #endif
-

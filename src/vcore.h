@@ -36,6 +36,7 @@
 
 #define LOG2_MAX_VCORES 6
 #define MAX_VCORES (1 << LOG2_MAX_VCORES)
+#define VCORE_UNMAPPED (-1)
 
 #include <stdio.h>
 #include <sys/param.h>
@@ -55,6 +56,10 @@ extern "C" {
 /* The vcore type */
 struct vcore;
 typedef struct vcore vcore_t;
+
+/* A map of the currently allocated vcores for this process to their underlying
+ * "hardware context" or physical core */
+extern long __vcore_map[MAX_VCORES];
 
 /* Array of vcores */
 extern vcore_t *__vcores;
@@ -93,6 +98,12 @@ extern __thread void *vcore_saved_tls_desc;
  * there.
  */
 extern void vcore_entry() __attribute__((weak));
+
+/**
+ * Functions for sending/receiving a signal to a vcore
+ */
+extern void vcore_signal(int vcoreid);
+extern void vcore_sigentry() __attribute__((weak));
 
 /* Initialization routine for the vcore subsystem. */
 int vcore_lib_init();

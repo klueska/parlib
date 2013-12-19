@@ -10,6 +10,7 @@ struct alarm_waiter {
     uint64_t wakeup_time; /* in usec */  
     bool     unset;
     bool     done;
+    void     *data;
 };
 
 void init_awaiter(struct alarm_waiter *waiter,

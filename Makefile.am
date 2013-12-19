@@ -99,7 +99,7 @@ parlibincdir = $(includedir)/$(LIBNAME)
 dist_parlibinc_DATA = $(LIB_HFILES)
 
 # Setup parameters to build the test programs
-check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test alarm_test
+check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test alarm_test signal_test
 
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
 lock_test_CFLAGS = $(AM_CFLAGS)
@@ -130,6 +130,11 @@ alarm_test_SOURCES =  @TESTSDIR@/alarm_test.c
 alarm_test_CFLAGS = $(AM_CFLAGS)
 alarm_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 alarm_test_LDADD = libparlib.la
+
+signal_test_SOURCES =  @TESTSDIR@/signal_test.c
+signal_test_CFLAGS = $(AM_CFLAGS)
+signal_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
+signal_test_LDADD = libparlib.la
 
 if SPHINX_BUILD
 man_MANS = \
