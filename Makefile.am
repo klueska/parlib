@@ -134,7 +134,7 @@ alarm_test_LDADD = libparlib.la
 signal_test_SOURCES =  @TESTSDIR@/signal_test.c
 signal_test_CFLAGS = $(AM_CFLAGS)
 signal_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
-signal_test_LDADD = libparlib.la
+signal_test_LDADD = libparlib.la -lpthread
 
 if SPHINX_BUILD
 man_MANS = \
