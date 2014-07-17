@@ -167,7 +167,7 @@ void __vcore_entry_gate()
    * set_affinity(), which may call malloc underneath). */
   cpu_set_t c;
   CPU_ZERO(&c);
-  CPU_SET(vcoreid, &c);
+  CPU_SET(__vcore_id, &c);
   if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
     exit(1);
