@@ -131,5 +131,35 @@ AM_CONDITIONAL([SPHINX_BUILD], [test x$SPHINX_BUILD != x])
 # Execute ACT-IF-FOUND if it does.  ACT-IF-NOT otherwise.
 #AC_CHECK_LIB(LIBRARY, FUNCT, [ACT-IF-FOUND], [ACT-IF-NOT])
 
+echo -n "checking whether RD/WR fsgsbase supported... "
+AC_RUN_IFELSE(
+  [AC_LANG_PROGRAM([[
+      static inline unsigned long rdfsbase(void)
+      {
+        unsigned long fs;
+        asm volatile(".byte 0xf3,0x48,0x0f,0xae,0xc0 # rdfsbaseq %%rax"
+            : "=a" (fs)
+            :: "memory");
+        return fs;
+      }
+      
+      static inline void wrfsbase(unsigned long fs)
+      {
+        asm volatile(".byte 0xf3,0x48,0x0f,0xae,0xd0 # wrfsbaseq %%rax"
+            :: "a" (fs)
+            : "memory");
+      }
+    ]],
+    [[ 
+      wrfsbase(rdfsbase());
+    ]]
+  )],
+  [
+    AC_DEFINE([HAVE_FSGSBASE], [1], [Define to 1 if the current architecture and OS support RD/WR on fsgsbase])
+    echo "yes"
+  ],
+  [echo "no"]
+)
+
 # Actually output all declared files
 AC_OUTPUT
