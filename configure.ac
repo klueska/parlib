@@ -99,29 +99,34 @@ AC_PREPROC_IFELSE([AC_LANG_SOURCE(
 [STATIC_ONLY=true])
 AM_CONDITIONAL([STATIC_ONLY], [test x$STATIC_ONLY = xtrue])
 
-# Allow us to enable __thread TLS for Uthreads
-AC_ARG_WITH([uthread-tls],
-  [AS_HELP_STRING([--with-uthread-tls],
-    [enable __thread tls support for uthreads])],
-  [with_uthread_tls=yes],
-  [with_uthread_tls=no])
-
-if test "x$with_uthread_tls" != xyes; then
-  AC_DEFINE([NO_UTHREAD_TLS], [1],
-              [Define if you want to disable support for uthread tls])
-fi
+# Allow us to disable __thread TLS for Uthreads
+AC_ARG_ENABLE([uthread-tls],
+  [AS_HELP_STRING([--disable-uthread-tls],
+    [disable __thread tls support for uthreads])],
+  [
+    if test "x$enable_uthread_tls" = "xno"; then
+      AC_DEFINE([NO_UTHREAD_TLS], [1],
+                  [Define to 1 if you want to disable support for uthread tls])
+    fi
+  ],
+  []
+)
 
 # Allow us to disable creating vcores as pthreads, calling clone directly
-AC_ARG_WITH([vcore-as-pthread],
-  [AS_HELP_STRING([--without-vcore-as-pthread],
+AC_ARG_ENABLE([vcore-as-pthread],
+  [AS_HELP_STRING([--disable-vcore-as-pthread],
     [disable creating vcores as pthreads, calling clone directly])],
-  [with_vcore_as_pthread=no],
-  [with_vcore_as_pthread=yes])
-
-if test "x$with_vcore_as_pthread" == xyes; then
-  AC_DEFINE([VCORE_AS_PTHREAD], [1],
-              [Define if you want to create vcores as pthreads, instead of using a direct call to clone])
-fi
+  [
+    if test "x$enable_vcore_as_pthread" = "xyes"; then
+      AC_DEFINE([VCORE_AS_PTHREAD], [1],
+                  [Define to 1 if you want to create vcores as pthreads, instead of using a direct call to clone])
+    fi
+  ],
+  [
+    AC_DEFINE([VCORE_AS_PTHREAD], [1],
+                [Define to 1 if you want to create vcores as pthreads, instead of using a direct call to clone])
+  ]
+)
 
 # Check if we have the sphinx documentation tool installed
 SPHINX_BUILD=`which sphinx-build`
