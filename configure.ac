@@ -88,13 +88,13 @@ AM_CONDITIONAL([ARCH_i686], [test x$ARCH_i686 = xtrue])
 AM_CONDITIONAL([ARCH_x86_64], [test x$ARCH_x86_64 = xtrue])
 
 # Check if we have gcc > 4.4
-AC_PREPROC_IFELSE(
+AC_PREPROC_IFELSE([AC_LANG_SOURCE(
 [
 #include <features.h>
 #if !__GNUC_PREREQ(4,4)
   #error "Looks like I'm going to be building just static libs :("
 #endif
-],
+])],
 [STATIC_ONLY=false],
 [STATIC_ONLY=true])
 AM_CONDITIONAL([STATIC_ONLY], [test x$STATIC_ONLY = xtrue])
