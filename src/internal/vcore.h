@@ -30,6 +30,7 @@
 
 #include "arch.h"
 #include "parlib-config.h"
+#include "internal/tls.h"
 
 #ifdef PARLIB_VCORE_AS_PTHREAD
   #include <pthread.h>
@@ -43,15 +44,9 @@ struct vcore {
   bool allocated __attribute__((aligned (ARCH_CL_SIZE)));
   bool running __attribute__((aligned (ARCH_CL_SIZE)));
 
-#ifdef __i386__
-  /* The ldt entry associated with this vcore. Used for managing TLS in user
-   * space. */
-  struct user_desc ldt_entry;
-#elif __x86_64__
-  /* The base address of the TLS currently installed on this vcore. Used for
-   * managing TLS in user space. */
-  void *current_tls_base;
-#endif
+  /* Architecture-specific TLS context information, e.g. LDT on IA-32 or
+     the address of the TCB on other ISAs. */
+  arch_tls_data_t arch_tls_data;
   
 #ifdef PARLIB_VCORE_AS_PTHREAD
   /* The linux pthread associated with this vcore */

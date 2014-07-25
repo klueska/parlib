@@ -39,9 +39,15 @@ extern void *main_tls_desc;
  * vcore */
 extern __thread void *current_tls_desc;
 
+/* Initialize the tls subsystem for use */
+int tls_lib_init();
+
 /* Get a TLS, returns 0 on failure.  Any thread created by a user-level
  * scheduler needs to create a TLS. */
 void *allocate_tls(void);
+
+/* Initialize tls for use by a vcore */
+void init_tls(uint32_t vcoreid);
 
 /* Reinitialize an already allocated TLS, returns 0 on failure.  */
 void *reinit_tls(void *tcb);

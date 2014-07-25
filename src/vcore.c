@@ -413,15 +413,9 @@ static void __create_vcore(int i)
                      | CLONE_DETACHED
                      | 0);
 
-#ifdef __i386__
-  #define TLS_PARAM (&cvcore->ldt_entry)
-#elif __x86_64__
-  #define TLS_PARAM (cvcore->current_tls_base)
-#endif
-
   if(clone(__vcore_trampoline_entry, cvcore->stack_bottom+cvcore->stack_size, 
            clone_flags, (void *)((long int)i), 
-           &cvcore->ptid, TLS_PARAM, &cvcore->ptid) == -1) {
+           &cvcore->ptid, CLONE_TLS_PARAM, &cvcore->ptid) == -1) {
     perror("Error");
     exit(2);
   }
