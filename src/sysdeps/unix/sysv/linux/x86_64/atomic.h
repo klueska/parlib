@@ -49,12 +49,33 @@
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* Full CPU memory barrier */
+#define mb() ({ asm volatile("mfence" ::: "memory"); })
+/* Compiler memory barrier (optimization barrier) */
+#define cmb() ({ asm volatile("" ::: "memory"); })
+/* Partial CPU memory barriers */
+#define rmb() cmb()
+#define wmb() cmb()
+#define wrmb() mb()
+#define rwmb() cmb()
+
+/* Forced barriers, used for string ops, SSE ops, dealing with hardware, or
+ * other places where you avoid 'normal' x86 read/writes (like having an IPI
+ * beat a write) */
+#define mb_f() ({ asm volatile("mfence" ::: "memory"); })
+#define rmb_f() ({ asm volatile("lfence" ::: "memory"); })
+#define wmb_f() ({ asm volatile("sfence" ::: "memory"); })
+#define wrmb_f() mb_f()
+#define rwmb_f() mb_f()
+
 typedef void* atomic_t;
+#define ATOMIC_INITIALIZER(val) ((atomic_t)(val))
 
 static inline void atomic_init(atomic_t *number, long val)
 {
@@ -76,47 +97,36 @@ static inline uint32_t atomic_swap_u32(uint32_t *addr, uint32_t val)
     return __sync_lock_test_and_set(addr, val);
 }
 
-/* Full CPU memory barrier */
-#define mb() ({ asm volatile("mfence" ::: "memory"); })
-/* Compiler memory barrier (optimization barrier) */
-#define cmb() ({ asm volatile("" ::: "memory"); })
-/* Partial CPU memory barriers */
-#define rmb() cmb()
-#define wmb() cmb()
-#define wrmb() mb()
-#define rwmb() cmb()
+static inline long atomic_read(atomic_t *number)
+{
+    long val;
+    asm volatile("mov %1,%0" : "=r"(val) : "m"(*number));
+    return val;
+}
 
-/* Forced barriers, used for string ops, SSE ops, dealing with hardware, or
- * other places where you avoid 'normal' x86 read/writes (like having an IPI
- * beat a write) */
-#define mb_f() ({ asm volatile("mfence" ::: "memory"); })
-#define rmb_f() ({ asm volatile("lfence" ::: "memory"); })
-#define wmb_f() ({ asm volatile("sfence" ::: "memory"); })
-#define wrmb_f() mb_f()
-#define rwmb_f() mb_f()
+static inline void atomic_set(atomic_t *number, long val)
+{
+    asm volatile("mov %1,%0" : "=m"(*number) : "r"(val));
+}
 
-#define atomic_read(number)                                 \
-({                                                          \
-  long val;                                                 \
-  asm volatile("movl %1,%0" : "=r"(val) : "m"(*(number)));  \
-  val;                                                      \
-})
+static inline bool atomic_cas(atomic_t *addr, long exp_val, long new_val)
+{
+    return __sync_bool_compare_and_swap(addr, exp_val, new_val);
+}
 
-#define atomic_set(number, val)                             \
-({                                                          \
-  asm volatile("movl %1,%0" : "=m"(*(number)) : "r"(val));  \
-})
-
-#define cmpxchg(ptr, value, comparand)            \
-({                                                \
-  int result;                                     \
-  asm volatile ("lock\n\t"                        \
-		"cmpxchg %2,%1\n"                 \
-		: "=a" (result), "=m" (*ptr)      \
-		: "q" (value), "0" (comparand)    \
-		: "memory");                      \
-  result;                                         \
-})
+/* Adds val to number, so long as number was not zero.  Returns TRUE if the
+ * operation succeeded (added, not zero), returns FALSE if number is zero. */
+static inline bool atomic_add_not_zero(atomic_t *number, long val)
+{
+    long old_num, new_num;
+    do {
+        old_num = atomic_read(number);
+        if (!old_num)
+            return false;
+        new_num = old_num + val;
+    } while (!atomic_cas(number, old_num, new_num));
+    return true;
+}
 
 #define __arch_compare_and_exchange_val_8_acq(mem, newval, oldval) \
   ({ __typeof (*mem) ret;						      \
