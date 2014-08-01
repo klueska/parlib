@@ -114,6 +114,11 @@ static inline bool atomic_cas(atomic_t *addr, long exp_val, long new_val)
     return __sync_bool_compare_and_swap(addr, exp_val, new_val);
 }
 
+static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
+{
+    return (long)__sync_val_compare_and_swap(addr, exp_val, new_val);
+}
+
 /* Adds val to number, so long as number was not zero.  Returns TRUE if the
  * operation succeeded (added, not zero), returns FALSE if number is zero. */
 static inline bool atomic_add_not_zero(atomic_t *number, long val)

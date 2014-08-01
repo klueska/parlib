@@ -18,7 +18,8 @@ LIB_CFILES = \
   @SRCDIR@/uthread.c  \
   @SRCDIR@/syscall.c  \
   @SRCDIR@/alarm.c    \
-  @SRCDIR@/vcore.c
+  @SRCDIR@/vcore.c    \
+  @SRCDIR@/waitfreelist.c
 
 LIB_HFILES = \
   $(LIBNAME)-config.h  \
@@ -32,7 +33,8 @@ LIB_HFILES = \
   @SRCDIR@/uthread.h   \
   @SRCDIR@/syscall.h   \
   @SRCDIR@/alarm.h     \
-  @SRCDIR@/vcore.h
+  @SRCDIR@/vcore.h     \
+  @SRCDIR@/waitfreelist.h
 
 LIB_SFILES = 
 
@@ -99,7 +101,7 @@ parlibincdir = $(includedir)/$(LIBNAME)
 dist_parlibinc_DATA = $(LIB_HFILES)
 
 # Setup parameters to build the test programs
-check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test alarm_test signal_test
+check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test alarm_test signal_test wfl_test
 
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
 lock_test_CFLAGS = $(AM_CFLAGS)
@@ -135,6 +137,11 @@ signal_test_SOURCES =  @TESTSDIR@/signal_test.c
 signal_test_CFLAGS = $(AM_CFLAGS)
 signal_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 signal_test_LDADD = libparlib.la -lpthread
+
+wfl_test_SOURCES = @TESTSDIR@/wfl_test.c
+wfl_test_CFLAGS = $(AM_CFLAGS)
+wfl_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
+wfl_test_LDADD = libparlib.la
 
 if SPHINX_BUILD
 man_MANS = \
