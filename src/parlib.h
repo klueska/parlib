@@ -117,7 +117,8 @@ static inline uintptr_t ROUNDUPPWR2(uintptr_t value)
 }
 
 /* Makes sure func is run exactly once.  Can handle concurrent callers, and
- * other callers spin til the func is complete. */
+ * other callers spin til the func is complete. Do NOT execute a return
+ * statement within func. */
 #define run_once(func)                                                   \
 {                                                                        \
   static bool ran_once = FALSE;                                          \
@@ -137,7 +138,8 @@ static inline uintptr_t ROUNDUPPWR2(uintptr_t value)
   }                                                                      \
 }
 
-/* Unprotected, single-threaded version, makes sure func is run exactly once */
+/* Unprotected, single-threaded version, makes sure func is run exactly once.
+ * Do NOT execute a return statement within func. */
 #define run_once_racy(func)                                                  \
 {                                                                            \
   static bool ran_once = FALSE;                                              \
