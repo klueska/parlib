@@ -332,7 +332,7 @@ void print_slab_cache(struct slab_cache *cp)
 	spinlock_lock(&cp->cache_lock);
 	printf("\nPrinting slab_cache:\n---------------------\n");
 	printf("Name: %s\n", cp->name);
-	printf("Objsize: %lu\n", cp->obj_size);
+	printf("Objsize: %zu\n", cp->obj_size);
 	printf("Align: %d\n", cp->align);
 	printf("Flags: 0x%08x\n", cp->flags);
 	printf("Constructor: %p\n", cp->ctor);
@@ -347,9 +347,9 @@ void print_slab_cache(struct slab_cache *cp)
 void print_slab(struct slab *slab)
 {
 	printf("\nPrinting slab:\n---------------------\n");
-	printf("Objsize: %lu (%p)\n", slab->obj_size, (void*)slab->obj_size);
-	printf("NumBusy: %lu\n", slab->num_busy_obj);
-	printf("Num_total: %lu\n", slab->num_total_obj);
+	printf("Objsize: %zu (%p)\n", slab->obj_size, (void*)slab->obj_size);
+	printf("NumBusy: %zu\n", slab->num_busy_obj);
+	printf("Num_total: %zu\n", slab->num_total_obj);
 	if (slab->obj_size + sizeof(uintptr_t) < SLAB_LARGE_CUTOFF) {
 		printf("Free Small obj: %p\n", &slab->free_small_obj);
 		void *buf = slab->free_small_obj;
