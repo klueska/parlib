@@ -265,16 +265,16 @@ static void __create_vcore(int i)
   }
 #else 
   struct vcore *cvcore = &__vcores[i];
-  cvcore->stack_size = VCORE_MIN_STACK_SIZE;
+  cvcore->stack_size = VCORE_STACK_SIZE;
   cvcore->stack_bottom = __stack_alloc(cvcore->stack_size);
 
   cvcore->tls_desc = allocate_tls();
 #ifdef __i386__
   init_tls(i);
-  cvcore->ldt_entry.entry_number = 6;
-  cvcore->ldt_entry.base_addr = (uintptr_t)cvcore->tls_desc;
+  cvcore->arch_tls_data.entry_number = 6;
+  cvcore->arch_tls_data.base_addr = (uintptr_t)cvcore->tls_desc;
 #elif __x86_64__
-  cvcore->current_tls_base = cvcore->tls_desc;
+  cvcore->arch_tls_data= cvcore->tls_desc;
 #endif
   
   /* Up the vcore count counts and set the flag for allocated until we
@@ -290,7 +290,7 @@ static void __create_vcore(int i)
 
   if(clone(__vcore_trampoline_entry, cvcore->stack_bottom+cvcore->stack_size, 
            clone_flags, (void *)((long int)i), 
-           &cvcore->ptid, CLONE_TLS_PARAM, &cvcore->ptid) == -1) {
+           &cvcore->ptid, CLONE_TLS_PARAM(cvcore->arch_tls_data), &cvcore->ptid) == -1) {
     perror("Error");
     exit(2);
   }
