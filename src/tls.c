@@ -40,8 +40,10 @@ void *allocate_tls(void)
 {
 	extern void *_dl_allocate_tls(void *mem) internal_function;
 	void *tcb = _dl_allocate_tls(NULL);
-	if (!tcb)
-		return 0;
+	if (!tcb) {
+		fprintf(stderr, "could not allocate tls!\n");
+		abort();
+	}
 	/* Make sure the TLS is set up properly - its tcb pointer 
 	 * points to itself. */
 	tcbhead_t *head = (tcbhead_t*)tcb;
