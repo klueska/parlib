@@ -49,12 +49,14 @@
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef void* atomic_t;
+#define ATOMIC_INITIALIZER(val) ((atomic_t)(val))
 
 static inline void atomic_init(atomic_t *number, long val)
 {
@@ -74,6 +76,16 @@ static inline long atomic_swap(atomic_t *addr, long val)
 static inline uint32_t atomic_swap_u32(uint32_t *addr, uint32_t val)
 {
     return __sync_lock_test_and_set(addr, val);
+}
+
+static inline bool atomic_cas(atomic_t *addr, long exp_val, long new_val)
+{
+    return __sync_bool_compare_and_swap(addr, exp_val, new_val);
+}
+
+static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
+{
+    return (long)__sync_val_compare_and_swap(addr, exp_val, new_val);
 }
 
 /* Full CPU memory barrier */
