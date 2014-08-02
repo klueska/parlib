@@ -53,6 +53,7 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 
+#include "parlib.h"
 #include "internal/vcore.h"
 #include "internal/tls.h"
 #include "internal/futex.h"
@@ -76,10 +77,6 @@ struct vcore *__vcores = NULL;
  * the vcore library. */
 void **__vcore_tls_descs = NULL;
 
-/* A map of the currently allocated vcores for this process to their underlying
- * "hardware context" (i.e. pthread_self() id on linux) */
-long __vcore_map[MAX_VCORES];
-
 /* Id of the currently running vcore. */
 __thread int __vcore_id = -1;
 
@@ -101,10 +98,7 @@ __thread void *vcore_saved_tls_desc = NULL;
 __thread bool __in_vcore_context = false;
 
 /* Number of currently allocated vcores. */
-volatile int __num_vcores = 0;
-
-/* Max number of vcores this application has requested. */
-volatile int __max_requested_vcores = 0;
+atomic_t __num_vcores = ATOMIC_INITIALIZER(0);
 
 /* Maximum number of vcores that can ever be allocated. */
 volatile int __max_vcores = 0;
@@ -113,21 +107,41 @@ volatile int __max_vcores = 0;
  * context over to vcore0 */
 static ucontext_t main_context = { 0 };
 
-/* Mutex used to provide mutually exclusive access to our globals. */
-static mcs_lock_t __vcore_mutex = MCS_LOCK_INIT;
-
-/* Stack space to use when a vcore yields without a stack. */
-static __thread void *__vcore_stack = NULL;
+/* Stack space to use when a vcore yields so it has a stack to run setcontext on. */
+static __thread void *__vcore_trans_stack = NULL;
 
 /* Per vcore entery function used when reentering at the top of a vcore's stack */
 static __thread void (*__vcore_reentry_func)(void) = NULL;
-
-/* Flag used to indicate if the original main thread has completely migrated
- * over to a vcore or not.  Required so as not to clobber the stack if
- * the "new" main thread is started on the vcore before the original one
- * is done with all of its stack operations */
-static int original_main_done = false;
  
+/* Generic stack allocation function using mmap */
+static void *__stack_alloc(size_t s)
+{
+  void *stack_bottom = mmap(0, s, PROT_READ|PROT_WRITE|PROT_EXEC,
+                            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  if(stack_bottom == MAP_FAILED) {
+    fprintf(stderr, "vcore: could not mmap stack!\n");
+    exit(1);
+  }
+  return stack_bottom;
+}
+
+/* Generic set affinity function */
+static void __set_affinity(int cpuid)
+{
+  /* Set the proper affinity for this vcore */
+  /* Moved here so that we are assured we are fully on the vcore before doing
+   * any substantial work that makes any glibc library calls (like calling
+   * set_affinity(), which may call malloc underneath). */
+  cpu_set_t c;
+  CPU_ZERO(&c);
+  CPU_SET(cpuid, &c);
+  if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
+    fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
+    exit(1);
+  }
+  sched_yield();
+}
+
 /* Default callback for vcore_entry() */
 static void __vcore_entry()
 {
@@ -144,173 +158,70 @@ __vcore_reenter()
   assert(0);
 }
 
-void vcore_reenter(void (*entry_func)(void))
-{
-  assert(in_vcore_context());
-
-  __vcore_reentry_func = entry_func;
-  set_stack_pointer(vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size);
-  cmb();
-  __vcore_reenter();
-  assert(0);
-}
-
 /* The entry gate of a vcore after it's initial creation. */
-void __vcore_entry_gate()
+static void __vcore_entry_gate()
 {
   assert(__in_vcore_context);
-
-#ifndef PARLIB_VCORE_AS_PTHREAD
-  /* Set the proper affinity for this vcore */
-  /* Moved here so that we are assured we are fully on the vcore before doing
-   * any substantial work that makes any glibc library calls (like calling
-   * set_affinity(), which may call malloc underneath). */
-  cpu_set_t c;
-  CPU_ZERO(&c);
-  CPU_SET(__vcore_id, &c);
-  if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0) {
-    fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
-    exit(1);
-  }
-  sched_yield();
-#endif
-
-  /* Cache a copy of vcoreid so we don't lose track of it over system call
-   * invocations in which TLS might change out from under us. */
   int vcoreid = __vcore_id;
-  mcs_lock_qnode_t qnode = {0};
-  mcs_lock_lock(&__vcore_mutex, &qnode);
-  {
-    /* Check and see if we should wait at the gate. */
-    if (__max_requested_vcores > __num_vcores) {
-      printf("%d not waiting at gate\n", vcoreid);
-      mcs_lock_unlock(&__vcore_mutex, &qnode);
-      goto entry;
-    }
 
-    /* Update vcore counts. */
-    __num_vcores--;
-    __max_requested_vcores--;
-
-    /* Deallocate the thread. */
-    __vcores[vcoreid].allocated = false;
-
-    /* Signal that we are about to wait on the futex. */
-    __vcores[vcoreid].running = false;
-  }
-  mcs_lock_unlock(&__vcore_mutex, &qnode);
-
-#ifdef PARLIB_VCORE_AS_PTHREAD
-  /* Set the entry in the vcore_map to the sentinel value */
-  __vcore_map[vcoreid] = VCORE_UNMAPPED;
-#endif
+  /* Update the vcore counts and set the flag for allocated to false */
+  atomic_set(&__vcores[vcoreid].allocated, false);
+  atomic_add(&__num_vcores, -1);
 
   /* Wait for this vcore to get woken up. */
-  futex_wait(&(__vcores[vcoreid].running), false);
+  futex_wait(&__vcores[vcoreid].allocated, false);
 
-  /* Hard thread is awake. */
-entry:
-  /* Wait for the original main to reach the point of not requiring its stack
-   * anymore.  TODO: Think of a better way to this.  Required for now because
-   * we need to call mcs_lock_unlock() in this thread, which causes a race
-   * for using the main threads stack with the vcore restarting it in
-   * ht_entry(). */
-  while(!original_main_done) 
-    cpu_relax();
-
-  /* Use cached value of vcoreid in case TLS changed out from under us while
-   * waiting for this vcore to get woken up. */
-  assert(__vcores[vcoreid].running == true);
-
-#ifdef PARLIB_VCORE_AS_PTHREAD
-  /* Set the entry in the vcore_map to the pthread_self() id */
-  __vcore_map[vcoreid] = pthread_self();
-#endif
-
-  /* Jump to the vcore's entry point */
+  /* Vcore is awake. Jump to the vcore's entry point */
   vcore_entry();
 
+  /* We never exit a vcore ... we always park them instead. If we did we would
+   * need to take care not to exit the main vcore (experience shows that exits
+   * the application). */
   fprintf(stderr, "vcore: failed to invoke vcore_yield\n");
-
-  /* We never exit a vcore ... we always park them and therefore
-   * we never exit them. If we did we would need to take care not to
-   * exit the main vcore (experience shows that exits the
-   * application) and we should probably detach any created vcores
-   * (but this may be debatable because of our implementation of
-   * htls).
-   */
   exit(1);
 }
 
-#ifdef PARLIB_VCORE_AS_PTHREAD
-void *
-#else
-int 
-#endif
-__vcore_trampoline_entry(void *arg)
+static void __vcore_init(int vcoreid, bool newstack)
 {
-  assert(sizeof(void *) == sizeof(long int));
-  int vcoreid = (int) (long int) arg;
+  /* Set the affinity on this vcore */
+  __set_affinity(vcoreid);
 
   /* Initialize the tls region to be used by this vcore */
   init_tls(vcoreid);
+
+  /* Switch to that tls region */
   set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
 
-  /* Set it that we are in vcore context */
+  /* Set that we are in vcore context */
   __in_vcore_context = true;
 
   /* Assign the id to the tls variable */
   __vcore_id = vcoreid;
 
-  /* If this is the first ht, set ht_saved_ucontext to the main_context in this
-   * guys TLS region. MUST be done here, so in proper TLS */
-  static int once = true;
-  if(once) {
-    once = false;
-    vcore_saved_ucontext = &main_context;
-    vcore_saved_tls_desc = main_tls_desc;
-  }
+  /* Create stack space for the function 'setcontext' jumped to
+   * after an invocation of vcore_yield(). */
+  __vcore_trans_stack = __stack_alloc(getpagesize()) + getpagesize();
 
-  /*
-   * We create stack space for the function 'setcontext' jumped to
-   * after an invocation of ht_yield.
-   */
-  if ((__vcore_stack = alloca(getpagesize())) == NULL) {
-    fprintf(stderr, "vcore: could not allocate space on the stack\n");
-    exit(1);
+  /* Set __vcore_entry_gate() as the entry function for when restarted. */
+  parlib_getcontext(&vcore_context);
+  if (newstack) {
+      vcore_context.uc_stack.ss_sp = __stack_alloc(getpagesize());
+      vcore_context.uc_stack.ss_size = getpagesize();
   }
-
-  __vcore_stack = (void *)(((size_t) __vcore_stack) + getpagesize());
-
-  /*
-   * We need to save a context because experience shows that we seg fault if we
-   * clean up this vcore (i.e. call exit) on a stack other than the
-   * original stack (maybe because certain things are placed on the stack like
-   * cleanup functions).
-   */
-  if (parlib_getcontext(&vcore_context) < 0) {
-    fprintf(stderr, "vcore: could not get context\n");
-    exit(1);
-  }
-
-  if ((vcore_context.uc_stack.ss_sp = alloca(getpagesize())) == NULL) {
-    fprintf(stderr, "vcore: could not allocate space on the stack\n");
-    exit(1);
-  }
+  vcore_context.uc_link = 0;
+  parlib_makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);
+}
 
 #ifdef PARLIB_VCORE_AS_PTHREAD
-  /* Set up a singal handler for sending a signal to a vcore */
-  struct sigaction act;
-  act.sa_handler = vcore_sigentry;
-  act.sa_flags = SA_NODEFER;
-  sigemptyset(&act.sa_mask);
-  sigaction(SIGUSR1, &act, NULL);
+static void * __vcore_trampoline_entry(void *arg)
+#else
+static int __vcore_trampoline_entry(void *arg)
 #endif
+{
+  /* Initialize the vcore */
+  __vcore_init((long)arg, true);
 
-  vcore_context.uc_stack.ss_size = getpagesize();
-  vcore_context.uc_link = 0;
-
-  parlib_makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);
+  /* Jump to the __vcore_entry_gate() and wait to be allocated */
   parlib_setcontext(&vcore_context);
 
   /* We never exit a vcore ... we always park them and therefore
@@ -320,14 +231,8 @@ __vcore_trampoline_entry(void *arg)
    * (but this may be debatable because of our implementation of
    * htls).
    */
-  fprintf(stderr, "vcore: failed to invoke vcore_yield\n");
+  fprintf(stderr, "vcore: something is really screwed up if we get here!\n");
   exit(1);
-}
-
-void vcore_signal(int vcoreid) {
-#ifdef PARLIB_VCORE_AS_PTHREAD
-	pthread_kill(__vcore_map[vcoreid], SIGUSR1);
-#endif
 }
 
 static void __create_vcore(int i)
@@ -336,15 +241,7 @@ static void __create_vcore(int i)
   struct vcore *cht = &__vcores[i];
   pthread_attr_t attr;
   pthread_attr_init(&attr);
-  cpu_set_t c;
-  CPU_ZERO(&c);
-  CPU_SET(i, &c);
-  if ((errno = pthread_attr_setaffinity_np(&attr,
-                                    sizeof(cpu_set_t),
-                                    &c)) != 0) {
-    fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
-    exit(1);
-  }
+
   if ((errno = pthread_attr_setstacksize(&attr, 4*PTHREAD_STACK_MIN)) != 0) {
     fprintf(stderr, "vcore: could not set stack size of underlying pthread\n");
     exit(1);
@@ -354,18 +251,12 @@ static void __create_vcore(int i)
     exit(1);
   }
   
-  /* Set the created flag for the thread we are about to spawn off */
-  cht->created = true;
+  /* Up the vcore count counts and set the flag for allocated until we
+   * get a chance to stop the thread and deallocate it in its entry gate */
+  atomic_add(&__num_vcores, 1);
 
-  /* Also up the thread counts and set the flags for allocated and running
-   * until we get a chance to stop the thread and deallocate it in its entry
-   * gate */
-  cht->allocated = true;
-  cht->running = true;
-  __num_vcores++;
-  __max_requested_vcores++;
-
-  if ((errno = pthread_create(&cht->thread,
+  pthread_t thread;
+  if ((errno = pthread_create(&thread,
                               &attr,
                               __vcore_trampoline_entry,
                               (void *) (long int) i)) != 0) {
@@ -375,18 +266,9 @@ static void __create_vcore(int i)
 #else 
   struct vcore *cvcore = &__vcores[i];
   cvcore->stack_size = VCORE_MIN_STACK_SIZE;
+  cvcore->stack_bottom = __stack_alloc(cvcore->stack_size);
 
-  cvcore->stack_bottom = mmap(0, cvcore->stack_size,
-                              PROT_READ|PROT_WRITE|PROT_EXEC,
-                              MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-  if(cvcore->stack_bottom == MAP_FAILED) {
-    fprintf(stderr, "vcore: could not set stack size of underlying vcore\n");
-    exit(1);
-  }
-  if((cvcore->tls_desc = allocate_tls()) == NULL) {
-    fprintf(stderr, "vcore: could not allocate tls for underlying vcore\n");
-    exit(1);
-  }
+  cvcore->tls_desc = allocate_tls();
 #ifdef __i386__
   init_tls(i);
   cvcore->ldt_entry.entry_number = 6;
@@ -395,16 +277,9 @@ static void __create_vcore(int i)
   cvcore->current_tls_base = cvcore->tls_desc;
 #endif
   
-  /* Set the created flag for the thread we are about to spawn off */
-  cvcore->created = true;
-
-  /* Also up the thread counts and set the flags for allocated and running
-   * until we get a chance to stop the thread and deallocate it in its entry
-   * gate */
-  cvcore->allocated = true;
-  cvcore->running = true;
-  __num_vcores++;
-  __max_requested_vcores++;
+  /* Up the vcore count counts and set the flag for allocated until we
+   * get a chance to stop the thread and deallocate it in its entry gate */
+  atomic_add(&__num_vcores, 1);
 
   int clone_flags = (CLONE_VM | CLONE_FS | CLONE_FILES 
                      | CLONE_SIGHAND | CLONE_THREAD
@@ -422,92 +297,72 @@ static void __create_vcore(int i)
 #endif
 }
 
-static int __vcore_allocate(int k)
+static int __vcore_request(int requested)
 {
-  int j = 0;
-  for (; k > 0; k--) {
+  if (requested == 0)
+    return 0;
+
+  /* If there is no chance of waking up requested vcores, just bail out */
+  long nvc;
+  do {
+    nvc = atomic_read(&__num_vcores);
+    if(requested > (__max_vcores - nvc))
+      return -1;
+  } while (!atomic_cas(&__num_vcores, nvc, nvc + requested));
+
+  /* Otherwise try and reserve requested vcores for waking up */
+  int reserved = 0;
+  while (1) {
     for (int i = 0; i < __max_vcores; i++) {
-      assert(__vcores[i].created);
-      if (!__vcores[i].allocated) {
-        assert(__vcores[i].running == false);
-        __vcores[i].allocated = true;
-        __vcores[i].running = true;
-        futex_wakeup_one(&(__vcores[i].running));
-        j++;
-        break;
+      if (atomic_read(&__vcores[i].allocated) == false) {
+        if (atomic_swap(&__vcores[i].allocated, true) == false) {
+          futex_wakeup_one(&__vcores[i].allocated);
+          if (++reserved == requested)
+            return 0;
+        }
       }
     }
   }
-  return j;
 }
 
-static int __vcore_request(int k)
+void vcore_reenter(void (*entry_func)(void))
 {
-  /* Short circuit if k == 0 */
-  if(k == 0)
-    return 0;
+  assert(in_vcore_context());
 
-  /* Determine how many vcores we can allocate. */
-  int available = __max_vcores - __max_requested_vcores;
-  k = available >= k ? k : available;
-
-  /* Update vcore counts. */
-  __max_requested_vcores += k;
-
-  /* Allocate as many as known available. */
-  k = __max_requested_vcores - __num_vcores;
-  int j = __vcore_allocate(k);
-  if(k != j) {
-    printf("&k, %p, k: %d\n", &k, k);
-  }
-  assert(k == j);
-
-  /* Update vcore counts. */
-  __num_vcores += j;
-
-  return k;
+  __vcore_reentry_func = entry_func;
+  set_stack_pointer(vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size);
+  cmb();
+  __vcore_reenter();
+  assert(0);
 }
 
 int vcore_request(int k)
 {
-  int vcores = 0;
-  // Always access the qnode through the qnode_ptr variable.  The reasons are
-  // made clearer below. In the normal path we will just acquire and release
-  // using this qnode.
-  mcs_lock_qnode_t qnode = {0};
-  mcs_lock_lock(&__vcore_mutex, &qnode);
-  {
-    if (k == 0) {
-      mcs_lock_unlock(&__vcore_mutex, &qnode);
-      return 0;
-    } else {
-      /* If this is the first vcore requested, do something special */
-      static int once = true;
-      if(once) {
-        cmb();
-        parlib_getcontext(&main_context);
-        cmb();
-        if(once) {
-          once = false;
-          __vcore_request(1);
-          /* Don't use the stack anymore! */
-		  /* This is also my poor man's lock to ensure the main context is not
-		   * restored until after I'm done using the stack and this "version"
-		   * of the main thread goes to sleep forever */
-          original_main_done = true;
-          /* Futex calls are forced inline */
-          futex_wait(&original_main_done, true);
-          assert(0);
-        }
-        vcores = 1;
-        k -=1;
-      }
-      /* Put in the rest of the request as normal */
-      vcores += __vcore_request(k);
+  if (k == 0)
+    return 0;
+
+  /* If this is the first vcore requested, do something special */
+  run_once_racy(
+    volatile bool once = false;
+    parlib_getcontext(&main_context);
+
+    if (!once) {
+      once = true;
+      /* Update the vcore counts and set the flag for allocated */
+      atomic_set(&__vcores[0].allocated, true);
+      atomic_set(&__num_vcores, 1);
+
+      /* Vcore is awake. Jump to the vcore's entry point at the top of the
+       * vcore stack. */
+      set_tls_desc(__vcore_tls_descs[0], 0);
+      vcore_saved_ucontext = &main_context;
+      vcore_saved_tls_desc = main_tls_desc;
+      vcore_reenter(vcore_entry);
     }
-  }
-  mcs_lock_unlock(&__vcore_mutex, &qnode);
-  return 0;
+    k -=1;
+  )
+
+  return __vcore_request(k);
 }
 
 void vcore_yield()
@@ -515,13 +370,14 @@ void vcore_yield()
   /* Clear out the saved ht_saved_context and ht_saved_tls_desc variables */
   vcore_saved_ucontext = NULL;
   vcore_saved_tls_desc = NULL;
+
 #ifndef PARLIB_NO_UTHREAD_TLS
   /* Restore the TLS associated with this vcore's context */
   set_tls_desc(__vcore_tls_descs[__vcore_id], __vcore_id);
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
-  set_stack_pointer(__vcore_stack);
+  set_stack_pointer(__vcore_trans_stack);
   /* Go back to the ht entry gate */
   parlib_setcontext(&vcore_context);
 }
@@ -529,62 +385,43 @@ void vcore_yield()
 int vcore_lib_init()
 {
   /* Make sure this only runs once */
-  static bool initialized = false;
-  if (initialized)
-      return 0;
-  initialized = true;
+  run_once(
+    /* Make sure the tls subsystem is up and running */
+    assert(!tls_lib_init());
 
-  /* Temporarily set this main thread to be in vcore context while we
-   * create all of our real vcores and move over to them. */
-  __in_vcore_context = true;
+    /* Get the number of available vcores in the system */
+    char *limit = getenv("VCORE_LIMIT");
+    if (limit != NULL) {
+      __max_vcores = atoi(limit);
+    } else {
+      __max_vcores = get_nprocs();
+    }
 
-  /* Make sure the vcore subsystem is up and running */
-  assert(!tls_lib_init());
+    /* Allocate the structs containing meta data about the vcores
+     * themselves. Never freed though.  Just freed automatically when the program
+     * dies since vcores should be alive for the entire lifetime of the
+     * program. */
+    __vcores = malloc(sizeof(struct vcore) * __max_vcores);
+    __vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
 
-  /* Get the number of available vcores in the system */
-  char *limit = getenv("VCORE_LIMIT");
-  if (limit != NULL) {
-    __max_vcores = atoi(limit);
-  } else {
-    __max_vcores = get_nprocs();  
-  }
+    if (__vcores == NULL || __vcore_tls_descs == NULL) {
+      fprintf(stderr, "vcore: failed to initialize vcores\n");
+      exit(1);
+    }
 
-  /* Allocate the structs containing meta data about the vcores
-   * themselves. Never freed though.  Just freed automatically when the program
-   * dies since vcores should be alive for the entire lifetime of the
-   * program. */
-  __vcores = malloc(sizeof(struct vcore) * __max_vcores);
-  __vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
+    /* Initialize zeroth vcore (i.e., us). */
+    set_tls_desc(allocate_tls(), 0);
+      __vcore_init(0, true);
+    set_tls_desc(main_tls_desc, 0);
 
-  if (__vcores == NULL || __vcore_tls_descs == NULL) {
-    fprintf(stderr, "vcore: failed to initialize vcores\n");
-    exit(1);
-  }
-
-  /* Initialize. */
-  for (int i = 0; i < __max_vcores; i++) {
-    __vcores[i].created = true;
-    __vcores[i].allocated = true;
-    __vcores[i].running = true;
-  }
-
-  /* Create all the vcores up front */
-  for (int i = 0; i < __max_vcores; i++) {
-    /* Create all the vcores */
-    __create_vcore(i);
-
-	/* Make sure the threads have all started and are ready to be allocated
-     * before moving on */
-    while (__vcores[i].running == true)
+    /* Create other vcores. */
+    for (int i = 1; i < __max_vcores; i++) {
+      __create_vcore(i);
+    }
+    /* Wait until they have parked. */
+    while (atomic_read(&__num_vcores) > 0)
       cpu_relax();
-  }
-
-  /* Initialize the vcore_map to a sentinel value */
-  for (int i=0; i < MAX_VCORES; i++)
-    __vcore_map[i] = VCORE_UNMAPPED;
-
-  /* Reset __in_vcore_context to false */
-  __in_vcore_context = false;
+  )
   return 0;
 }
 

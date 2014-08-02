@@ -31,6 +31,7 @@
 #include "arch.h"
 #include "parlib-config.h"
 #include "internal/tls.h"
+#include "atomic.h"
 
 #ifdef PARLIB_VCORE_AS_PTHREAD
   #include <pthread.h>
@@ -40,18 +41,13 @@
 
 struct vcore {
   /* For bookkeeping */
-  bool created __attribute__((aligned (ARCH_CL_SIZE)));
-  bool allocated __attribute__((aligned (ARCH_CL_SIZE)));
-  bool running __attribute__((aligned (ARCH_CL_SIZE)));
+  atomic_t allocated;
 
   /* Architecture-specific TLS context information, e.g. LDT on IA-32 or
      the address of the TCB on other ISAs. */
   arch_tls_data_t arch_tls_data;
   
-#ifdef PARLIB_VCORE_AS_PTHREAD
-  /* The linux pthread associated with this vcore */
-  pthread_t thread;
-#else
+#ifndef PARLIB_VCORE_AS_PTHREAD
   /* Thread properties when running in vcore context: stack + TLS stuff */
   pid_t ptid;
   void *stack_bottom;

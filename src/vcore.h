@@ -57,10 +57,6 @@ extern "C" {
 struct vcore;
 typedef struct vcore vcore_t;
 
-/* A map of the currently allocated vcores for this process to their underlying
- * "hardware context" or physical core */
-extern long __vcore_map[MAX_VCORES];
-
 /* Array of vcores */
 extern vcore_t *__vcores;
 
@@ -138,8 +134,8 @@ static inline int vcore_id(void)
  */
 static inline size_t num_vcores(void)
 {
-	extern volatile int __num_vcores;
-	return __num_vcores;
+	extern atomic_t __num_vcores;
+	return atomic_read(&__num_vcores);
 }
 
 /**
