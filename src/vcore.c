@@ -200,13 +200,13 @@ static void __vcore_init(int vcoreid, bool newstack)
 
   /* Create stack space for the function 'setcontext' jumped to
    * after an invocation of vcore_yield(). */
-  __vcore_trans_stack = __stack_alloc(getpagesize()) + getpagesize();
+  __vcore_trans_stack = __stack_alloc(VCORE_STACK_SIZE) + VCORE_STACK_SIZE;
 
   /* Set __vcore_entry_gate() as the entry function for when restarted. */
   parlib_getcontext(&vcore_context);
   if (newstack) {
-      vcore_context.uc_stack.ss_sp = __stack_alloc(getpagesize());
-      vcore_context.uc_stack.ss_size = getpagesize();
+      vcore_context.uc_stack.ss_sp = __stack_alloc(VCORE_STACK_SIZE);
+      vcore_context.uc_stack.ss_size = VCORE_STACK_SIZE;
   }
   vcore_context.uc_link = 0;
   parlib_makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);

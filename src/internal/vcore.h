@@ -35,9 +35,12 @@
 
 #ifdef PARLIB_VCORE_AS_PTHREAD
   #include <pthread.h>
+  #include "limits.h"
+  #define VCORE_STACK_SIZE (4*PTHREAD_STACK_MIN)
+#else
+  #define VCORE_STACK_SIZE (16*PGSIZE)
 #endif
 
-#define VCORE_MIN_STACK_SIZE (3*PGSIZE)
 
 struct vcore {
   /* For bookkeeping */
