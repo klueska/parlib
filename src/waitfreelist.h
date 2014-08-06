@@ -27,6 +27,13 @@ void wfl_insert(struct wfl *list, void *data);
 void *wfl_remove(struct wfl *list);
 size_t wfl_remove_all(struct wfl *list, void *data);
 
+/* Iterate over list.  Safe w.r.t. inserts, but not w.r.t. removals. */
+#define wfl_foreach_unsafe(elm, list) \
+  for (struct wfl_entry *_p = (list)->head; \
+       elm = _p == NULL ? NULL : _p->data, _p != NULL; \
+       _p = _p->next) \
+    if (elm)
+
 #ifdef __cplusplus
 }
 #endif
