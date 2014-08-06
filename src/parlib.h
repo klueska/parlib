@@ -60,6 +60,11 @@ enum {
 	PG_RDWR   = 6,
 };
 
+/* Function to obtain the main thread's stack bottom and size. Must be called
+ * while running on the main thread, otherwise the values returned are
+ * undefined. */
+void parlib_get_main_stack(void **bottom, size_t *size);
+
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 
 #define FOR_CIRC_BUFFER(next, size, var) \

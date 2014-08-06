@@ -19,6 +19,7 @@ LIB_CFILES = \
   @SRCDIR@/syscall.c  \
   @SRCDIR@/alarm.c    \
   @SRCDIR@/vcore.c    \
+  @SRCDIR@/parlib.c   \
   @SRCDIR@/waitfreelist.c
 
 LIB_HFILES = \
