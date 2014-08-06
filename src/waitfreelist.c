@@ -105,10 +105,9 @@ void wfl_insert(struct wfl *list, void *data)
 void *wfl_remove(struct wfl *list)
 {
   for (struct wfl_entry *p = list->head; p != NULL; p = p->next) {
-    void *data = p->data;
-    if (data != NULL) {
-      void *newval = __sync_val_compare_and_swap(&p->data, data, NULL);
-      if (data == newval)
+    if (p->data != NULL) {
+      void *data = atomic_swap_ptr(&p->data, 0);
+      if (data != NULL)
         return data;
     }
   }
