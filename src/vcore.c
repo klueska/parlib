@@ -238,7 +238,6 @@ static int __vcore_trampoline_entry(void *arg)
 static void __create_vcore(int i)
 {
 #ifdef PARLIB_VCORE_AS_PTHREAD
-  struct vcore *cht = &__vcores[i];
   pthread_attr_t attr;
   pthread_attr_init(&attr);
 
