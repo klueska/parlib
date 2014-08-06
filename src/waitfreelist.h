@@ -25,6 +25,7 @@ size_t wfl_capacity(struct wfl *list);
 size_t wfl_size(struct wfl *list);
 void wfl_insert(struct wfl *list, void *data);
 void *wfl_remove(struct wfl *list);
+size_t wfl_remove_all(struct wfl *list, void *data);
 
 #ifdef __cplusplus
 }

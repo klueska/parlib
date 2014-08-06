@@ -113,3 +113,13 @@ void *wfl_remove(struct wfl *list)
   }
   return NULL;
 }
+
+size_t wfl_remove_all(struct wfl *list, void *data)
+{
+  size_t n = 0;
+  for (struct wfl_entry *p = list->head; p != NULL; p = p->next) {
+    if (p->data == data)
+      n += __sync_bool_compare_and_swap(&p->data, data, NULL);
+  }
+  return n;
+}
