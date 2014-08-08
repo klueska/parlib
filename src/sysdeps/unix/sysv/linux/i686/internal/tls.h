@@ -23,7 +23,6 @@
 #define PARLIB_I386_TLS_H
 
 #include "assert.h"
-#include "glibc-tls.h"
 #include <unistd.h>
 #include <sys/syscall.h>
 

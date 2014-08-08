@@ -27,7 +27,6 @@
 #include <sys/syscall.h>
 
 #include "arch.h"
-#include "glibc-tls.h"
 
 #include <asm/prctl.h>
 #include <sys/prctl.h>

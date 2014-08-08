@@ -20,10 +20,12 @@
 
 #include <stddef.h>
 #include <sys/syscall.h>
+#include <pthread.h>
 
 #include "internal/vcore.h"
 #include "internal/tls.h"
 #include "internal/assert.h"
+#include "internal/futex.h"
 #include "atomic.h"
 #include "tls.h"
 #include "vcore.h"
@@ -38,25 +40,46 @@ __thread void *current_tls_desc = NULL;
  * scheduler needs to create a TLS. */
 void *allocate_tls(void)
 {
-	extern void *_dl_allocate_tls(void *mem) internal_function;
-	void *tcb = _dl_allocate_tls(NULL);
-	if (!tcb) {
-		fprintf(stderr, "could not allocate tls!\n");
-		abort();
-	}
-	/* Make sure the TLS is set up properly - its tcb pointer 
-	 * points to itself. */
-	tcbhead_t *head = (tcbhead_t*)tcb;
-	size_t offset = offsetof(tcbhead_t, multiple_threads);
+  /* This code has gone through many iterations of trying to create tls
+   * regions and get them set up properly so that arbitrary user-level thread
+   * code can make glibc calls safely.  After alot of headaches and trial and
+   * error, I've finally settled on just creating an actual full blown pthread
+   * with a minimal stack to get at a unique tls region that is properly
+   * initialized and safe to make glibc calls using.  With this method, any
+   * user level thread that gets created actually has a pthread backing it
+   * from the perspective of the underlying system, but all we use from this
+   * pthread is its properly initialized tls region.  The pthread itself,
+   * simply spins up and parks itself on a futex until its tls region is no
+   * longer needed. This slows things down on tls creation, but does not
+   * affect any user-level scheduling that may go one above this. */
+  void *start_routine(void *arg)
+  {
+    void **tcb = (void **)arg;
+    *tcb = get_current_tls_base();
+    futex_wakeup_one(tcb);
 
-	/* These fields in the tls_desc need to be set up for linux to work
-	 * properly with TLS. Take a look at how things are done in libc in the
-	 * nptl code for reference. */
-	memcpy(tcb+offset, main_tls_desc+offset, sizeof(tcbhead_t)-offset);
-	head->tcb = tcb;
-	head->self = tcb;
-	head->multiple_threads = true;
+    current_tls_desc = NULL;
+    futex_wait(&current_tls_desc, 0);
+    return NULL;
+  }
+
+  void *tcb = NULL;
+  pthread_t p;
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
+  pthread_create(&p, &attr, start_routine, &tcb);
+  futex_wait(&tcb, 0);
 	return tcb;
+}
+
+/* Free a previously allocated TLS region */
+void free_tls(void *tcb)
+{
+  begin_access_tls_vars(tcb);
+  current_tls_desc = tcb;
+  futex_wakeup_one(&current_tls_desc);
+  end_access_tls_vars();
 }
 
 /* Reinitialize / reset / refresh a TLS to its initial values.  This doesn't do
@@ -66,14 +89,6 @@ void *reinit_tls(void *tcb)
 {
     free_tls(tcb);
     return allocate_tls();
-}
-
-/* Free a previously allocated TLS region */
-void free_tls(void *tcb)
-{
-	extern void _dl_deallocate_tls (void *tcb, bool dealloc_tcb) internal_function;
-	assert(tcb);
-	_dl_deallocate_tls(tcb, 1);
 }
 
 /* Constructor to get a reference to the main thread's TLS descriptor */
