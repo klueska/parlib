@@ -54,11 +54,10 @@ inline static void futex_wait(void *futex, int comparand)
    * it blocks when it is supposed to. */
   while (1) {
     int r = syscall(SYS_futex, futex, FUTEX_WAIT, comparand, NULL, NULL, 0);
-    if (r == 0)
+    if (r == 0 || errno == EWOULDBLOCK)
       break;
     /* If there are any other types of errors, we die */
-    if (!(r == EWOULDBLOCK ||
-        (r == -1 && (errno == EAGAIN || errno == EINTR)))) {
+    if (errno != EINTR) {
       fprintf(stderr, "futex: futex_wait failed");
       exit(1);
     }
