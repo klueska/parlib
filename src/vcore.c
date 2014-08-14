@@ -241,7 +241,7 @@ static void __create_vcore(int i)
   pthread_attr_t attr;
   pthread_attr_init(&attr);
 
-  if ((errno = pthread_attr_setstacksize(&attr, 4*PTHREAD_STACK_MIN)) != 0) {
+  if ((errno = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN)) != 0) {
     fprintf(stderr, "vcore: could not set stack size of underlying pthread\n");
     exit(1);
   }
@@ -254,14 +254,8 @@ static void __create_vcore(int i)
    * get a chance to stop the thread and deallocate it in its entry gate */
   atomic_add(&__num_vcores, 1);
 
-  pthread_t thread;
-  if ((errno = pthread_create(&thread,
-                              &attr,
-                              __vcore_trampoline_entry,
-                              (void *) (long int) i)) != 0) {
-    fprintf(stderr, "vcore: could not allocate underlying vcore\n");
-    exit(2);
-  }
+  /* Actually create the vcore's backing pthread. */
+  internal_pthread_create(&attr, __vcore_trampoline_entry, (void *) (long) i);
 #else 
   struct vcore *cvcore = &__vcores[i];
   cvcore->stack_size = VCORE_STACK_SIZE;
@@ -422,6 +416,40 @@ int vcore_lib_init()
       cpu_relax();
   )
   return 0;
+}
+
+pthread_t internal_pthread_create(pthread_attr_t *attr,
+                                  void *(*start_routine) (void *), void *arg)
+{
+  pthread_t pthread;
+
+  if (attr != NULL) {
+    size_t stack_size;
+    if (pthread_attr_getstacksize(attr, &stack_size) != 0)
+      abort();
+    /* PTHREAD_STACK_MIN is not actually always sufficient because
+     * the static TLS, whose size is program-dependent, is allocated
+     * at the top of the stack.  Determine a sufficient value. */
+    if (stack_size == PTHREAD_STACK_MIN) {
+      static size_t min_stack_size = 0;
+      if (min_stack_size == 0) {
+        min_stack_size = PTHREAD_STACK_MIN;
+        /* We assume pthread_create can only fail due to stack shortage.
+         * Make sure your other attributes are legit! */
+        while (pthread_create(&pthread, attr, start_routine, arg) != 0) {
+          min_stack_size *= 2;
+          pthread_attr_setstacksize(attr, min_stack_size);
+        }
+        return pthread;
+      }
+      if (pthread_attr_setstacksize(attr, min_stack_size) != 0)
+        abort();
+    }
+  }
+
+  if (pthread_create(&pthread, attr, start_routine, arg) != 0)
+    abort();
+  return pthread;
 }
 
 /* Clear pending, and try to handle events that came in between a previous call

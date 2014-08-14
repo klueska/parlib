@@ -65,11 +65,10 @@ void *allocate_tls(void)
   }
 
   void *tcb = NULL;
-  pthread_t p;
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
-  pthread_create(&p, &attr, start_routine, &tcb);
+  internal_pthread_create(&attr, start_routine, &tcb);
   futex_wait(&tcb, 0);
 	return tcb;
 }

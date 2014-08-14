@@ -59,4 +59,7 @@ struct vcore {
 #endif
 };
 
+pthread_t internal_pthread_create(pthread_attr_t *attr,
+                                  void *(*start_routine) (void *), void *arg);
+
 #endif // VCORE_INTERNAL_H
