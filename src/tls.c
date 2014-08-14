@@ -36,6 +36,8 @@ void *main_tls_desc = NULL;
 /* Current tls_desc for each running vcore, used when swapping contexts onto a vcore */
 __thread void *current_tls_desc = NULL;
 
+static __thread int tls_futex = 0;
+
 /* Get a TLS, returns 0 on failure.  Any thread created by a user-level
  * scheduler needs to create a TLS. */
 void *allocate_tls(void)
@@ -58,8 +60,7 @@ void *allocate_tls(void)
     *tcb = get_current_tls_base();
     futex_wakeup_one(tcb);
 
-    current_tls_desc = NULL;
-    futex_wait(&current_tls_desc, 0);
+    futex_wait(&tls_futex, 0);
     return NULL;
   }
 
@@ -77,8 +78,9 @@ void *allocate_tls(void)
 void free_tls(void *tcb)
 {
   begin_access_tls_vars(tcb);
-  current_tls_desc = tcb;
-  futex_wakeup_one(&current_tls_desc);
+  int *tls_futex_addr = &tls_futex;
+  *tls_futex_addr = 1;
+  futex_wakeup_one(tls_futex_addr);
   end_access_tls_vars();
 }
 
