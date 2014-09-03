@@ -165,8 +165,8 @@ static void __vcore_entry_gate()
   int vcoreid = __vcore_id;
 
   /* Update the vcore counts and set the flag for allocated to false */
-  atomic_set(&__vcores[vcoreid].allocated, false);
   atomic_add(&__num_vcores, -1);
+  atomic_set(&__vcores[vcoreid].allocated, false);
 
   /* Wait for this vcore to get woken up. */
   futex_wait(&__vcores[vcoreid].allocated, false);
@@ -252,6 +252,7 @@ static void __create_vcore(int i)
   
   /* Up the vcore count counts and set the flag for allocated until we
    * get a chance to stop the thread and deallocate it in its entry gate */
+  atomic_set(&__vcores[i].allocated, true);
   atomic_add(&__num_vcores, 1);
 
   /* Actually create the vcore's backing pthread. */
