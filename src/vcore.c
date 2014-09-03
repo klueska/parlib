@@ -402,15 +402,17 @@ int vcore_lib_init()
       exit(1);
     }
 
-    /* Initialize zeroth vcore (i.e., us). */
-    set_tls_desc(allocate_tls(), 0);
-      __vcore_init(0, true);
-    set_tls_desc(main_tls_desc, 0);
-
     /* Create other vcores. */
     for (int i = 1; i < __max_vcores; i++) {
       __create_vcore(i);
     }
+
+    /* Initialize zeroth vcore (i.e., us).  We do this last so that the
+     * pthreads that correspond to the vcores are contiguous in GDB. */
+    set_tls_desc(allocate_tls(), 0);
+      __vcore_init(0, true);
+    set_tls_desc(main_tls_desc, 0);
+
     /* Wait until they have parked. */
     while (atomic_read(&__num_vcores) > 0)
       cpu_relax();
