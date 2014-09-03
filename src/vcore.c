@@ -353,7 +353,7 @@ int vcore_request(int k)
       vcore_saved_tls_desc = main_tls_desc;
       vcore_reenter(vcore_entry);
     }
-    k -=1;
+    k--;
   )
 
   return __vcore_request(k);

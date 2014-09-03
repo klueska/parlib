@@ -4,17 +4,17 @@
  * Kevin Klues <klueska@cs.berkeley.edu>
  *
  * This file is part of Parlib.
- * 
+ *
  * Parlib is free software: you can redistribute it and/or modify
  * it under the terms of the Lesser GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Parlib is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * Lesser GNU General Public License for more details.
- * 
+ *
  * See COPYING.LESSER for details on the GNU Lesser General Public License.
  * See COPYING for details on the GNU General Public License.
  */
@@ -47,7 +47,7 @@ struct uthread {
     int state;
 #ifndef PARLIB_NO_UTHREAD_TLS
     void *tls_desc;
-#else 
+#else
     void *dtls_data;
 #endif
     struct syscall *sysc;
@@ -104,7 +104,7 @@ void run_uthread(struct uthread *uthread) __attribute((noreturn));
 void swap_uthreads(struct uthread *__old, struct uthread *__new);
 
 static inline void
-init_uthread_tf(uthread_t *uth, void (*entry)(void), 
+init_uthread_tf(uthread_t *uth, void (*entry)(void),
                 void *stack_bottom, uint32_t size)
 {
   init_uthread_stack_ARCH(uth, stack_bottom, size);
@@ -117,7 +117,7 @@ init_uthread_tf(uthread_t *uth, void (*entry)(void),
 
   #define uthread_end_access_tls_vars() \
     end_access_tls_vars()
-  
+
   #define uthread_set_tls_var(uthread, name, val)                        \
   {                                                                      \
   	typeof(val) __val = val;                                           \
@@ -125,7 +125,7 @@ init_uthread_tf(uthread_t *uth, void (*entry)(void),
   	name = __val;                                                      \
   	end_access_tls_vars();                                             \
   }
-  
+
   #define uthread_get_tls_var(uthread, name)                             \
   ({                                                                     \
   	typeof(name) val;                                                  \

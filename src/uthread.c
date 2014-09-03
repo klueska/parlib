@@ -4,17 +4,17 @@
  * Kevin Klues <klueska@cs.berkeley.edu>
  *
  * This file is part of Parlib.
- * 
+ *
  * Parlib is free software: you can redistribute it and/or modify
  * it under the terms of the Lesser GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Parlib is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * Lesser GNU General Public License for more details.
- * 
+ *
  * See COPYING.LESSER for details on the GNU Lesser General Public License.
  * See COPYING for details on the GNU General Public License.
  */
@@ -75,10 +75,10 @@ void uthread_lib_init(struct uthread* uthread)
 
 		/* Request some cores ! */
 		while (num_vcores() < 1) {
-		  /* Ask for a core -- this will transition the main thread onto
-					   * vcore 0 once successful */
-		  vcore_request(1);
-		  cpu_relax();
+			/* Ask for a core -- this will transition the main thread onto
+			 * vcore 0 once successful */
+			vcore_request(1);
+			cpu_relax();
 		}
 	);
 	/* We are now running on vcore 0 */
@@ -142,11 +142,9 @@ void uthread_init(struct uthread *uthread)
 		assert(!__uthread_allocate_tls(uthread));
 
 	/* Setup some thread local data for this newly initialized uthread */
-    extern void __ctype_init(void);
-    uthread_begin_access_tls_vars(uthread)
-	  __ctype_init();
-	  current_uthread = uthread;
-    uthread_end_access_tls_vars()
+	uthread_begin_access_tls_vars(uthread)
+	current_uthread = uthread;
+	uthread_end_access_tls_vars()
 #endif
 }
 
@@ -188,12 +186,13 @@ void uthread_has_blocked(struct uthread *uthread, int flags)
 /* Need to have this as a separate, non-inlined function since we clobber the
  * stack pointer before calling it, and don't want the compiler to play games
  * with my hart. */
-static void __attribute__((noinline, noreturn)) 
+static void __attribute__((noinline, noreturn))
 __uthread_yield(void)
 {
 	assert(in_vcore_context());
 
 	struct uthread *uthread = current_uthread;
+
 	/* Do whatever the yielder wanted us to do */
 	assert(uthread->yield_func);
 	uthread->yield_func(uthread, uthread->yield_arg);
@@ -247,7 +246,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
 #else
 	extern __thread bool __in_vcore_context;
-    __in_vcore_context = true;
+	__in_vcore_context = true;
 #endif
 	assert(current_uthread == uthread);	
 	assert(in_vcore_context());	/* technically, we aren't fully in vcore context */
@@ -261,7 +260,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	/* Will jump here when the uthread's trapframe is restarted/popped. */
 yield_return_path:
 	assert(current_uthread == uthread);	
-	printd("[U] Uthread %p returning from a yield on vcore %d with tls %p!\n", 
+	printd("[U] Uthread %p returning from a yield on vcore %d with tls %p!\n",
            current_uthread, vcore_id(), get_tls_desc(vcore_id()));
 }
 
@@ -283,10 +282,10 @@ void hijack_current_uthread(struct uthread *uthread)
 	current_uthread->state = UT_HIJACKED;
 	uthread->state = UT_RUNNING;
 #ifdef PARLIB_NO_UTHREAD_TLS
-    uthread->dtls_data = current_uthread->dtls_data;
+	uthread->dtls_data = current_uthread->dtls_data;
 #else
-    uthread->tls_desc = current_uthread->tls_desc;
-    current_uthread = uthread;
+	uthread->tls_desc = current_uthread->tls_desc;
+	current_uthread = uthread;
 #endif
 	vcore_set_tls_var(current_uthread, uthread);
 }
@@ -296,13 +295,14 @@ void run_current_uthread(void)
 {
 	assert(in_vcore_context());
 	assert(current_uthread);
+	assert(current_uthread->state == UT_RUNNING);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 	assert(current_uthread->tls_desc);
 	set_tls_desc(current_uthread->tls_desc, vcore_id());
 #else
 	extern __thread bool __in_vcore_context;
-    __in_vcore_context = false;
+	__in_vcore_context = false;
 #endif
 	parlib_setcontext(&current_uthread->uc);
 	assert(0);
@@ -324,21 +324,21 @@ void run_uthread(struct uthread *uthread)
  * current uthread in the process */
 void swap_uthreads(struct uthread *__old, struct uthread *__new)
 {
-  volatile bool swap = true;
+	volatile bool swap = true;
 #ifndef PARLIB_NO_UTHREAD_TLS
-  void *tls_desc = get_tls_desc(vcore_id());
+	void *tls_desc = get_tls_desc(vcore_id());
 #endif
-  ucontext_t uc;
-  parlib_getcontext(&uc);
-  cmb();
-  if(swap) {
-    swap = false;
-    memcpy(&__old->uc, &uc, sizeof(ucontext_t));
-    run_uthread(__new);
-  }
-  vcore_set_tls_var(current_uthread, __old);
+	ucontext_t uc;
+	parlib_getcontext(&uc);
+	cmb();
+	if(swap) {
+		swap = false;
+		memcpy(&__old->uc, &uc, sizeof(ucontext_t));
+		run_uthread(__new);
+	}
+	vcore_set_tls_var(current_uthread, __old);
 #ifndef PARLIB_NO_UTHREAD_TLS
-  set_tls_desc(tls_desc, vcore_id());
+	set_tls_desc(tls_desc, vcore_id());
 #endif
 }
 
@@ -375,12 +375,12 @@ static int __uthread_allocate_tls(struct uthread *uthread)
 
 static int __uthread_reinit_tls(struct uthread *uthread)
 {
-    uthread->tls_desc = reinit_tls(uthread->tls_desc);
-    if (!uthread->tls_desc) {
-        errno = ENOMEM;
-        return -1;
-    }
-    return 0;
+	uthread->tls_desc = reinit_tls(uthread->tls_desc);
+	if (!uthread->tls_desc) {
+		errno = ENOMEM;
+		return -1;
+	}
+	return 0;
 }
 
 static void __uthread_free_tls(struct uthread *uthread)
