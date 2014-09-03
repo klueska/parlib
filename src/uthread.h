@@ -25,6 +25,11 @@
 #include "arch.h"
 #include "vcore.h"
 
+/* Thread States */
+#define UT_RUNNING      1
+#define UT_NOT_RUNNING  2
+#define UT_HIJACKED     3
+
 /* Externally blocked thread reasons (for uthread_has_blocked()) */
 #define UTH_EXT_BLK_MUTEX         1
 #define UTH_EXT_BLK_JUSTICE       2   /* whatever.  might need more options */

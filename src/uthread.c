@@ -59,6 +59,7 @@ void uthread_lib_init(struct uthread* uthread)
 		/* Set current_uthread to the uthread passed in, so we have a place to
 		 * save the main thread's context when yielding */
 		current_uthread = uthread;
+		uthread->state = UT_RUNNING;
 	
 #ifndef PARLIB_NO_UTHREAD_TLS
 		/* Associate the main thread's tls with the current tls as well */
@@ -130,9 +131,8 @@ void vcore_sigentry(int sig)
 void uthread_init(struct uthread *uthread)
 {
 #ifndef PARLIB_NO_UTHREAD_TLS
-	/* Make sure we are not in vcore context */
-	// TODO: Need to revisit this since in ROS this assert is still there...
-//	assert(!in_vcore_context());
+	assert(uthread);
+	uthread->state = UT_NOT_RUNNING;
 
 	/* If a tls_desc is already set for this thread, reinit it... */
 	if (uthread->tls_desc)
@@ -221,6 +221,8 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	struct uthread *uthread = current_uthread;
 	volatile bool yielding = TRUE; /* signal to short circuit when restarting */
 	assert(!in_vcore_context());
+	assert(uthread->state == UT_RUNNING);
+	uthread->state = UT_NOT_RUNNING;
 	/* Pass info to ourselves across the uth_yield -> __uth_yield transition. */
 	uthread->yield_func = yield_func;
 	uthread->yield_arg = yield_arg;
@@ -278,7 +280,8 @@ void save_current_uthread(struct uthread *uthread)
 void hijack_current_uthread(struct uthread *uthread)
 {
 	assert(uthread != current_uthread);
-
+	current_uthread->state = UT_HIJACKED;
+	uthread->state = UT_RUNNING;
 #ifdef PARLIB_NO_UTHREAD_TLS
     uthread->dtls_data = current_uthread->dtls_data;
 #else
@@ -310,7 +313,9 @@ void run_uthread(struct uthread *uthread)
 {
 	assert(in_vcore_context());
 	assert(uthread != current_uthread);
+	assert(uthread->state == UT_NOT_RUNNING);
 
+	uthread->state = UT_RUNNING;
 	current_uthread = uthread;
 	run_current_uthread();
 }
