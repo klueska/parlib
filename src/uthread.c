@@ -28,6 +28,7 @@
 #include "arch.h"
 #include "tls.h"
 #include "internal/assert.h"
+#include "internal/vcore.h"
 
 #define printd(...)
 
@@ -251,14 +252,11 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	assert(current_uthread == uthread);	
 	assert(in_vcore_context());	/* technically, we aren't fully in vcore context */
 	/* After this, make sure you don't use local variables. */
-	set_stack_pointer(vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size);
-	cmb();
-	/* Finish yielding in another function. */
-	__uthread_yield();
+	void *sp = vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size;
+	__vcore_reenter(__uthread_yield, sp);
 	/* Should never get here */
-	assert(0);
-	/* Will jump here when the uthread's trapframe is restarted/popped. */
 yield_return_path:
+	/* Will jump here when the uthread's trapframe is restarted/popped. */
 	assert(current_uthread == uthread);	
 	printd("[U] Uthread %p returning from a yield on vcore %d with tls %p!\n",
            current_uthread, vcore_id(), get_tls_desc(vcore_id()));

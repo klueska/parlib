@@ -106,9 +106,6 @@ volatile int __max_vcores = 0;
 /* Global context associated with the main thread.  Used when swapping this
  * context over to vcore0 */
 static ucontext_t main_context = { 0 };
-
-/* Per vcore entery function used when reentering at the top of a vcore's stack */
-static __thread void (*__vcore_reentry_func)(void) = NULL;
  
 /* Generic stack allocation function using mmap */
 static void *__stack_alloc(size_t s)
@@ -148,12 +145,6 @@ extern void vcore_entry() __attribute__ ((weak, alias ("__vcore_entry")));
 
 /* Helper functions used to reenter at the top of a vcore's stack for an
  * arbitrary function */
-static void __attribute__((noinline, noreturn)) 
-__vcore_reenter()
-{
-  __vcore_reentry_func();
-  assert(0);
-}
 
 /* The entry gate of a vcore after it's initial creation. */
 static void __vcore_entry_gate()
@@ -315,12 +306,8 @@ static int __vcore_request(int requested)
 void vcore_reenter(void (*entry_func)(void))
 {
   assert(in_vcore_context());
-
-  __vcore_reentry_func = entry_func;
-  set_stack_pointer(vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size);
-  cmb();
-  __vcore_reenter();
-  assert(0);
+  void *sp = vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size;
+  __vcore_reenter(entry_func, sp);
 }
 
 int vcore_request(int k)

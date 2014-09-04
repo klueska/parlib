@@ -54,6 +54,7 @@ if ARCH_i686
 SYSDEPDIR = $(srcdir)/@SYSDEPDIR_i686@
 
 LIB_SFILES += \
+  @SYSDEPDIR_i686@/reenter.S \
   @SYSDEPDIR_i686@/swapcontext.S \
   @SYSDEPDIR_i686@/setcontext.S  \
   @SYSDEPDIR_i686@/getcontext.S
@@ -72,6 +73,7 @@ if ARCH_x86_64
 SYSDEPDIR = $(srcdir)/@SYSDEPDIR_x86_64@
 
 LIB_SFILES += \
+  @SYSDEPDIR_x86_64@/reenter.S \
   @SYSDEPDIR_x86_64@/swapcontext.S \
   @SYSDEPDIR_x86_64@/setcontext.S  \
   @SYSDEPDIR_x86_64@/getcontext.S

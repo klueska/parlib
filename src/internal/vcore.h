@@ -62,4 +62,8 @@ struct vcore {
 pthread_t internal_pthread_create(pthread_attr_t *attr,
                                   void *(*start_routine) (void *), void *arg);
 
+/* Architecture-specific function to reenter atop the stack. */
+extern void __attribute__((noinline,noreturn))
+  __vcore_reenter(void (*func)(void), void *sp);
+
 #endif // VCORE_INTERNAL_H

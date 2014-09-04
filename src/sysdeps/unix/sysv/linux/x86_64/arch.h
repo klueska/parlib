@@ -42,19 +42,6 @@ typedef struct ucontext uthread_context_t;
 #define PGSIZE getpagesize()
 #define ARCH_CL_SIZE 64
 
-/* Make sure you subtract off/save enough space at the top of the stack for
- * whatever you compiler might want to use when calling a noreturn function or
- * to handle a HW spill or whatever. */
-static __inline void __attribute__((always_inline))
-set_stack_pointer(void* sp)
-{
-#ifdef __i386__ 
-	asm volatile ("mov %0,%%esp" : : "r"(sp) : "memory","esp");
-#elif __x86_64__ 
-	asm volatile ("mov %0,%%rsp" : : "r"(sp) : "memory","rsp");
-#endif
-}
-
 static __inline void
 breakpoint(void)
 {
