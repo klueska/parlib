@@ -107,9 +107,6 @@ volatile int __max_vcores = 0;
  * context over to vcore0 */
 static ucontext_t main_context = { 0 };
 
-/* Stack space to use when a vcore yields so it has a stack to run setcontext on. */
-static __thread void *__vcore_trans_stack = NULL;
-
 /* Per vcore entery function used when reentering at the top of a vcore's stack */
 static __thread void (*__vcore_reentry_func)(void) = NULL;
  
@@ -197,10 +194,6 @@ static void __vcore_init(int vcoreid, bool newstack)
 
   /* Assign the id to the tls variable */
   __vcore_id = vcoreid;
-
-  /* Create stack space for the function 'setcontext' jumped to
-   * after an invocation of vcore_yield(). */
-  __vcore_trans_stack = __stack_alloc(VCORE_STACK_SIZE) + VCORE_STACK_SIZE;
 
   /* Set __vcore_entry_gate() as the entry function for when restarted. */
   parlib_getcontext(&vcore_context);
@@ -371,8 +364,6 @@ void vcore_yield()
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
-  set_stack_pointer(__vcore_trans_stack);
-  /* Go back to the ht entry gate */
   parlib_setcontext(&vcore_context);
 }
 
