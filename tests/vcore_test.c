@@ -55,7 +55,9 @@ void vcore_entry()
   }
 
   printf_safe("entry %d, num_vcores: %ld\n", vcore_id(), num_vcores());
-  vcore_request(1);
+  while (vcore_request(max_vcores() - num_vcores()) != 0 && vcore_id() % 2 == 0)
+    ;
+
   vcore_yield();
 }
 
