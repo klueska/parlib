@@ -29,6 +29,7 @@
 #define PARLIB_PARLIB_H 1
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <sys/time.h>
@@ -64,6 +65,8 @@ enum {
  * while running on the main thread, otherwise the values returned are
  * undefined. */
 void parlib_get_main_stack(void **bottom, size_t *size);
+
+#define CACHE_LINE_ALIGNED __attribute__((aligned(ARCH_CL_SIZE)))
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 
@@ -120,6 +123,20 @@ static inline uintptr_t ROUNDUPPWR2(uintptr_t value)
 {
 	return 1 << LOG2_UP(value);
 }
+
+#define parlib_malloc(size) \
+({ \
+  void *p = malloc(size); \
+  if (p == NULL) abort(); \
+  p; \
+})
+
+#define parlib_aligned_alloc(align, size) \
+({ \
+  void *p; \
+  if (posix_memalign(&p, (align), (size))) abort(); \
+  p; \
+})
 
 /* Makes sure func is run exactly once.  Can handle concurrent callers, and
  * other callers spin til the func is complete. Do NOT execute a return
