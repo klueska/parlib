@@ -167,13 +167,10 @@ static void __vcore_entry_gate()
   exit(1);
 }
 
-static void __vcore_init(int vcoreid, bool newstack)
+static void __vcore_init(int vcoreid)
 {
   /* Set the affinity on this vcore */
   __set_affinity(vcoreid);
-
-  /* Initialize the tls region to be used by this vcore */
-  init_tls(vcoreid);
 
   /* Switch to that tls region */
   set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
@@ -186,10 +183,8 @@ static void __vcore_init(int vcoreid, bool newstack)
 
   /* Set __vcore_entry_gate() as the entry function for when restarted. */
   parlib_getcontext(&vcore_context);
-  if (newstack) {
-      vcore_context.uc_stack.ss_sp = __stack_alloc(VCORE_STACK_SIZE);
-      vcore_context.uc_stack.ss_size = VCORE_STACK_SIZE;
-  }
+  vcore_context.uc_stack.ss_sp = __stack_alloc(VCORE_STACK_SIZE);
+  vcore_context.uc_stack.ss_size = VCORE_STACK_SIZE;
   vcore_context.uc_link = 0;
   parlib_makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);
 }
@@ -200,8 +195,13 @@ static void * __vcore_trampoline_entry(void *arg)
 static int __vcore_trampoline_entry(void *arg)
 #endif
 {
+  uint32_t vcoreid = (uintptr_t)arg;
+
+  /* Initialize the tls region to be used by this vcore */
+  init_tls(get_current_tls_base(), vcoreid);
+
   /* Initialize the vcore */
-  __vcore_init((long)arg, true);
+  __vcore_init(vcoreid);
 
   /* Jump to the __vcore_entry_gate() and wait to be allocated */
   parlib_setcontext(&vcore_context);
@@ -386,8 +386,8 @@ int vcore_lib_init()
 
     /* Initialize zeroth vcore (i.e., us).  We do this last so that the
      * pthreads that correspond to the vcores are contiguous in GDB. */
-    set_tls_desc(allocate_tls(), 0);
-      __vcore_init(0, true);
+    init_tls(allocate_tls(), 0);
+    __vcore_init(0);
     set_tls_desc(main_tls_desc, 0);
 
     /* Wait until they have parked. */

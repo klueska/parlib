@@ -47,7 +47,7 @@ int tls_lib_init();
 void *allocate_tls(void);
 
 /* Initialize tls for use by a vcore */
-void init_tls(uint32_t vcoreid);
+void init_tls(void *tcb, uint32_t vcoreid);
 
 /* Reinitialize an already allocated TLS, returns 0 on failure.  */
 void *reinit_tls(void *tcb);

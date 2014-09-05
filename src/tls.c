@@ -108,16 +108,10 @@ int tls_lib_init()
 }
 
 /* Initialize tls for use in this vcore */
-void init_tls(uint32_t vcoreid)
+void init_tls(void *tcb, uint32_t vcoreid)
 {
-	/* Get a reference to the current TLS region in the GDT */
-	void *tcb = get_current_tls_base();
-	assert(tcb);
-
   init_arch_tls_data(&__vcores[vcoreid].arch_tls_data, tcb, vcoreid);
-
-	/* Set the tls_desc in the tls_desc array */
-	__vcore_tls_descs[vcoreid] = tcb;
+  __vcore_tls_descs[vcoreid] = tcb;
 }
 
 /* Passing in the vcoreid, since it'll be in TLS of the caller */
