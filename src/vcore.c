@@ -52,6 +52,7 @@
 #include <sys/sysinfo.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
+#include <pthread.h>
 
 #include "parlib.h"
 #include "internal/vcore.h"
@@ -62,12 +63,6 @@
 #include "tls.h"
 #include "vcore.h"
 #include "mcs.h"
-
-#ifdef PARLIB_VCORE_AS_PTHREAD
-#include <pthread.h>
-#else
-#include <sched.h>
-#endif
 
 /* Array of vcores using clone to masquerade. */
 struct vcore *__vcores = NULL;
@@ -189,11 +184,7 @@ static void __vcore_init(int vcoreid)
   parlib_makecontext(&vcore_context, (void (*) ()) __vcore_entry_gate, 0);
 }
 
-#ifdef PARLIB_VCORE_AS_PTHREAD
 static void * __vcore_trampoline_entry(void *arg)
-#else
-static int __vcore_trampoline_entry(void *arg)
-#endif
 {
   uint32_t vcoreid = (uintptr_t)arg;
 
@@ -219,7 +210,6 @@ static int __vcore_trampoline_entry(void *arg)
 
 static void __create_vcore(int i)
 {
-#ifdef PARLIB_VCORE_AS_PTHREAD
   pthread_attr_t attr;
   pthread_attr_init(&attr);
 
@@ -239,38 +229,6 @@ static void __create_vcore(int i)
 
   /* Actually create the vcore's backing pthread. */
   internal_pthread_create(&attr, __vcore_trampoline_entry, (void *) (long) i);
-#else 
-  struct vcore *cvcore = &__vcores[i];
-  cvcore->stack_size = VCORE_STACK_SIZE;
-  cvcore->stack_bottom = __stack_alloc(cvcore->stack_size);
-
-  cvcore->tls_desc = allocate_tls();
-#ifdef __i386__
-  init_tls(i);
-  cvcore->arch_tls_data.entry_number = 6;
-  cvcore->arch_tls_data.base_addr = (uintptr_t)cvcore->tls_desc;
-#elif __x86_64__
-  cvcore->arch_tls_data= cvcore->tls_desc;
-#endif
-  
-  /* Up the vcore count counts and set the flag for allocated until we
-   * get a chance to stop the thread and deallocate it in its entry gate */
-  atomic_add(&__num_vcores, 1);
-
-  int clone_flags = (CLONE_VM | CLONE_FS | CLONE_FILES 
-                     | CLONE_SIGHAND | CLONE_THREAD
-                     | CLONE_SETTLS | CLONE_PARENT_SETTID
-                     | CLONE_CHILD_CLEARTID | CLONE_SYSVSEM
-                     | CLONE_DETACHED
-                     | 0);
-
-  if(clone(__vcore_trampoline_entry, cvcore->stack_bottom+cvcore->stack_size, 
-           clone_flags, (void *)((long int)i), 
-           &cvcore->ptid, CLONE_TLS_PARAM(cvcore->arch_tls_data), &cvcore->ptid) == -1) {
-    perror("Error");
-    exit(2);
-  }
-#endif
 }
 
 static int __vcore_request(int requested)

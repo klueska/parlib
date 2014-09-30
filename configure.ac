@@ -112,22 +112,6 @@ AC_ARG_ENABLE([uthread-tls],
   []
 )
 
-# Allow us to disable creating vcores as pthreads, calling clone directly
-AC_ARG_ENABLE([vcore-as-pthread],
-  [AS_HELP_STRING([--disable-vcore-as-pthread],
-    [disable creating vcores as pthreads, calling clone directly])],
-  [
-    if test "x$enable_vcore_as_pthread" = "xyes"; then
-      AC_DEFINE([VCORE_AS_PTHREAD], [1],
-                  [Define to 1 if you want to create vcores as pthreads, instead of using a direct call to clone])
-    fi
-  ],
-  [
-    AC_DEFINE([VCORE_AS_PTHREAD], [1],
-                [Define to 1 if you want to create vcores as pthreads, instead of using a direct call to clone])
-  ]
-)
-
 # Check if we have the sphinx documentation tool installed
 SPHINX_BUILD=`which sphinx-build`
 AM_CONDITIONAL([SPHINX_BUILD], [test x$SPHINX_BUILD != x])

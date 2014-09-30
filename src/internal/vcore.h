@@ -33,14 +33,9 @@
 #include "internal/tls.h"
 #include "atomic.h"
 
-#ifdef PARLIB_VCORE_AS_PTHREAD
-  #include <pthread.h>
-  #include "limits.h"
-  #define VCORE_STACK_SIZE (4*PTHREAD_STACK_MIN)
-#else
-  #define VCORE_STACK_SIZE (16*PGSIZE)
-#endif
-
+#include <pthread.h>
+#include "limits.h"
+#define VCORE_STACK_SIZE (4*PTHREAD_STACK_MIN)
 
 struct vcore {
   /* For bookkeeping */
@@ -49,14 +44,6 @@ struct vcore {
   /* Architecture-specific TLS context information, e.g. LDT on IA-32 or
      the address of the TCB on other ISAs. */
   arch_tls_data_t arch_tls_data;
-  
-#ifndef PARLIB_VCORE_AS_PTHREAD
-  /* Thread properties when running in vcore context: stack + TLS stuff */
-  pid_t ptid;
-  void *stack_bottom;
-  size_t stack_size;
-  void *tls_desc;
-#endif
 };
 
 pthread_t internal_pthread_create(pthread_attr_t *attr,

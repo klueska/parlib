@@ -28,19 +28,8 @@
 #include "vcore.h"
 #include "waitfreelist.h"
 
-#ifndef PARLIB_VCORE_AS_PTHREAD
-#include "spinlock.h"
-spinlock_t printf_lock = SPINLOCK_INITIALIZER;
-#define printf_safe(...)           \
-{                                  \
-  spinlock_lock(&printf_lock);     \
-  printf(__VA_ARGS__);             \
-  spinlock_unlock(&printf_lock);   \
-}
-#else
 #define printf_safe(...)           \
   printf(__VA_ARGS__)
-#endif
 
 #define NUM_VCORES \
   max_vcores()
