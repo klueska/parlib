@@ -41,6 +41,7 @@
  * the proper arch.h file */
 struct uthread {
     uthread_context_t uc;
+    pthread_t pthread;
     void (*yield_func)(struct uthread*, void*);
     void *yield_arg;
     int flags;
