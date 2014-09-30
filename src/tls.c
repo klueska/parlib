@@ -70,7 +70,7 @@ void *allocate_tls(void)
   pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
   internal_pthread_create(&attr, start_routine, &tcb);
   futex_wait(&tcb, 0);
-	return tcb;
+  return tcb;
 }
 
 /* Free a previously allocated TLS region */
