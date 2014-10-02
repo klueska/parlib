@@ -27,25 +27,21 @@
 #include "tls.h"
 #include "vcore.h"
 
-#define printf_safe(...)           \
-  printf(__VA_ARGS__)
-
-#define NUM_VCORES \
-  max_vcores()
-
 void vcore_entry()
 {
   if(vcore_saved_ucontext) {
     void *cuc = vcore_saved_ucontext;
-    printf_safe("Restoring context: entry %d, num_vcores: %ld\n", vcore_id(), num_vcores());
+    printf("Restoring context: entry %d, num_vcores: %ld\n", vcore_id(), num_vcores());
     set_tls_desc(current_tls_desc, vcore_id());
     parlib_setcontext(cuc);
     assert(0);
   }
 
-  printf_safe("entry %d, num_vcores: %ld\n", vcore_id(), num_vcores());
-  while (vcore_request(max_vcores() - num_vcores()) != 0 && vcore_id() % 2 == 0)
-    ;
+  printf("entry %d, num_vcores: %ld\n", vcore_id(), num_vcores());
+
+  do {
+    vcore_request(1) == 0;
+  } while (vcore_id() == 0);
 
   vcore_yield();
 }
@@ -53,10 +49,8 @@ void vcore_entry()
 int main()
 {
   vcore_lib_init();
-  printf_safe("main, max_vcores: %ld\n", max_vcores());
-  vcore_request(NUM_VCORES);
+  printf("main, max_vcores: %ld\n", max_vcores());
   set_tls_desc(__vcore_tls_descs[0], 0);
   vcore_saved_ucontext = NULL;  
   vcore_entry();
 }
-
