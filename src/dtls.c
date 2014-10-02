@@ -84,6 +84,7 @@ static dtls_key_t __allocate_dtls_key()
 
 static void __maybe_free_dtls_key(dtls_key_t key)
 {
+  __sync_fetch_and_add(&key->ref_count, -1);
   if(key->ref_count == 0) {
     spinlock_lock(&__slab_lock);
     slab_cache_free(__dtls_keys_cache, key);
@@ -123,7 +124,6 @@ dtls_key_t dtls_key_create(dtls_dtor_t dtor)
 void dtls_key_delete(dtls_key_t key)
 {
   assert(key);
-  __sync_fetch_and_add(&key->ref_count, -1);
   key->valid = false;
   __maybe_free_dtls_key(key);
 }
@@ -177,7 +177,6 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
         key->dtor(dtls);
       }
     }
-    __sync_fetch_and_add(&key->ref_count, -1);
     __maybe_free_dtls_key(key);
 
     n = TAILQ_NEXT(v, link);
