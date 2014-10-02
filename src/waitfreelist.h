@@ -1,16 +1,18 @@
 #ifndef _PARLIB_WAITFREELIST_H
 #define _PARLIB_WAITFREELIST_H
 
+#include <stdbool.h>
 #include <string.h>
 
-struct wfl_entry {
-  struct wfl_entry *next;
+struct wfl_slot {
+  struct wfl_slot *next;
   void *data;
 };
 
 struct wfl {
-  struct wfl_entry *head;
-  struct wfl_entry first;
+  struct wfl_slot *head;
+  struct wfl_slot first;
+  size_t size;
 };
 
 #define WFL_INITIALIZER(list) {&(list).first, {0, 0}}
@@ -19,17 +21,52 @@ struct wfl {
 extern "C" {
 #endif
 
+/* Initialize a WFL. Memory for the wfl struct must be allocated externally. */
 void wfl_init(struct wfl *list);
-void wfl_destroy(struct wfl *list);
-size_t wfl_capacity(struct wfl *list);
-size_t wfl_size(struct wfl *list);
-void wfl_insert(struct wfl *list, void *data);
+
+/* Cleanup a WFL. Memory for the wfl struct must be freed externally. */
+void wfl_cleanup(struct wfl *list);
+
+/* Insert an item into a WFL. A pointer to the slot where the data is stored in
+ * the WFL is returned. This function will never fail. */
+struct wfl_slot *wfl_insert(struct wfl *list, void *data);
+
+/* Try to insert an item into a specific slot in a WFL. If the slot is already
+ * occupied, return false, indicating a failure. Otherwise return true. */
+bool wfl_insert_into(struct wfl *list, struct wfl_slot *slot, void *data);
+
+/* Try to remove an item from the WFL. If an item is found, return it. If an
+ * item is not found, return NULL. Removals are not synchronized with
+ * insertions (meaning just because we return NULL, doesn't mean the list is
+ * empty if an insertion was happening concurrently). */
 void *wfl_remove(struct wfl *list);
+
+/* Try to remove an item from a specific slot in a WFL. If the slot is empty,
+ * return NULL. This call is also not synchronized with insertions and may not
+ * remove an item if an insertion happens concurrently. */
+void *wfl_remove_from(struct wfl *list, struct wfl_slot *slot);
+
+/* Try to remove all items from a WFL. Return the number of items removed.
+ * Just like the other remove variants, this call is also not synchronized with
+ * insertions, so it may not actually remove everything from the list if
+ * insertions are happening concurrently. */
 size_t wfl_remove_all(struct wfl *list, void *data);
 
-/* Iterate over list.  Safe w.r.t. inserts, but not w.r.t. removals. */
+/* Return the current capacity of a WFL (i.e. how many slots have been
+ * allocated for it). This call is not synchronized with either insertion or
+ * removal, so it is just an estimate of the current capacity. */
+size_t wfl_capacity(struct wfl *list);
+
+/* Return the current size of the WFL (i.e. how many items are currently
+ * present in). This call is not synchronized with either insertion or
+ * removal, so it is just an estimate of the current size . */
+size_t wfl_size(struct wfl *list);
+
+/* Iterate through all items in a WFL. Not synchronized with insertions or
+ * removals, so care must be taken by the caller to ensure the integrity of the
+ * items being operated on. */
 #define wfl_foreach_unsafe(elm, list) \
-  for (struct wfl_entry *_p = (list)->head; \
+  for (struct wfl_slot *_p = (list)->head; \
        elm = _p == NULL ? NULL : _p->data, _p != NULL; \
        _p = _p->next) \
     if (elm)

@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "internal/assert.h"
+#include <assert.h>
 
 #include "atomic.h"
 #include "tls.h"
@@ -68,7 +68,7 @@ void vcore_entry()
   while (b2 < NUM_VCORES);
 
   if (vcore_id() == 0) {
-    wfl_destroy(&wfl);
+    wfl_cleanup(&wfl);
     exit(0);
   }
 

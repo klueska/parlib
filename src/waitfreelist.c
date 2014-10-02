@@ -5,18 +5,19 @@
 
 void wfl_init(struct wfl *list)
 {
+  list->size = 0;
   list->first.next = NULL;
   list->first.data = NULL;
   list->head = &list->first;
 }
 
-void wfl_destroy(struct wfl *list)
+void wfl_cleanup(struct wfl *list)
 {
   assert(list->first.data == NULL);
-  struct wfl_entry *p = list->first.next; // don't free the first element
+  struct wfl_slot *p = list->first.next; // don't free the first element
   while (p != NULL) {
     assert(p->data == NULL);
-    struct wfl_entry *tmp = p;
+    struct wfl_slot *tmp = p;
     p = p->next;
     free(tmp);
   }
@@ -25,30 +26,26 @@ void wfl_destroy(struct wfl *list)
 size_t wfl_capacity(struct wfl *list)
 {
   size_t res = 0;
-  for (struct wfl_entry *p = list->head; p != NULL; p = p->next)
+  for (struct wfl_slot *p = list->head; p != NULL; p = p->next)
     res++;
   return res;
 }
 
 size_t wfl_size(struct wfl *list)
 {
-  size_t res = 0;
-  for (struct wfl_entry *p = list->head; p != NULL; p = p->next)
-    res += p->data != NULL;
-  return res;
+  return list->size;
 }
 
 #if 0
-void wfl_insert(struct wfl *list, void *data)
+struct wfl_slot *wfl_insert(struct wfl *list, void *data)
 {
-retry:
-  struct wfl_entry *p = list->head; // list head is never null
-  struct wfl_entry *new_entry = NULL;
+  struct wfl_slot *p = list->head; // list head is never null
+  struct wfl_slot *new_slot = NULL;
   while (1) {
     if (p->data == NULL) {
       if (__sync_bool_compare_and_swap(&p->data, NULL, data)) {
-        free(new_entry);
-        return;
+        free(new_slot);
+        return p;
       }
     }
 
@@ -57,30 +54,31 @@ retry:
       continue;
     }
 
-    if (new_entry == NULL) {
-      new_entry = malloc(sizeof(struct wfl_entry));
-      if (new_entry == NULL)
+    if (new_slot == NULL) {
+      new_slot = malloc(sizeof(struct wfl_slot));
+      if (new_slot == NULL)
         abort();
-      new_entry->data = data;
-      new_entry->next = NULL;
+      new_slot->data = data;
+      new_slot->next = NULL;
       wmb();
     }
  
-    if (__sync_bool_compare_and_swap(&p->next, NULL, new_entry))
-      return;
-    goto retry;
+    if (__sync_bool_compare_and_swap(&p->next, NULL, new_slot)) {
+      __sync_fetch_and_add(&list->size, 1);
+      return new_slot;
+    }
     p = list->head;
   }
 }
 #endif
 
-void wfl_insert(struct wfl *list, void *data)
+struct wfl_slot *wfl_insert(struct wfl *list, void *data)
 {
-  struct wfl_entry *p = list->head; // list head is never null
+  struct wfl_slot *p = list->head; // list head is never null
   while (1) {
     if (p->data == NULL) {
-      if (__sync_bool_compare_and_swap(&p->data, NULL, data))
-        return;
+      if (wfl_insert_into(list, p, data))
+        return p;
     }
 
     if (p->next == NULL)
@@ -89,24 +87,43 @@ void wfl_insert(struct wfl *list, void *data)
     p = p->next;
   }
 
-  struct wfl_entry *new_entry = malloc(sizeof(struct wfl_entry));
-  if (new_entry == NULL)
+  struct wfl_slot *new_slot = malloc(sizeof(struct wfl_slot));
+  if (new_slot == NULL)
     abort();
-  new_entry->data = data;
-  new_entry->next = NULL;
+  new_slot->data = data;
+  new_slot->next = NULL;
 
   wmb();
 
-  struct wfl_entry *next;
-  while ((next = __sync_val_compare_and_swap(&p->next, NULL, new_entry)))
+  struct wfl_slot *next;
+  while ((next = __sync_val_compare_and_swap(&p->next, NULL, new_slot)))
     p = next;
+
+  __sync_fetch_and_add(&list->size, 1);
+  return new_slot;
+}
+
+bool wfl_insert_into(struct wfl *list, struct wfl_slot *slot, void *data)
+{
+  bool ret = __sync_bool_compare_and_swap(&slot->data, NULL, data);
+  if (ret)
+    __sync_fetch_and_add(&list->size, 1);
+  return ret;
+}
+
+void *wfl_remove_from(struct wfl *list, struct wfl_slot *slot)
+{
+  void *data = atomic_swap_ptr(&slot->data, 0);
+  if (data != NULL)
+    __sync_fetch_and_add(&list->size, -1);
+  return data;
 }
 
 void *wfl_remove(struct wfl *list)
 {
-  for (struct wfl_entry *p = list->head; p != NULL; p = p->next) {
+  for (struct wfl_slot *p = list->head; p != NULL; p = p->next) {
     if (p->data != NULL) {
-      void *data = atomic_swap_ptr(&p->data, 0);
+      void *data = wfl_remove_from(list, p);
       if (data != NULL)
         return data;
     }
@@ -117,9 +134,10 @@ void *wfl_remove(struct wfl *list)
 size_t wfl_remove_all(struct wfl *list, void *data)
 {
   size_t n = 0;
-  for (struct wfl_entry *p = list->head; p != NULL; p = p->next) {
+  for (struct wfl_slot *p = list->head; p != NULL; p = p->next) {
     if (p->data == data)
       n += __sync_bool_compare_and_swap(&p->data, data, NULL);
   }
+  __sync_fetch_and_add(&list->size, -n);
   return n;
 }
