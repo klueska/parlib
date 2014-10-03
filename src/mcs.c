@@ -22,16 +22,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "internal/assert.h"
 #include <errno.h>
 
+#include "internal/parlib.h"
 #include "atomic.h"
 #include "mcs.h"
 
 // MCS locks
 void mcs_lock_init(struct mcs_lock *lock)
 {
-	memset(lock,0,sizeof(mcs_lock_t));
+	memset(lock, 0, sizeof(mcs_lock_t));
 }
 
 static inline mcs_lock_qnode_t *mcs_qnode_swap(mcs_lock_qnode_t **addr,
@@ -132,3 +132,9 @@ void mcs_barrier_wait(mcs_barrier_t* b, size_t pid)
 	localflags->parity = 1-localflags->parity;
 }
 
+#undef mcs_lock_init
+#undef mcs_lock_lock
+#undef mcs_lock_unlock
+EXPORT_ALIAS(INTERNAL(mcs_lock_init), mcs_lock_init)
+EXPORT_ALIAS(INTERNAL(mcs_lock_lock), mcs_lock_lock)
+EXPORT_ALIAS(INTERNAL(mcs_lock_unlock), mcs_lock_unlock)

@@ -80,7 +80,7 @@ int main()
   vcore_lib_init();
   printf_safe("main, max_vcores: %ld\n", max_vcores());
   vcore_request(NUM_VCORES);
-  set_tls_desc(__vcore_tls_descs[0], 0);
+  set_tls_desc(vcore_tls_descs[0], 0);
   vcore_saved_ucontext = NULL;  
   vcore_entry();
 }

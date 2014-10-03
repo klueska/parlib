@@ -8,7 +8,6 @@ SRCDIR = $(srcdir)/@SRCDIR@
 
 # List of C FILES to build into objects
 LIB_CFILES = \
-  @SRCDIR@/spinlock.c \
   @SRCDIR@/mcs.c      \
   @SRCDIR@/slab.c     \
   @SRCDIR@/tls.c      \
@@ -35,11 +34,14 @@ LIB_HFILES = \
   @SRCDIR@/syscall.h   \
   @SRCDIR@/alarm.h     \
   @SRCDIR@/vcore.h     \
+  @SRCDIR@/export.h    \
+  @SRCDIR@/context.h   \
   @SRCDIR@/waitfreelist.h
 
 LIB_SFILES = 
 
 LIB_INTERNAL_FILES = \
+  @SRCDIR@/internal/parlib.h \
   @SRCDIR@/internal/futex.h \
   @SRCDIR@/internal/glibc-tls.h \
   @SRCDIR@/internal/tls.h \
@@ -61,8 +63,7 @@ LIB_SFILES += \
 
 LIB_HFILES += \
   @SYSDEPDIR_i686@/arch.h   \
-  @SYSDEPDIR_i686@/atomic.h \
-  @SYSDEPDIR_i686@/context.h
+  @SYSDEPDIR_i686@/atomic.h
 
 LIB_INTERNAL_FILES += \
   @SYSDEPDIR_i686@/internal/ucontext_i.h
@@ -80,8 +81,7 @@ LIB_SFILES += \
 
 LIB_HFILES += \
   @SYSDEPDIR_x86_64@/arch.h   \
-  @SYSDEPDIR_x86_64@/atomic.h \
-  @SYSDEPDIR_x86_64@/context.h
+  @SYSDEPDIR_x86_64@/atomic.h
 
 LIB_INTERNAL_FILES += \
   @SYSDEPDIR_x86_64@/internal/ucontext_i.h
@@ -91,8 +91,8 @@ LIB_FILES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES) $(LIB_INTERNAL_FILES)
 
 # Setup parameters to build the library
 lib_LTLIBRARIES = libparlib.la
-libparlib_la_CFLAGS = $(AM_CFLAGS)
-libparlib_la_CFLAGS += -I$(SYSDEPDIR)
+libparlib_la_CFLAGS = $(LIB_CFLAGS)
+libparlib_la_CPPFLAGS = -I$(SYSDEPDIR) -I$(srcdir)/src -DCOMPILING_PARLIB
 libparlib_la_SOURCES = $(LIB_FILES)
 libparlib_la_LIBADD = -lpthread -lrt
 if STATIC_ONLY
@@ -107,42 +107,42 @@ dist_parlibinc_DATA = $(LIB_HFILES)
 check_PROGRAMS = lock_test vcore_test pool_test slab_test pthread_pool_test alarm_test signal_test wfl_test
 
 lock_test_SOURCES =  @TESTSDIR@/lock_test.c
-lock_test_CFLAGS = $(AM_CFLAGS)
+lock_test_CFLAGS = $(TEST_CFLAGS)
 lock_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 lock_test_LDADD = libparlib.la
 
 vcore_test_SOURCES = @TESTSDIR@/vcore_test.c
-vcore_test_CFLAGS = $(AM_CFLAGS)
+vcore_test_CFLAGS = $(TEST_CFLAGS)
 vcore_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 vcore_test_LDADD = libparlib.la 
 
 pool_test_SOURCES =  @TESTSDIR@/pool_test.c
-pool_test_CFLAGS = $(AM_CFLAGS)
+pool_test_CFLAGS = $(TEST_CFLAGS)
 pool_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 pool_test_LDADD = libparlib.la
 
 slab_test_SOURCES =  @TESTSDIR@/slab_test.c
-slab_test_CFLAGS = $(AM_CFLAGS)
+slab_test_CFLAGS = $(TEST_CFLAGS)
 slab_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 slab_test_LDADD = libparlib.la
 
 pthread_pool_test_SOURCES =  @TESTSDIR@/pthread_pool_test.c
-pthread_pool_test_CFLAGS = $(AM_CFLAGS)
+pthread_pool_test_CFLAGS = $(TEST_CFLAGS)
 pthread_pool_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 pthread_pool_test_LDADD = libparlib.la
 
 alarm_test_SOURCES =  @TESTSDIR@/alarm_test.c
-alarm_test_CFLAGS = $(AM_CFLAGS)
+alarm_test_CFLAGS = $(TEST_CFLAGS)
 alarm_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 alarm_test_LDADD = libparlib.la
 
 signal_test_SOURCES =  @TESTSDIR@/signal_test.c
-signal_test_CFLAGS = $(AM_CFLAGS)
+signal_test_CFLAGS = $(TEST_CFLAGS)
 signal_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 signal_test_LDADD = libparlib.la -lpthread
 
 wfl_test_SOURCES = @TESTSDIR@/wfl_test.c
-wfl_test_CFLAGS = $(AM_CFLAGS)
+wfl_test_CFLAGS = $(TEST_CFLAGS)
 wfl_test_CFLAGS += -I$(SRCDIR) -I$(SYSDEPDIR)
 wfl_test_LDADD = libparlib.la
 

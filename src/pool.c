@@ -17,12 +17,13 @@
  *  @date   $Date: 2010-01-20 19:59:07 $
  */
 
-#include <stddef.h>
-#include "internal/assert.h"
+#include "internal/parlib.h"
 #include "pool.h"
+#include "export.h"
+#include <stddef.h>
 
-void pool_init(pool_t *pool, void* buffer, void **object_queue,
-               size_t num_objects, size_t object_size)
+void EXPORT_SYMBOL pool_init(pool_t *pool, void* buffer, void **object_queue,
+                             size_t num_objects, size_t object_size)
 {
   assert(pool);
   assert(buffer);
@@ -41,18 +42,18 @@ void pool_init(pool_t *pool, void* buffer, void **object_queue,
   pool->index = 0;
 }
 
-size_t pool_size(pool_t *pool)
+size_t EXPORT_SYMBOL pool_size(pool_t *pool)
 {
   return pool->num_objects;
 }
 
-size_t pool_available(pool_t *pool)
+size_t EXPORT_SYMBOL pool_available(pool_t *pool)
 {
   assert(pool);
   return pool->free;
 }
 
-void* pool_alloc(pool_t *pool)
+void EXPORT_SYMBOL *pool_alloc(pool_t *pool)
 {
   assert(pool);
 
@@ -69,7 +70,7 @@ void* pool_alloc(pool_t *pool)
   return NULL;
 }
 
-int pool_free(pool_t* pool, void *object)
+int EXPORT_SYMBOL pool_free(pool_t* pool, void *object)
 {
   assert(pool);
 

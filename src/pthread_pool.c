@@ -1,8 +1,8 @@
+#include "internal/parlib.h"
+#include "internal/pthread_pool.h"
+#include "internal/futex.h"
 #include "slab.h"
 #include "spinlock.h"
-#include "internal/futex.h"
-#include "internal/assert.h"
-#include "internal/pthread_pool.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -75,7 +75,7 @@ static void *__thread_wrapper(void *arg)
   return 0;
 }
 
-void pooled_pthread_start(void *(*func)(void*), void *arg)
+void EXPORT_SYMBOL pooled_pthread_start(void *(*func)(void*), void *arg)
 {
   spinlock_lock(&lock);
     struct job *j = slab_cache_alloc(job_slab, 0);

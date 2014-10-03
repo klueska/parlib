@@ -18,9 +18,12 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#include "internal/parlib.h"
 #include "internal/ucontext_i.h"
+#include "context.h"
+#include "export.h"
 
-ENTRY(__parlib_setcontext)
+HIDDEN_ENTRY(parlib_setcontext)
 	/* Load address of the context data structure.  */
 	movl	4(%esp), %eax
 
@@ -89,6 +92,7 @@ ENTRY(__parlib_setcontext)
 
 L(pseudo_end):
 	ret
-PSEUDO_END(__parlib_setcontext)
+PSEUDO_END(parlib_setcontext)
 
-weak_alias (__parlib_setcontext, parlib_setcontext)
+#undef parlib_setcontext
+weak_alias (INTERNAL(parlib_setcontext), parlib_setcontext)

@@ -51,7 +51,8 @@ AC_CONFIG_FILES([
 AC_CONFIG_SRCDIR([src/vcore.c])
 
 # Set the common AM_CFLAGS for all Makefile.am files
-MY_CFLAGS="                \
+COMMON_CFLAGS="            \
+  -std=gnu99               \
   -g -O2 -Wall             \
   -Wno-unused-function     \
   -Wno-unused-value        \
@@ -60,8 +61,17 @@ MY_CFLAGS="                \
   -fno-strict-aliasing     \
 "
 
+LIB_CFLAGS="               \
+  -ftls-model=initial-exec \
+  -fvisibility=hidden      \
+"
+
+TEST_CFLAGS="              \
+"
+
 # Set the common AM_CFLAGS for all Makefile.am files
-AC_SUBST([AM_CFLAGS],["-std=gnu99 $MY_CFLAGS"])
+AC_SUBST([LIB_CFLAGS],["$COMMON_CFLAGS $LIB_CFLAGS"])
+AC_SUBST([TEST_CFLAGS],["$COMMON_CFLAGS $TEST_CFLAGS"])
 
 # Set up some global variables for use in the makefile
 SRCDIR=src

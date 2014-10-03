@@ -17,9 +17,12 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include "internal/parlib.h"
 #include "internal/ucontext_i.h"
+#include "context.h"
+#include "export.h"
 
-ENTRY(__parlib_swapcontext)
+HIDDEN_ENTRY(parlib_swapcontext)
 	/* Load address of the context data structure we save in.  */
 	movl	4(%esp), %eax
 
@@ -105,4 +108,5 @@ L(pseudo_end):
 	ret
 PSEUDO_END(__parlib_swapcontext)
 
-weak_alias (__parlib_swapcontext, parlib_swapcontext)
+#undef parlib_swapcontext
+weak_alias (INTERNAL(parlib_swapcontext), parlib_swapcontext)

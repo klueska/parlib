@@ -2,7 +2,7 @@
 
 /* void __vcore_reenter(void (*entry_func)(), void *stack_pointer) */
 
-ENTRY(__vcore_reenter)
+HIDDEN_ENTRY(__vcore_reenter)
   pop %eax         /* discard the return address */
   pop %eax         /* obtain entry_func */
   pop %ecx         /* obtain stack_pointer */

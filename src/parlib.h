@@ -64,7 +64,7 @@ enum {
 /* Function to obtain the main thread's stack bottom and size. Must be called
  * while running on the main thread, otherwise the values returned are
  * undefined. */
-void parlib_get_main_stack(void **bottom, size_t *size);
+void EXPORT_SYMBOL parlib_get_main_stack(void **bottom, size_t *size);
 
 #define CACHE_LINE_ALIGNED __attribute__((aligned(ARCH_CL_SIZE)))
 

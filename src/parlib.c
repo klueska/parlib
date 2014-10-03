@@ -18,8 +18,9 @@
  * See COPYING for details on the GNU General Public License.
  */
 
-#include <pthread.h>
+#include "internal/parlib.h"
 #include "parlib.h"
+#include <pthread.h>
 
 void parlib_get_main_stack(void **bottom, size_t *size)
 {

@@ -48,9 +48,19 @@
 #include "atomic.h"
 #include "parlib-config.h"
 #include "context.h"
+#include "export.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef COMPILING_PARLIB
+# define vcore_lib_init INTERNAL(vcore_lib_init)
+# define vcore_request INTERNAL(vcore_request)
+# define vcore_reenter INTERNAL(vcore_reenter)
+# define clear_notif_pending INTERNAL(clear_notif_pending)
+# define enable_notifs INTERNAL(enable_notifs)
+# define disable_notifs INTERNAL(disable_notifs)
 #endif
 
 /* The vcore type */
@@ -63,14 +73,14 @@ extern vcore_t *__vcores;
 /**
  *  Array of pointers to TLS descriptors for each vcore.
  */
-extern void **__vcore_tls_descs;
+extern void **vcore_tls_descs;
 
 /**
  * Context associated with each vcore. Serves as the entry point to this vcore
  * whenever the vcore is first brough up, a usercontext yields on it, or a
  * signal / async I/O notification is to be handled.
  */
-extern __thread ucontext_t vcore_context;
+extern __thread ucontext_t vcore_context TLS_INITIAL_EXEC;
 
 /**
  * Current user context running on each vcore, used when interrupting a
@@ -78,7 +88,7 @@ extern __thread ucontext_t vcore_context;
  * vcore_saved_ucontext is initialized to the continuation of the main thread's
  * context the first time it's vcore_entry() function is invoked.
  */
-extern __thread ucontext_t *vcore_saved_ucontext;
+extern __thread ucontext_t *vcore_saved_ucontext TLS_INITIAL_EXEC;
 
 /**
  * Current tls_desc of the user context running on each vcore, used when
@@ -86,20 +96,20 @@ extern __thread ucontext_t *vcore_saved_ucontext;
  * Thread 0's vcore_saved_tls_desc is initialized to the tls_desc of the main
  * thread's context the first time it's vcore_entry() function is invoked.
  */
-extern __thread void *vcore_saved_tls_desc;
+extern __thread void *vcore_saved_tls_desc TLS_INITIAL_EXEC;
 
 /**
  * User defined entry point for each vcore.  If vcore_saved_ucontext is
  * set, this function should most likely just restore it, otherwise, go on from
  * there.
  */
-extern void vcore_entry() __attribute__((weak));
+extern void vcore_entry();
 
 /**
  * Functions for sending/receiving a signal to a vcore
  */
 extern void vcore_signal(int vcoreid);
-extern void vcore_sigentry() __attribute__((weak));
+extern void vcore_sigentry();
 
 /* Initialization routine for the vcore subsystem. */
 int vcore_lib_init();
@@ -125,7 +135,7 @@ extern void vcore_yield();
  */
 static inline int vcore_id(void)
 {
-	extern __thread int __vcore_id;
+	extern __thread int __vcore_id TLS_INITIAL_EXEC;
 	return __vcore_id;
 }
 
@@ -151,7 +161,7 @@ static inline size_t max_vcores(void)
  * Returns whether you are currently running in vcore context or not.
  */
 static inline bool in_vcore_context() {
-	extern __thread bool __in_vcore_context;
+	extern __thread bool __in_vcore_context TLS_INITIAL_EXEC;
 	return __in_vcore_context;
 }
 
@@ -172,7 +182,7 @@ void disable_notifs(uint32_t vcoreid);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
   #define vcore_begin_access_tls_vars(vcore_id) \
-    begin_access_tls_vars(__vcore_tls_descs[(vcore_id)])
+    begin_access_tls_vars(vcore_tls_descs[(vcore_id)])
 
   #define vcore_end_access_tls_vars() \
     end_access_tls_vars()
@@ -180,7 +190,7 @@ void disable_notifs(uint32_t vcoreid);
   #define vcore_set_tls_var(name, val)                                 \
   {                                                                    \
   	typeof(val) __val = val;                                           \
-  	begin_access_tls_vars(__vcore_tls_descs[vcore_id()]);              \
+  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);              \
   	name = __val;                                                      \
   	end_access_tls_vars();                                             \
   }
@@ -188,7 +198,7 @@ void disable_notifs(uint32_t vcoreid);
   #define vcore_get_tls_var(name)                                      \
   ({                                                                   \
   	typeof(name) val;                                                  \
-  	begin_access_tls_vars(__vcore_tls_descs[vcore_id()]);              \
+  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);              \
   	val = name;                                                        \
   	end_access_tls_vars();                                             \
   	val;                                                               \

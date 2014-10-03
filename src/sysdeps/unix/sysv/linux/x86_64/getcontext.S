@@ -18,19 +18,22 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#include "internal/parlib.h"
 #include "internal/ucontext_i.h"
+#include "context.h"
+#include "export.h"
 
-/*  int __parlib_getcontext (ucontext_t *ucp)
+/*  int parlib_getcontext (ucontext_t *ucp)
 
   Saves the machine context in UCP such that when it is activated,
-  it appears as if __parlib_getcontext() returned again.
+  it appears as if parlib_getcontext() returned again.
 
   This implementation is intended to be used for *synchronous* context
   switches only.  Therefore, it does not have to save anything
   other than the PRESERVED state.  */
 
 
-ENTRY(__parlib_getcontext)
+HIDDEN_ENTRY(parlib_getcontext)
 	/* Save the preserved registers, the registers used for passing
 	   args, and the return address.  */
 	movq	%rbx, oRBX(%rdi)
@@ -83,6 +86,7 @@ ENTRY(__parlib_getcontext)
 L(pseudo_end):
 	ret
 SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
-PSEUDO_END(__parlib_getcontext)
+PSEUDO_END(parlib_getcontext)
 
-weak_alias (__parlib_getcontext, parlib_getcontext)
+#undef parlib_getcontext
+weak_alias (INTERNAL(parlib_getcontext), parlib_getcontext)

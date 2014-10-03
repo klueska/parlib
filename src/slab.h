@@ -33,6 +33,7 @@
 #include <sys/queue.h>
 #include "spinlock.h"
 #include "parlib.h"
+#include "export.h"
 
 /* Back in the day, their cutoff for "large objects" was 512B, based on
  * measurements and on not wanting more than 1/8 of internal fragmentation. */
@@ -88,6 +89,15 @@ typedef struct slab_cache {
 /* List of all slab_caches, sorted in order of size */
 SLIST_HEAD(slab_cache_list, slab_cache);
 extern struct slab_cache_list slab_caches;
+
+#ifdef COMPILING_PARLIB
+# define slab_cache_create INTERNAL(slab_cache_create)
+# define slab_cache_destroy INTERNAL(slab_cache_destroy)
+# define slab_cache_alloc INTERNAL(slab_cache_alloc)
+# define slab_cache_free INTERNAL(slab_cache_free)
+# define slab_cache_init INTERNAL(slab_cache_init)
+# define slab_cache_reap INTERNAL(slab_cache_reap)
+#endif
 
 /* Cache management */
 struct slab_cache *slab_cache_create(const char *name, size_t obj_size,

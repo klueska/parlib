@@ -18,7 +18,7 @@
  * See COPYING for details on the GNU General Public License.
  */
 
-#include "internal/assert.h"
+#include <assert.h>
 #include <stdio.h>
 
 #include "pool.h"

@@ -18,10 +18,12 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#include "internal/parlib.h"
 #include "internal/ucontext_i.h"
+#include "context.h"
+#include "export.h"
 
-
-/*  int __parlib_setcontext (const ucontext_t *ucp)
+/*  int parlib_setcontext (const ucontext_t *ucp)
 
   Restores the machine context in UCP and thereby resumes execution
   in that context.
@@ -30,7 +32,7 @@
   switches only.  Therefore, it does not have to restore anything
   other than the PRESERVED state.  */
 
-ENTRY(__parlib_setcontext)
+HIDDEN_ENTRY(parlib_setcontext)
 	/* Save argument since syscall will destroy it.  */
 	pushq	%rdi
 	cfi_adjust_cfa_offset(8)
@@ -99,6 +101,7 @@ ENTRY(__parlib_setcontext)
 L(pseudo_end):
 	ret
 SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
-PSEUDO_END(__parlib_setcontext)
+PSEUDO_END(parlib_setcontext)
 
-weak_alias (__parlib_setcontext, parlib_setcontext)
+#undef parlib_setcontext
+weak_alias (INTERNAL(parlib_setcontext), parlib_setcontext)

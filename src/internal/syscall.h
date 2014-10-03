@@ -5,6 +5,8 @@
 #ifndef __PARLIB_INTERNAL_SYSCALL_H__
 #define __PARLIB_INTERNAL_SYSCALL_H__
 
+#include <unistd.h>
+
 #ifdef __GLIBC__
 #define __SUPPORTED_C_LIBRARY__
 #define __internal_open __open
@@ -19,7 +21,7 @@ ssize_t __write(int, const void*, size_t);
 
 #include "../uthread.h"
 #include "../syscall.h"
-#include "assert.h"
+#include "parlib.h"
 #include "pthread_pool.h"
 #include <sys/mman.h>
 

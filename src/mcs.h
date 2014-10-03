@@ -59,6 +59,12 @@ typedef struct mcs_barrier_t
 	size_t logp;
 } mcs_barrier_t;
 
+#ifdef COMPILING_PARLIB
+# define mcs_lock_init INTERNAL(mcs_lock_init)
+# define mcs_lock_lock INTERNAL(mcs_lock_lock)
+# define mcs_lock_unlock INTERNAL(mcs_lock_unlock)
+#endif
+
 void mcs_lock_init(struct mcs_lock *lock);
 /* Caller needs to alloc (and zero) their own qnode to spin on.  The memory
  * should be on a cacheline that is 'per-thread'.  This could be on the stack,

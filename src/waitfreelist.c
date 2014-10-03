@@ -1,7 +1,8 @@
+#include "internal/parlib.h"
 #include "waitfreelist.h"
 #include "atomic.h"
-#include "internal/assert.h"
 #include <stdlib.h>
+#include "export.h"
 
 void wfl_init(struct wfl *list)
 {
@@ -141,3 +142,22 @@ size_t wfl_remove_all(struct wfl *list, void *data)
   __sync_fetch_and_add(&list->size, -n);
   return n;
 }
+
+#undef wfl_init
+#undef wfl_cleanup
+#undef wfl_insert
+#undef wfl_insert_into
+#undef wfl_remove
+#undef wfl_remove_from
+#undef wfl_remove_all
+#undef wfl_capacity
+#undef wfl_size
+EXPORT_ALIAS(INTERNAL(wfl_init), wfl_init)
+EXPORT_ALIAS(INTERNAL(wfl_cleanup), wfl_cleanup)
+EXPORT_ALIAS(INTERNAL(wfl_insert), wfl_insert)
+EXPORT_ALIAS(INTERNAL(wfl_insert_into), wfl_insert_into)
+EXPORT_ALIAS(INTERNAL(wfl_remove), wfl_remove)
+EXPORT_ALIAS(INTERNAL(wfl_remove_from), wfl_remove_from)
+EXPORT_ALIAS(INTERNAL(wfl_remove_all), wfl_remove_all)
+EXPORT_ALIAS(INTERNAL(wfl_capacity), wfl_capacity)
+EXPORT_ALIAS(INTERNAL(wfl_size), wfl_size)

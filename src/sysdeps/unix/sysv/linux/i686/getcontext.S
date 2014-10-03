@@ -19,9 +19,12 @@
    02111-1307 USA.  */
 
 
+#include "internal/parlib.h"
 #include "internal/ucontext_i.h"
+#include "context.h"
+#include "export.h"
 
-ENTRY(__parlib_getcontext)
+HIDDEN_ENTRY(parlib_getcontext)
 	/* Load address of the context data structure.  */
 	movl	4(%esp), %eax
 
@@ -78,6 +81,7 @@ ENTRY(__parlib_getcontext)
 	xorl	%eax, %eax
 L(pseudo_end):
 	ret
-PSEUDO_END(__parlib_getcontext)
+PSEUDO_END(parlib_getcontext)
 
-weak_alias (__parlib_getcontext, parlib_getcontext)
+#undef parlib_getcontext
+weak_alias (INTERNAL(parlib_getcontext), parlib_getcontext)

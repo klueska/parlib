@@ -2,8 +2,8 @@
 /* Kevin Klues <klueska@cs.berkeley.edu>	*/
 /* Andrew Waterman <waterman@cs.berkeley.edu>	*/
 
-#ifndef __PARLIB_SYSCALL_H__
-#define __PARLIB_SYSCALL_H__
+#ifndef PARLIB_SYSCALL_H
+#define PARLIB_SYSCALL_H
 
 struct uthread;
 
@@ -21,4 +21,4 @@ struct event_msg {
 typedef void (*handle_event_t)(struct event_msg *ev_msg, unsigned ev_type);
 extern handle_event_t ev_handlers[MAX_NR_EVENT];
 
-#endif // __PARLIB_SYSCALL_H__
+#endif // PARLIB_SYSCALL_H

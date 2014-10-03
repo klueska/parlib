@@ -56,7 +56,7 @@ struct uthread {
 typedef struct uthread uthread_t;
 
 /* External reference to the current uthread running on this vcore */
-extern __thread uthread_t *current_uthread;
+extern __thread uthread_t *current_uthread TLS_INITIAL_EXEC;
 
 /* 2L-Scheduler operations.  Can be 0.  Examples in pthread.c. */
 typedef struct schedule_ops {
@@ -103,14 +103,8 @@ void hijack_current_uthread(struct uthread *uthread);
 void run_current_uthread(void) __attribute((noreturn));
 void run_uthread(struct uthread *uthread) __attribute((noreturn));
 void swap_uthreads(struct uthread *__old, struct uthread *__new);
-
-static inline void
-init_uthread_tf(uthread_t *uth, void (*entry)(void),
-                void *stack_bottom, uint32_t size)
-{
-  init_uthread_stack_ARCH(uth, stack_bottom, size);
-  init_uthread_entry_ARCH(uth, entry);
-}
+void init_uthread_tf(uthread_t *uth, void (*entry)(void),
+                     void *stack_bottom, uint32_t size);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
   #define uthread_begin_access_tls_vars(uthread) \

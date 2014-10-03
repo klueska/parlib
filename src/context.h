@@ -21,6 +21,14 @@
 #ifndef _PARLIB_CONTEXT_H
 #define _PARLIB_CONTEXT_H	1
 
+#ifdef COMPILING_PARLIB
+# define parlib_getcontext INTERNAL(parlib_getcontext)
+# define parlib_setcontext INTERNAL(parlib_setcontext)
+# define parlib_swapcontext INTERNAL(parlib_swapcontext)
+#endif
+
+#ifndef __ASSEMBLER__
+
 /* Get machine dependent definition of data structures.  */
 #include <ucontext.h>
 
@@ -50,6 +58,8 @@ extern int parlib_swapcontext (ucontext_t *__restrict __oucp,
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif /* context.h */

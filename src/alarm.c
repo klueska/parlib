@@ -1,8 +1,9 @@
-#include "alarm.h"
-#include "spinlock.h"
-#include "internal/assert.h"
+#include "internal/parlib.h"
 #include "internal/time.h"
 #include "internal/pthread_pool.h"
+#include "alarm.h"
+#include "spinlock.h"
+#include "export.h"
 #include <unistd.h>
 #include <stdlib.h>
 
@@ -31,8 +32,8 @@ static void *__waiting_thread(void *arg)
 	return NULL;
 }
 
-void init_awaiter(struct alarm_waiter *waiter,
-                  void (*func) (struct alarm_waiter *))
+void EXPORT_SYMBOL init_awaiter(struct alarm_waiter *waiter,
+                                void (*func) (struct alarm_waiter *))
 {
 	waiter->func = func;
 	waiter->wakeup_time = 0;
@@ -40,7 +41,7 @@ void init_awaiter(struct alarm_waiter *waiter,
 	waiter->done = false;
 }
 
-void set_awaiter_rel(struct alarm_waiter *waiter, uint64_t usleep)
+void EXPORT_SYMBOL set_awaiter_rel(struct alarm_waiter *waiter, uint64_t usleep)
 {
 	uint64_t now = time_usec();
 	spinlock_lock(&lock);
@@ -48,7 +49,7 @@ void set_awaiter_rel(struct alarm_waiter *waiter, uint64_t usleep)
 	spinlock_unlock(&lock);
 }
 
-void set_awaiter_inc(struct alarm_waiter *waiter, uint64_t usleep)
+void EXPORT_SYMBOL set_awaiter_inc(struct alarm_waiter *waiter, uint64_t usleep)
 {
 	assert(waiter->wakeup_time);
 	spinlock_lock(&lock);
@@ -56,13 +57,13 @@ void set_awaiter_inc(struct alarm_waiter *waiter, uint64_t usleep)
 	spinlock_unlock(&lock);
 }
 
-void set_alarm(struct alarm_waiter *waiter)
+void EXPORT_SYMBOL set_alarm(struct alarm_waiter *waiter)
 {
 	assert(!waiter->unset);
 	pooled_pthread_start(__waiting_thread, waiter);	
 }
 
-bool unset_alarm(struct alarm_waiter *waiter)
+bool EXPORT_SYMBOL unset_alarm(struct alarm_waiter *waiter)
 {
 	spinlock_lock(&lock);
 	if (!waiter->done) {

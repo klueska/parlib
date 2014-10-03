@@ -21,6 +21,18 @@ struct wfl {
 extern "C" {
 #endif
 
+#ifdef COMPILING_PARLIB
+# define wfl_init INTERNAL(wfl_init)
+# define wfl_cleanup INTERNAL(wfl_cleanup)
+# define wfl_insert INTERNAL(wfl_insert)
+# define wfl_insert_into INTERNAL(wfl_insert_into)
+# define wfl_remove INTERNAL(wfl_remove)
+# define wfl_remove_from INTERNAL(wfl_remove_from)
+# define wfl_remove_all INTERNAL(wfl_remove_all)
+# define wfl_capacity INTERNAL(wfl_capacity)
+# define wfl_size INTERNAL(wfl_size)
+#endif
+
 /* Initialize a WFL. Memory for the wfl struct must be allocated externally. */
 void wfl_init(struct wfl *list);
 

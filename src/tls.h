@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "export.h"
 
 #ifndef __GNUC__
   #error "You need to be using gcc to compile this library..."
@@ -32,12 +33,17 @@
 extern "C" {
 #endif
 
+#ifdef COMPILING_PARLIB
+# define set_tls_desc INTERNAL(set_tls_desc)
+# define get_tls_desc INTERNAL(get_tls_desc)
+#endif
+
 /* Reference to the main thread's tls descriptor */
 extern void *main_tls_desc;
 
 /* Current tls_desc for each running vcore, used when swapping uthreads onto a
  * vcore */
-extern __thread void *current_tls_desc;
+extern __thread void *current_tls_desc TLS_INITIAL_EXEC;
 
 /* Initialize the tls subsystem for use */
 int tls_lib_init();

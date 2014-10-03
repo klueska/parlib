@@ -21,6 +21,8 @@
 /* My own defines for stuff found in the *context.S files */
 #define ENTRY(__func) \
   .globl __func; .type __func,@function; .align 1<<4; __func: cfi_startproc;
+#define HIDDEN_ENTRY(__func) \
+  ENTRY(__func); .hidden __func;
 #define SYSCALL_ERROR() \
   movq __libc_errno@GOTTPOFF(%rip), %rcx; xorl %edx, %edx; subq %rax, %rdx; movl %edx, %fs:(%rcx); orq $-1, %rax; jmp L(pseudo_end); 
 #define PSEUDO_END(__func) \

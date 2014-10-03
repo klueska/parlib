@@ -22,9 +22,9 @@
 #include <sys/syscall.h>
 #include <pthread.h>
 
+#include "internal/parlib.h"
 #include "internal/vcore.h"
 #include "internal/tls.h"
-#include "internal/assert.h"
 #include "internal/futex.h"
 #include "atomic.h"
 #include "tls.h"
@@ -34,7 +34,7 @@
 void *main_tls_desc = NULL;
 
 /* Current tls_desc for each running vcore, used when swapping contexts onto a vcore */
-__thread void *current_tls_desc = NULL;
+__thread void EXPORT_SYMBOL *current_tls_desc = NULL;
 
 static __thread int tls_futex = 0;
 
@@ -111,7 +111,7 @@ int tls_lib_init()
 void init_tls(void *tcb, uint32_t vcoreid)
 {
   init_arch_tls_data(&__vcores[vcoreid].arch_tls_data, tcb, vcoreid);
-  __vcore_tls_descs[vcoreid] = tcb;
+  vcore_tls_descs[vcoreid] = tcb;
 }
 
 /* Passing in the vcoreid, since it'll be in TLS of the caller */
@@ -135,3 +135,7 @@ void *get_tls_desc(uint32_t vcoreid)
   return desc;
 }
 
+#undef set_tls_desc
+#undef get_tls_desc
+EXPORT_ALIAS(INTERNAL(set_tls_desc), set_tls_desc)
+EXPORT_ALIAS(INTERNAL(get_tls_desc), get_tls_desc)

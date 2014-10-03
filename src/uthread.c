@@ -21,13 +21,14 @@
 
 #include <errno.h>
 
+#include "internal/parlib.h"
 #include "parlib.h"
 #include "vcore.h"
 #include "uthread.h"
 #include "atomic.h"
 #include "arch.h"
 #include "tls.h"
-#include "internal/assert.h"
+#include "internal/parlib.h"
 #include "internal/vcore.h"
 
 #define printd(...)
@@ -35,9 +36,9 @@
 /* Which operations we'll call for the 2LS.  Will change a bit with Lithe.  For
  * now, there are no defaults.  2LSs can override sched_ops. */
 static struct schedule_ops default_2ls_ops = {0};
-struct schedule_ops *sched_ops __attribute__((weak)) = &default_2ls_ops;
+struct schedule_ops *sched_ops __attribute__((weak)) EXPORT_SYMBOL = &default_2ls_ops;
 
-__thread struct uthread *current_uthread = 0;
+__thread struct uthread EXPORT_SYMBOL *current_uthread = 0;
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 /* static helpers: */
@@ -48,7 +49,7 @@ static void __uthread_free_tls(struct uthread *uthread);
 
 /* The real 2LS calls this, passing in a uthread representing thread0.  When it
  * returns, you're in _M mode, still running thread0, on vcore0 */
-void uthread_lib_init(struct uthread* uthread)
+void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 {
 	run_once(
 		/* Make sure they passed in a valid uthread pointer */
@@ -71,7 +72,7 @@ void uthread_lib_init(struct uthread* uthread)
 		 * thread, so when vcore 0 comes up it will resume the main thread.
 		 * Note: there is no need to restore the original tls here, since we
 		 * are right about to transition onto vcore 0 anyway... */
-		set_tls_desc(__vcore_tls_descs[0], 0);
+		set_tls_desc(vcore_tls_descs[0], 0);
 		safe_set_tls_var(current_uthread, uthread);
 
 		/* Request some cores ! */
@@ -95,7 +96,7 @@ void __attribute__((noreturn)) uthread_vcore_entry(void)
 	__builtin_unreachable();
 }
 
-void vcore_entry() {
+static void __vcore_entry() {
 	if(vcore_saved_ucontext) {
 		assert(current_uthread);
 		memcpy(&current_uthread->uc, vcore_saved_ucontext, sizeof(struct ucontext));
@@ -105,6 +106,7 @@ void vcore_entry() {
 	}
 	uthread_vcore_entry();
 }
+EXPORT_ALIAS(__vcore_entry, vcore_entry)
 
 void vcore_sigentry(int sig)
 {
@@ -129,7 +131,7 @@ void vcore_sigentry(int sig)
 	uthread_yield(true, cb, NULL);
 }
 
-void uthread_init(struct uthread *uthread)
+void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 {
 #ifndef PARLIB_NO_UTHREAD_TLS
 	assert(uthread);
@@ -150,7 +152,7 @@ void uthread_init(struct uthread *uthread)
 #endif
 }
 
-void uthread_cleanup(struct uthread *uthread)
+void EXPORT_SYMBOL uthread_cleanup(struct uthread *uthread)
 {
 #ifndef PARLIB_NO_UTHREAD_TLS
 	printd("[U] thread %08p on vcore %d is DYING!\n", uthread, vcore_id());
@@ -160,7 +162,7 @@ void uthread_cleanup(struct uthread *uthread)
 #endif
 }
 
-void uthread_runnable(struct uthread *uthread)
+void EXPORT_SYMBOL uthread_runnable(struct uthread *uthread)
 {
 	/* Allow the 2LS to make the thread runnable, and do whatever. */
 	assert(sched_ops->thread_runnable);
@@ -178,7 +180,7 @@ void uthread_runnable(struct uthread *uthread)
  * call this.
  *
  * AKA: obviously_a_uthread_has_blocked_in_lincoln_park() */
-void uthread_has_blocked(struct uthread *uthread, int flags)
+void EXPORT_SYMBOL uthread_has_blocked(struct uthread *uthread, int flags)
 {
 	if (sched_ops->thread_has_blocked)
 		sched_ops->thread_has_blocked(uthread, flags);
@@ -216,8 +218,9 @@ __uthread_yield(void)
  * If you do *not* pass a 2LS sched op or other 2LS function as yield_func,
  * then you must also call uthread_has_blocked(flags), which will let the 2LS
  * know a thread blocked beyond its control (and why). */
-void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
-                   void *yield_arg)
+void EXPORT_SYMBOL uthread_yield(bool save_state,
+                                 void (*yield_func)(struct uthread*, void*),
+                                 void *yield_arg)
 {
 	struct uthread *uthread = current_uthread;
 	volatile bool yielding = TRUE; /* signal to short circuit when restarting */
@@ -245,7 +248,7 @@ void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
 	yielding = FALSE; /* for when it starts back up */
 	/* Change to the transition context (both TLS and stack). */
 #ifndef PARLIB_NO_UTHREAD_TLS
-	set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
+	set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
 #else
 	extern __thread bool __in_vcore_context;
 	__in_vcore_context = true;
@@ -264,7 +267,7 @@ yield_return_path:
 }
 
 /* Saves the state of the current uthread from the point at which it is called */
-void save_current_uthread(struct uthread *uthread)
+void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
 {
 	int ret = parlib_getcontext(&uthread->uc);
 	assert(ret == 0);
@@ -275,7 +278,7 @@ void save_current_uthread(struct uthread *uthread)
  * and make sure that the new uthread struct is used to store this context upon
  * yielding, etc. USE WITH EXTREME CAUTION!
 */
-void hijack_current_uthread(struct uthread *uthread)
+void EXPORT_SYMBOL hijack_current_uthread(struct uthread *uthread)
 {
 	assert(uthread != current_uthread);
 	current_uthread->state = UT_HIJACKED;
@@ -290,7 +293,7 @@ void hijack_current_uthread(struct uthread *uthread)
 }
 
 /* Runs whatever thread is vcore's current_uthread */
-void run_current_uthread(void)
+void EXPORT_SYMBOL run_current_uthread(void)
 {
 	assert(in_vcore_context());
 	assert(current_uthread);
@@ -308,7 +311,7 @@ void run_current_uthread(void)
 }
 
 /* Launches the uthread on the vcore.  Don't call this on current_uthread. */
-void run_uthread(struct uthread *uthread)
+void EXPORT_SYMBOL run_uthread(struct uthread *uthread)
 {
 	assert(in_vcore_context());
 	assert(uthread != current_uthread);
@@ -346,7 +349,7 @@ void swap_uthreads(struct uthread *__old, struct uthread *__new)
  * 'check' instead of 'handle', since this isn't an event handler.  It's the "Oh
  * shit a preempt is on its way ASAP".  While it is isn't too involved with
  * uthreads, it is tied in to sched_ops. */
-bool check_preempt_pending(uint32_t vcoreid)
+bool EXPORT_SYMBOL check_preempt_pending(uint32_t vcoreid)
 {
 	bool retval = FALSE;
 //	if (__procinfo.vcoremap[vcoreid].preempt_pending) {
@@ -358,6 +361,13 @@ bool check_preempt_pending(uint32_t vcoreid)
 //		sys_yield(TRUE);
 //	}
 	return retval;
+}
+
+void EXPORT_SYMBOL init_uthread_tf(uthread_t *uth, void (*entry)(void),
+                                   void *stack_bottom, uint32_t size)
+{
+  init_uthread_stack_ARCH(uth, stack_bottom, size);
+  init_uthread_entry_ARCH(uth, entry);
 }
 
 #ifndef PARLIB_NO_UTHREAD_TLS

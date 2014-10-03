@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* Metadata needed to manage a pool */
 typedef struct pool {

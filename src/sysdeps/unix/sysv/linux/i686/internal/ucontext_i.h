@@ -21,12 +21,12 @@
 /* My own defines for stuff found in the *context.S files */
 #define ENTRY(func) \
  .globl func; .type func##,@function; .align 1<<4; func##: cfi_startproc;
+#define HIDDEN_ENTRY(__func) \
+  ENTRY(__func); .hidden __func;
 #define cfi_adjust_cfa_offset(arg) \
   .cfi_adjust_cfa_offset arg
 #define cfi_rel_offset(arg0, arg1) \
   .cfi_rel_offset arg0, arg1
-#define ENTER_KERNEL \
-  call *%gs:0x10
 #define cfi_adjust_cfa_offset(arg) \
   .cfi_adjust_cfa_offset arg
 #define cfi_restore(arg) \

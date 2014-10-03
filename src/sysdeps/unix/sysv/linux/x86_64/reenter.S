@@ -2,7 +2,7 @@
 
 /* void __vcore_reenter(void (*entry_func)(), void *stack_pointer) */
 
-ENTRY(__vcore_reenter)
+HIDDEN_ENTRY(__vcore_reenter)
   and $-16, %rsi   /* align stack */
   add $-16, %rsi   /* get a two-word buffer at the top of the stack */
   movq $0, 0(%rsi) /* clear buffer[0] */

@@ -18,10 +18,12 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#include "internal/parlib.h"
 #include "internal/ucontext_i.h"
+#include "context.h"
+#include "export.h"
 
-
-/* int __parlib_swapcontext (ucontext_t *oucp, const ucontext_t *ucp);
+/* int parlib_swapcontext (ucontext_t *oucp, const ucontext_t *ucp);
 
   Saves the machine context in oucp such that when it is activated,
   it appears as if __parlib_swapcontextt() returned again, restores the
@@ -32,7 +34,7 @@
   switches only.  Therefore, it does not have to save anything
   other than the PRESERVED state.  */
 
-ENTRY(__parlib_swapcontext)
+HIDDEN_ENTRY(parlib_swapcontext)
 	/* Save the preserved registers, the registers used for passing args,
 	   and the return address.  */
 	movq	%rbx, oRBX(%rdi)
@@ -117,6 +119,7 @@ ENTRY(__parlib_swapcontext)
 L(pseudo_end):
 	ret
 SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
-PSEUDO_END(__parlib_swapcontext)
+PSEUDO_END(parlib_swapcontext)
 
-weak_alias (__parlib_swapcontext, parlib_swapcontext)
+#undef parlib_swapcontext
+weak_alias (INTERNAL(parlib_swapcontext), parlib_swapcontext)

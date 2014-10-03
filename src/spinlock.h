@@ -22,9 +22,9 @@
 #ifndef SPINLOCK_H
 #define SPINLOCK_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <errno.h>
+#include "atomic.h"
+#include "arch.h"
 
 #define SPINLOCK_INITIALIZER {0}
 
@@ -32,14 +32,25 @@ typedef struct spinlock {
   int lock;
 } spinlock_t;
 
-void spinlock_init(spinlock_t *lock);
-int spinlock_trylock(spinlock_t *lock);
-void spinlock_lock(spinlock_t *lock);
-void spinlock_unlock(spinlock_t *lock);
-
-#ifdef __cplusplus
+static inline void spinlock_init(spinlock_t *lock)
+{
+  lock->lock = 0;
 }
-#endif
 
+static inline int spinlock_trylock(spinlock_t *lock)
+{
+  return __sync_lock_test_and_set(&lock->lock, EBUSY);
+}
+
+static inline void spinlock_lock(spinlock_t *lock)
+{
+  while (spinlock_trylock(lock))
+    cpu_relax();
+}
+
+static inline void spinlock_unlock(spinlock_t *lock)
+{
+  __sync_lock_release(&lock->lock, 0);
+}
 
 #endif // SPINLOCK_H

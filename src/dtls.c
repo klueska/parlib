@@ -19,10 +19,10 @@
  */
 
 #include <stddef.h>
+#include "internal/parlib.h"
 #include "dtls.h"
 #include "spinlock.h"
 #include "slab.h"
-#include "internal/assert.h"
 
 /* The current dymamic tls implementation uses a locked linked list
  * to find the key for a given thread. We should probably find a better way to
@@ -112,7 +112,7 @@ static void dtls_lib_init()
   );
 }
 
-dtls_key_t dtls_key_create(dtls_dtor_t dtor)
+dtls_key_t EXPORT_SYMBOL dtls_key_create(dtls_dtor_t dtor)
 {
   dtls_lib_init();
   dtls_key_t key = __allocate_dtls_key();
@@ -121,7 +121,7 @@ dtls_key_t dtls_key_create(dtls_dtor_t dtor)
   return key;
 }
 
-void dtls_key_delete(dtls_key_t key)
+void EXPORT_SYMBOL dtls_key_delete(dtls_key_t key)
 {
   assert(key);
   key->valid = false;
@@ -188,7 +188,7 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
   }
 }
 
-void set_dtls(dtls_key_t key, void *dtls)
+void EXPORT_SYMBOL set_dtls(dtls_key_t key, void *dtls)
 {
   bool initialized = true;
   dtls_data_t *dtls_data = NULL;
@@ -219,7 +219,7 @@ void set_dtls(dtls_key_t key, void *dtls)
   __set_dtls(dtls_data, key, dtls);
 }
 
-void *get_dtls(dtls_key_t key)
+void EXPORT_SYMBOL *get_dtls(dtls_key_t key)
 {
   dtls_data_t *dtls_data = NULL;
 #ifdef PARLIB_NO_UTHREAD_TLS
@@ -240,7 +240,7 @@ void *get_dtls(dtls_key_t key)
   return __get_dtls(dtls_data, key);
 }
 
-void destroy_dtls()
+void EXPORT_SYMBOL destroy_dtls()
 {
   dtls_data_t *dtls_data = NULL;
 #ifdef PARLIB_NO_UTHREAD_TLS

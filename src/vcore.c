@@ -42,7 +42,7 @@
 
 #define _GNU_SOURCE
 
-#include "internal/assert.h"
+#include "internal/parlib.h"
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -70,17 +70,17 @@ struct vcore *__vcores = NULL;
 /* Array of TLS descriptors to use for each vcore. Separate from the vcore
  * array so that we can access it transparently, as an array, outside of
  * the vcore library. */
-void **__vcore_tls_descs = NULL;
+void EXPORT_SYMBOL **vcore_tls_descs = NULL;
 
 /* Id of the currently running vcore. */
-__thread int __vcore_id = -1;
+__thread int EXPORT_SYMBOL __vcore_id = -1;
 
 /* Per vcore context with its own stack and TLS region */
 __thread ucontext_t vcore_context = { 0 };
 
 /* Current user context running on a vcore, this used to restore a user context
  * if it is interrupted for some reason without yielding voluntarily */
-__thread ucontext_t *vcore_saved_ucontext = NULL;
+__thread ucontext_t EXPORT_SYMBOL *vcore_saved_ucontext = NULL;
 
 /* Current tls_desc of the user context running on a vcore, this used to restore
  * a user's tls_desc if it is interrupted for some reason without yielding
@@ -90,13 +90,13 @@ __thread void *vcore_saved_tls_desc = NULL;
 /* Delineates whether the current context running on the vcore is the vcore
  * context or not. Default is false, so we don't have to set it whenever we
  * create new contexts. */
-__thread bool __in_vcore_context = false;
+__thread bool EXPORT_SYMBOL __in_vcore_context = false;
 
 /* Number of currently allocated vcores. */
-atomic_t __num_vcores = ATOMIC_INITIALIZER(0);
+atomic_t EXPORT_SYMBOL __num_vcores = ATOMIC_INITIALIZER(0);
 
 /* Maximum number of vcores that can ever be allocated. */
-volatile int __max_vcores = 0;
+volatile int EXPORT_SYMBOL __max_vcores = 0;
 
 /* Global context associated with the main thread.  Used when swapping this
  * context over to vcore0 */
@@ -128,13 +128,6 @@ static void __set_affinity(int cpuid)
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
   sched_yield();
 }
-
-/* Default callback for vcore_entry() */
-static void __vcore_entry()
-{
-       // Do nothing by default...
-}
-extern void vcore_entry() __attribute__ ((weak, alias ("__vcore_entry")));
 
 /* Helper functions used to reenter at the top of a vcore's stack for an
  * arbitrary function */
@@ -168,7 +161,7 @@ static void __vcore_init(int vcoreid)
   __set_affinity(vcoreid);
 
   /* Switch to that tls region */
-  set_tls_desc(__vcore_tls_descs[vcoreid], vcoreid);
+  set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
 
   /* Set that we are in vcore context */
   __in_vcore_context = true;
@@ -233,9 +226,6 @@ static void __create_vcore(int i)
 
 static int __vcore_request(int requested)
 {
-  if (requested == 0)
-    return 0;
-
   /* If there is no chance of waking up requested vcores, just bail out */
   long nvc;
   do {
@@ -266,36 +256,47 @@ void vcore_reenter(void (*entry_func)(void))
   __vcore_reenter(entry_func, sp);
 }
 
-int vcore_request(int k)
+/* If this is the first vcore requested, do something special */
+
+static bool vcore0_init()
 {
-  if (k == 0)
-    return 0;
+  init_once_racy(return false);
 
-  /* If this is the first vcore requested, do something special */
-  run_once_racy(
-    volatile bool once = false;
-    parlib_getcontext(&main_context);
+  volatile bool once = false;
+  parlib_getcontext(&main_context);
 
-    if (!once) {
-      once = true;
-      /* Update the vcore counts and set the flag for allocated */
-      atomic_set(&__vcores[0].allocated, true);
-      atomic_set(&__num_vcores, 1);
+  if (!once) {
+    once = true;
+    /* Update the vcore counts and set the flag for allocated */
+    atomic_set(&__vcores[0].allocated, true);
+    atomic_set(&__num_vcores, 1);
 
-      /* Vcore is awake. Jump to the vcore's entry point at the top of the
-       * vcore stack. */
-      set_tls_desc(__vcore_tls_descs[0], 0);
-      vcore_saved_ucontext = &main_context;
-      vcore_saved_tls_desc = main_tls_desc;
-      vcore_reenter(vcore_entry);
-    }
-    k--;
-  )
+    /* Vcore is awake. Jump to the vcore's entry point at the top of the
+     * vcore stack. */
+    set_tls_desc(vcore_tls_descs[0], 0);
+    vcore_saved_ucontext = &main_context;
+    vcore_saved_tls_desc = main_tls_desc;
+    vcore_reenter(vcore_entry);
+  }
 
-  return __vcore_request(k);
+  return true;
 }
 
-void vcore_yield()
+int vcore_request(int requested)
+{
+  if (requested < 0)
+    return -1;
+
+  if (requested > 0)
+    requested -= vcore0_init();
+
+  if (requested == 0)
+    return 0;
+
+  return __vcore_request(requested);
+}
+
+void EXPORT_SYMBOL vcore_yield()
 {
   /* Clear out the saved ht_saved_context and ht_saved_tls_desc variables */
   vcore_saved_ucontext = NULL;
@@ -303,7 +304,7 @@ void vcore_yield()
 
 #ifndef PARLIB_NO_UTHREAD_TLS
   /* Restore the TLS associated with this vcore's context */
-  set_tls_desc(__vcore_tls_descs[__vcore_id], __vcore_id);
+  set_tls_desc(vcore_tls_descs[__vcore_id], __vcore_id);
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
@@ -330,9 +331,9 @@ int vcore_lib_init()
      * dies since vcores should be alive for the entire lifetime of the
      * program. */
     __vcores = malloc(sizeof(struct vcore) * __max_vcores);
-    __vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
+    vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
 
-    if (__vcores == NULL || __vcore_tls_descs == NULL) {
+    if (__vcores == NULL || vcore_tls_descs == NULL) {
       fprintf(stderr, "vcore: failed to initialize vcores\n");
       exit(1);
     }
@@ -419,3 +420,15 @@ void disable_notifs(uint32_t vcoreid)
 //	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
 }
 
+#undef vcore_lib_init
+#undef vcore_request
+#undef vcore_reenter
+#undef clear_notif_pending
+#undef enable_notifs
+#undef disable_notifs
+EXPORT_ALIAS(INTERNAL(vcore_lib_init), vcore_lib_init)
+EXPORT_ALIAS(INTERNAL(vcore_request), vcore_request)
+EXPORT_ALIAS(INTERNAL(vcore_reenter), vcore_reenter)
+EXPORT_ALIAS(INTERNAL(clear_notif_pending), clear_notif_pending)
+EXPORT_ALIAS(INTERNAL(enable_notifs), enable_notifs)
+EXPORT_ALIAS(INTERNAL(disable_notifs), disable_notifs)

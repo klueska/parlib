@@ -13,7 +13,7 @@
  * Ported directly from the Akaros kernel's slab allocator. */
 
 #include <stdio.h>
-#include "internal/assert.h"
+#include "internal/parlib.h"
 #include <sys/mman.h>
 #include "slab.h"
 
@@ -327,7 +327,7 @@ void slab_cache_reap(struct slab_cache *cp)
 	spinlock_unlock(&cp->cache_lock);
 }
 
-void print_slab_cache(struct slab_cache *cp)
+void EXPORT_SYMBOL print_slab_cache(struct slab_cache *cp)
 {
 	spinlock_lock(&cp->cache_lock);
 	printf("\nPrinting slab_cache:\n---------------------\n");
@@ -344,7 +344,7 @@ void print_slab_cache(struct slab_cache *cp)
 	spinlock_unlock(&cp->cache_lock);
 }
 
-void print_slab(struct slab *slab)
+void EXPORT_SYMBOL print_slab(struct slab *slab)
 {
 	printf("\nPrinting slab:\n---------------------\n");
 	printf("Objsize: %zu (%p)\n", slab->obj_size, (void*)slab->obj_size);
@@ -363,3 +363,15 @@ void print_slab(struct slab *slab)
 	}
 }
 
+#undef slab_cache_create
+#undef slab_cache_destroy
+#undef slab_cache_alloc
+#undef slab_cache_free
+#undef slab_cache_init
+#undef slab_cache_reap
+EXPORT_ALIAS(INTERNAL(slab_cache_create), slab_cache_create)
+EXPORT_ALIAS(INTERNAL(slab_cache_destroy), slab_cache_destroy)
+EXPORT_ALIAS(INTERNAL(slab_cache_alloc), slab_cache_alloc)
+EXPORT_ALIAS(INTERNAL(slab_cache_free), slab_cache_free)
+EXPORT_ALIAS(INTERNAL(slab_cache_init), slab_cache_init)
+EXPORT_ALIAS(INTERNAL(slab_cache_reap), slab_cache_reap)
