@@ -76,6 +76,11 @@ extern vcore_t *__vcores;
 extern void **vcore_tls_descs;
 
 /**
+ * Array of mappings from vcore id to pcore id.
+ */
+extern int *vcore_map;
+
+/**
  * Context associated with each vcore. Serves as the entry point to this vcore
  * whenever the vcore is first brough up, a usercontext yields on it, or a
  * signal / async I/O notification is to be handled.

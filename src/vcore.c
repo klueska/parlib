@@ -72,6 +72,9 @@ struct vcore *__vcores = NULL;
  * the vcore library. */
 void EXPORT_SYMBOL **vcore_tls_descs = NULL;
 
+/**  Array of mappings from vcore id to pcore id */
+int EXPORT_SYMBOL *vcore_map = NULL;
+
 /* Id of the currently running vcore. */
 __thread int EXPORT_SYMBOL __vcore_id = -1;
 
@@ -115,7 +118,7 @@ static void *__stack_alloc(size_t s)
 }
 
 /* Generic set affinity function */
-static void __set_affinity(int cpuid)
+static void __set_affinity(int vcoreid, int cpuid)
 {
   /* Set the proper affinity for this vcore */
   /* Moved here so that we are assured we are fully on the vcore before doing
@@ -126,6 +129,10 @@ static void __set_affinity(int cpuid)
   CPU_SET(cpuid, &c);
   if((sched_setaffinity(0, sizeof(cpu_set_t), &c)) != 0)
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
+
+  /* Set the entry in the vcore_map to the cpuid */
+  vcore_map[vcoreid] = cpuid;
+
   sched_yield();
 }
 
@@ -158,7 +165,7 @@ static void __vcore_entry_gate()
 static void __vcore_init(int vcoreid)
 {
   /* Set the affinity on this vcore */
-  __set_affinity(vcoreid);
+  __set_affinity(vcoreid, vcoreid);
 
   /* Switch to that tls region */
   set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
@@ -332,11 +339,16 @@ int vcore_lib_init()
      * program. */
     __vcores = malloc(sizeof(struct vcore) * __max_vcores);
     vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
+    vcore_map = malloc(sizeof(int) * __max_vcores);
 
-    if (__vcores == NULL || vcore_tls_descs == NULL) {
+    if (__vcores == NULL || vcore_tls_descs == NULL || vcore_map == NULL) {
       fprintf(stderr, "vcore: failed to initialize vcores\n");
       exit(1);
     }
+
+    /* Initialize the vcore_map to a sentinel value */
+    for (int i=0; i < __max_vcores; i++)
+      vcore_map[i] = VCORE_UNMAPPED;
 
     /* Create other vcores. */
     for (int i = 1; i < __max_vcores; i++) {
