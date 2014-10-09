@@ -1,6 +1,8 @@
+#include <stdio.h>
+#include <unistd.h>
 #include "alarm.h"
 #include "internal/time.h"
-#include <stdio.h>
+#include "timing.h"
 
 volatile int progress = 0;
 
@@ -14,8 +16,13 @@ int main() {
   init_awaiter(&a, cb);
   init_awaiter(&b, cb);
 
-  printf("Hi, the current time is %f\n", time_usec() * 1e-6);
+  get_tsc_freq();
+  uint64_t beg = tsc2usec(read_tsc());
+  udelay(10000);
+  uint64_t end = tsc2usec(read_tsc());
+  printf("Checking tsc: %lld\n", end-beg);
 
+  printf("Hi, the current time is %f\n", time_usec() * 1e-6);
   set_awaiter_rel(&a, 1000000);
   set_alarm(&a);
   while (progress < 1);
