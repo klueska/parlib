@@ -19,6 +19,7 @@ LIB_CFILES = \
   @SRCDIR@/alarm.c    \
   @SRCDIR@/vcore.c    \
   @SRCDIR@/parlib.c   \
+  @SRCDIR@/timing.c   \
   @SRCDIR@/waitfreelist.c
 
 LIB_HFILES = \
@@ -36,6 +37,7 @@ LIB_HFILES = \
   @SRCDIR@/vcore.h     \
   @SRCDIR@/export.h    \
   @SRCDIR@/context.h   \
+  @SRCDIR@/timing.h    \
   @SRCDIR@/waitfreelist.h
 
 LIB_SFILES = 
