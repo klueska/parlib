@@ -103,6 +103,8 @@ static void __vcore_entry() {
 #ifndef PARLIB_NO_UTHREAD_TLS
 		current_uthread->tls_desc = vcore_saved_tls_desc;
 #endif
+		vcore_saved_ucontext = NULL;
+		vcore_saved_tls_desc = NULL;
 	}
 	uthread_vcore_entry();
 }
