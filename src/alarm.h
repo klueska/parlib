@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "spinlock.h"
 
 /* Specifc waiter, per alarm */
 struct alarm_waiter {
@@ -11,6 +12,7 @@ struct alarm_waiter {
     bool     unset;
     bool     done;
     void     *data;
+    spinlock_t lock;
 };
 
 void init_awaiter(struct alarm_waiter *waiter,
