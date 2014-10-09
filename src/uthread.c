@@ -257,8 +257,7 @@ void EXPORT_SYMBOL uthread_yield(bool save_state,
 	assert(current_uthread == uthread);	
 	assert(in_vcore_context());	/* technically, we aren't fully in vcore context */
 	/* After this, make sure you don't use local variables. */
-	void *sp = vcore_context.uc_stack.ss_sp + vcore_context.uc_stack.ss_size;
-	__vcore_reenter(__uthread_yield, sp);
+	vcore_reenter(__uthread_yield);
 	/* Should never get here */
 yield_return_path:
 	/* Will jump here when the uthread's trapframe is restarted/popped. */
