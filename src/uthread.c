@@ -145,7 +145,6 @@ void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 		assert(!__uthread_allocate_tls(uthread));
 
 	/* Setup some thread local data for this newly initialized uthread */
-	uthread->pthread = pthread_self();
 	uthread_begin_access_tls_vars(uthread)
 	current_uthread = uthread;
 	uthread_end_access_tls_vars()
