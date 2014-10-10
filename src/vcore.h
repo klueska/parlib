@@ -67,9 +67,6 @@ extern "C" {
 struct vcore;
 typedef struct vcore vcore_t;
 
-/* Array of vcores */
-extern vcore_t *__vcores;
-
 /**
  *  Array of pointers to TLS descriptors for each vcore.
  */

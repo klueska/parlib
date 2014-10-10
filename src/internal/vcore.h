@@ -45,6 +45,8 @@ struct vcore {
      the address of the TCB on other ISAs. */
   arch_tls_data_t arch_tls_data;
 };
+/* Array of vcores */
+extern struct vcore *__vcores;
 
 void *__stack_alloc(size_t s);
 void __stack_free(void *stack, size_t s);
