@@ -256,6 +256,31 @@ static void __create_vcore(int i)
   internal_pthread_create(&attr, __vcore_trampoline_entry, (void *) (long) i);
 }
 
+/* If this is the first vcore requested, do something special */
+static bool vcore_request_init()
+{
+  init_once_racy(return false);
+
+  volatile bool once = false;
+  parlib_getcontext(&main_context);
+
+  if (!once) {
+    once = true;
+    /* Update the vcore counts and set the flag for allocated */
+    atomic_set(&__vcores[0].allocated, true);
+    atomic_set(&__num_vcores, 1);
+
+    /* Vcore is awake. Jump to the vcore's entry point at the top of the
+     * vcore stack. */
+    set_tls_desc(vcore_tls_descs[0], 0);
+    vcore_saved_ucontext = &main_context;
+    vcore_saved_tls_desc = main_tls_desc;
+    vcore_reenter(vcore_entry);
+  }
+
+  return true;
+}
+
 static int __vcore_request(int requested)
 {
   /* If there is no chance of waking up requested vcores, just bail out */
@@ -281,39 +306,13 @@ static int __vcore_request(int requested)
   }
 }
 
-/* If this is the first vcore requested, do something special */
-
-static bool vcore0_init()
-{
-  init_once_racy(return false);
-
-  volatile bool once = false;
-  parlib_getcontext(&main_context);
-
-  if (!once) {
-    once = true;
-    /* Update the vcore counts and set the flag for allocated */
-    atomic_set(&__vcores[0].allocated, true);
-    atomic_set(&__num_vcores, 1);
-
-    /* Vcore is awake. Jump to the vcore's entry point at the top of the
-     * vcore stack. */
-    set_tls_desc(vcore_tls_descs[0], 0);
-    vcore_saved_ucontext = &main_context;
-    vcore_saved_tls_desc = main_tls_desc;
-    vcore_reenter(vcore_entry);
-  }
-
-  return true;
-}
-
 int vcore_request(int requested)
 {
   if (requested < 0)
     return -1;
 
   if (requested > 0)
-    requested -= vcore0_init();
+    requested -= vcore_request_init();
 
   if (requested == 0)
     return 0;
