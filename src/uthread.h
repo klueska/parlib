@@ -30,6 +30,9 @@
 #define UT_NOT_RUNNING  2
 #define UT_HIJACKED     3
 
+/* Thread flags */
+#define NO_INTERRUPT		0x0001
+
 /* Externally blocked thread reasons (for uthread_has_blocked()) */
 #define UTH_EXT_BLK_MUTEX         1
 #define UTH_EXT_BLK_JUSTICE       2   /* whatever.  might need more options */
@@ -45,6 +48,7 @@ struct uthread {
     void *yield_arg;
     int flags;
     int state;
+    void *sigstack;
 #ifndef PARLIB_NO_UTHREAD_TLS
     void *tls_desc;
 #else
@@ -95,6 +99,26 @@ void uthread_runnable(struct uthread *uthread);
 /* Function to yield a uthread - it can be made runnable again in the future */
 void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
                    void *yield_arg);
+
+/* Don't allow this uthread to be interrupted by an incoming vcore signal. This
+ * is the default once a uthread starts running. */
+void uthread_disable_interrupts();
+
+/* Allow this uthread to be interrupted by an incoming vcore signal. You should
+ * call this early on in your startup code if you want to allow your uthreads
+ * to be interrupted by a vcore signal. */
+void uthread_enable_interrupts();
+
+/* By default, none of the uthread operations above are safe from interrupts.
+ * If you call any of these functions in a context where it is NOT OK to be
+ * interrupted by a signal, you must wrap these calls in enable/disable
+ * interrrupt calls.  This macro provides a conveninet manner of doing so. */
+#define uthread_interrupt_safe(func) \
+{ \
+	uthread_disable_interrupts(); \
+	func; \
+	uthread_enable_interrupts(); \
+}
 
 /* Helpers, which sched_entry() can call */
 void save_current_uthread(struct uthread *uthread);

@@ -82,6 +82,9 @@ __thread int EXPORT_SYMBOL __vcore_id = -1;
 /* Stack of the currently running vcore. */
 __thread void *__vcore_stack = NULL;
 
+/* A pointer to the current signal stack in use by the vcore */
+__thread void *__vcore_sigstack = NULL;
+
 /* Per vcore contexts for entry at the top of the vcore stack */
 __thread ucontext_t EXPORT_SYMBOL vcore_entry_context = { 0 };
 __thread ucontext_t vcore_entry_gate_context = { 0 };
@@ -122,10 +125,36 @@ void *__stack_alloc(size_t s)
   return stack_bottom;
 }
 
+/* Generic stack free function using mmap */
 void __stack_free(void *stack, size_t s)
 {
   munmap(stack, s);
 }
+
+/* Allocate a new signal stack to the vcore and save a pointer to the old one
+ * in the variable passed in. If the pointer passed in is NULL, then it is not
+ * assigned.  */
+void __sigstack_swap(void *sigstack)
+{
+	if (sigstack) {
+		__sigstack_free(sigstack);
+		sigstack = __vcore_sigstack;
+	}
+	__vcore_sigstack = malloc(SIGSTKSZ);
+
+	stack_t altstack;
+	altstack.ss_sp = __vcore_sigstack;
+	altstack.ss_size = SIGSTKSZ;
+	altstack.ss_flags = 0;
+	assert(sigaltstack(&altstack, NULL) == 0);
+}
+
+/* Free the signal stack */
+void __sigstack_free(void *sigstack)
+{
+	free(sigstack);
+}
+
 /* Generic set affinity function */
 static void __set_affinity(int vcoreid, int cpuid)
 {
@@ -215,11 +244,14 @@ static void __vcore_init(int vcoreid)
   /* Set the affinity on this vcore */
   __set_affinity(vcoreid, vcoreid);
 
+  /* Switch to the proper tls region */
+  set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
+
   /* Call get_tsc_freq() once to prime it with the right value on this core */
   get_tsc_freq();
 
-  /* Switch to the proper tls region */
-  set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
+  /* Set the signal stack for this vcore */
+  __sigstack_swap(NULL);
 
   /* Set that we are in vcore context */
   __in_vcore_context = true;

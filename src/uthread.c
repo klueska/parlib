@@ -33,12 +33,30 @@
 
 #define printd(...)
 
+#define maybe_resignal() \
+{ \
+	int vcoreid = vcore_id(); \
+	if (atomic_swap(&vcore_sigpending[vcoreid], 0) == 1) \
+		vcore_signal(vcoreid); \
+}
+
+#define maybe_restart_vcore() \
+{ \
+	int vcoreid = vcore_id(); \
+	if (atomic_swap(&vcore_sigpending[vcoreid], 0) == 1) \
+		vcore_reenter(vcore_entry); \
+}
+
 /* Which operations we'll call for the 2LS.  Will change a bit with Lithe.  For
  * now, there are no defaults.  2LSs can override sched_ops. */
 static struct schedule_ops default_2ls_ops = {0};
 struct schedule_ops *sched_ops __attribute__((weak)) EXPORT_SYMBOL = &default_2ls_ops;
 
+/* A pointer to the current thread running on a vcore */
 __thread struct uthread EXPORT_SYMBOL *current_uthread = 0;
+
+/* Mark that we are not able to handle the signal immediately */
+static atomic_t *vcore_sigpending = NULL;
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 /* static helpers: */
@@ -46,6 +64,20 @@ static int __uthread_allocate_tls(struct uthread *uthread);
 static int __uthread_reinit_tls(struct uthread *uthread);
 static void __uthread_free_tls(struct uthread *uthread);
 #endif
+
+/* Allow this uthread to be interrupted by an incoming vcore signal. This is
+ * the default once a uthread starts running. */
+void EXPORT_SYMBOL uthread_enable_interrupts()
+{
+	current_uthread->flags &= ~NO_INTERRUPT;
+	maybe_resignal();
+}
+
+/* Don't allow this uthread to be interrupted by an incoming vcore signal */
+void EXPORT_SYMBOL uthread_disable_interrupts()
+{
+	current_uthread->flags |= NO_INTERRUPT;
+}
 
 /* The real 2LS calls this, passing in a uthread representing thread0.  When it
  * returns, you're in _M mode, still running thread0, on vcore0 */
@@ -58,10 +90,17 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 		/* Make sure the vcore subsystem is up and running */
 		assert(!vcore_lib_init());
 	
+		/* Initialize the vcore_sigpending array */
+		vcore_sigpending = calloc(sizeof(atomic_t), max_vcores());
+		for (int i=0; i<max_vcores(); i++)
+			vcore_sigpending[i] = ATOMIC_INITIALIZER(0);
+
 		/* Set current_uthread to the uthread passed in, so we have a place to
 		 * save the main thread's context when yielding */
 		current_uthread = uthread;
 		uthread->state = UT_RUNNING;
+		uthread->flags = NO_INTERRUPT;
+		uthread->sigstack = NULL;
 	
 #ifndef PARLIB_NO_UTHREAD_TLS
 		/* Associate the main thread's tls with the current tls as well */
@@ -110,25 +149,39 @@ static void __vcore_entry() {
 }
 EXPORT_ALIAS(__vcore_entry, vcore_entry)
 
+/* Our callback after receiving a signal on the vcore */
 void vcore_sigentry()
 {
-	if (in_vcore_context())
-		return;
+	int vcoreid = vcore_id();
+	struct uthread *uthread = current_uthread;
+	do {
+		cmb();
+		if (in_vcore_context()) {
+			atomic_set(&vcore_sigpending[vcoreid], 1);
+			return;
+		}
 
-	static __thread uint32_t in_signal_handler = 0;
-	if (atomic_swap_u32(&in_signal_handler, 1) == 1)
-		return;
+		if (uthread->flags & NO_INTERRUPT) {
+			atomic_set(&vcore_sigpending[vcoreid], 1);
+			return;
+		}
 
-	void cb(struct uthread *uthread, void *arg)
-	{
-		in_signal_handler = 0;
-
-		assert(sched_ops->thread_paused);
-		assert(sched_ops->sched_entry);
-		sched_ops->thread_paused(uthread);
-	}
-
-	uthread_yield(true, cb, NULL);
+		void cb(struct uthread *uthread, void *arg)
+		{
+			__sigstack_swap(uthread->sigstack);
+			assert(sched_ops->thread_paused);
+			sched_ops->thread_paused(uthread);
+			current_uthread = NULL;
+			/* Notice this is straight up setcontext, not parlib_setcontext.  We
+			 * actually want the signal mask to be restored this time! */
+			setcontext(&vcore_entry_context);
+		}
+		cmb();
+		uthread->flags |= NO_INTERRUPT;
+		uthread_yield(true, cb, 0);
+		uthread->flags &= ~NO_INTERRUPT;
+		vcoreid = vcore_id();
+	} while (atomic_swap(&vcore_sigpending[vcoreid], 0) == 1);
 }
 
 void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
@@ -136,6 +189,8 @@ void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 #ifndef PARLIB_NO_UTHREAD_TLS
 	assert(uthread);
 	uthread->state = UT_NOT_RUNNING;
+	uthread->flags = NO_INTERRUPT;
+	uthread->sigstack = NULL;
 
 	/* If a tls_desc is already set for this thread, reinit it... */
 	if (uthread->tls_desc)
@@ -159,6 +214,8 @@ void EXPORT_SYMBOL uthread_cleanup(struct uthread *uthread)
 	assert(uthread->tls_desc);
 	__uthread_free_tls(uthread);
 #endif
+	/* Free the uthread sigaltstack */
+	__sigstack_free(uthread->sigstack);
 }
 
 void EXPORT_SYMBOL uthread_runnable(struct uthread *uthread)
@@ -296,6 +353,7 @@ void EXPORT_SYMBOL run_current_uthread(void)
 	assert(in_vcore_context());
 	assert(current_uthread);
 	assert(current_uthread->state == UT_RUNNING);
+	maybe_restart_vcore();
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 	assert(current_uthread->tls_desc);
