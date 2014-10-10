@@ -105,10 +105,10 @@ extern __thread void *vcore_saved_tls_desc TLS_INITIAL_EXEC;
  */
 extern void vcore_entry();
 
-/**
- * Functions for sending/receiving a signal to a vcore
- */
+/* Function for sending a signal to a vcore. */
 extern void vcore_signal(int vcoreid);
+
+/* Callback to be implemented when a signal is recieved on a vcore. */
 extern void vcore_sigentry();
 
 /* Initialization routine for the vcore subsystem. */

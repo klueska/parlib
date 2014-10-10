@@ -110,10 +110,8 @@ static void __vcore_entry() {
 }
 EXPORT_ALIAS(__vcore_entry, vcore_entry)
 
-void vcore_sigentry(int sig)
+void vcore_sigentry()
 {
-	assert(sig == SIGUSR1);
-
 	if (in_vcore_context())
 		return;
 

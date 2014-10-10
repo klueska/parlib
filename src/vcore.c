@@ -145,6 +145,29 @@ static void __set_affinity(int vcoreid, int cpuid)
   sched_yield();
 }
 
+/* Wrapper function for the entry fucntion from a vcore signal */
+static void __vcore_sigentry(int sig, siginfo_t *info, void *context)
+{
+	assert(sig == SIGVCORE);
+	vcore_sigentry();
+}
+
+/* Generic sigaction function to set up a singal handler for sending a signal
+ * to a vcore */
+static void __set_sigaction()
+{
+	struct sigaction act;
+	act.sa_sigaction = __vcore_sigentry;
+	act.sa_flags = SA_SIGINFO;
+	sigemptyset(&act.sa_mask);
+	sigaction(SIGVCORE, &act, NULL);
+}
+
+/* Function for sending a signal to a vcore. */
+void EXPORT_SYMBOL vcore_signal(int vcoreid) {
+	pthread_kill(__vcores[vcoreid].pthread, SIGVCORE);
+}
+
 /* Helper function used to reenter at the top of a vcore's stack for an
  * arbitrary function */
 void vcore_reenter(void (*entry_func)(void))
@@ -203,6 +226,9 @@ static void __vcore_init(int vcoreid)
 
   /* Assign the id to the tls variable */
   __vcore_id = vcoreid;
+
+  /* Store a pointer to the backing pthread for this vcore */
+  __vcores[vcoreid].pthread = pthread_self();
 
   /* Set up useful contexts that start at the top of the vcore stack. */
   __vcore_init_context(&vcore_entry_context, vcore_entry);
@@ -362,6 +388,9 @@ int vcore_lib_init()
     /* Initialize the vcore_map to a sentinel value */
     for (int i=0; i < __max_vcores; i++)
       vcore_map[i] = VCORE_UNMAPPED;
+
+	/* Set the hignal handler for signals sent to all vcores (inherited) */
+	__set_sigaction();
 
     /* Create other vcores. */
     for (int i = 1; i < __max_vcores; i++) {

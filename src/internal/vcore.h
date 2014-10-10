@@ -37,6 +37,8 @@
 #include "limits.h"
 #define VCORE_STACK_SIZE (4*PTHREAD_STACK_MIN)
 
+#define SIGVCORE	SIGUSR1
+
 struct vcore {
   /* For bookkeeping */
   atomic_t allocated;
@@ -44,6 +46,9 @@ struct vcore {
   /* Architecture-specific TLS context information, e.g. LDT on IA-32 or
      the address of the TCB on other ISAs. */
   arch_tls_data_t arch_tls_data;
+
+  /* Pointer to the backing pthread for this vcore */
+  pthread_t pthread;
 };
 /* Array of vcores */
 extern struct vcore *__vcores;
