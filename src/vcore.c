@@ -93,7 +93,7 @@ __thread ucontext_t EXPORT_SYMBOL *vcore_saved_ucontext = NULL;
 /* Current tls_desc of the user context running on a vcore, this used to restore
  * a user's tls_desc if it is interrupted for some reason without yielding
  * voluntarily */
-__thread void *vcore_saved_tls_desc = NULL;
+__thread void EXPORT_SYMBOL *vcore_saved_tls_desc = NULL;
 
 /* Delineates whether the current context running on the vcore is the vcore
  * context or not. Default is false, so we don't have to set it whenever we
@@ -323,10 +323,6 @@ int vcore_request(int requested)
 
 void EXPORT_SYMBOL vcore_yield()
 {
-  /* Clear out the saved ht_saved_context and ht_saved_tls_desc variables */
-  vcore_saved_ucontext = NULL;
-  vcore_saved_tls_desc = NULL;
-
 #ifndef PARLIB_NO_UTHREAD_TLS
   /* Restore the TLS associated with this vcore's context */
   set_tls_desc(vcore_tls_descs[__vcore_id], __vcore_id);
