@@ -81,11 +81,9 @@ extern void **vcore_tls_descs;
 extern int *vcore_map;
 
 /**
- * Context associated with each vcore. Serves as the entry point to this vcore
- * whenever the vcore is first brough up, a usercontext yields on it, or a
- * signal / async I/O notification is to be handled.
+ * Per vcore context for entry at the top of the vcore stack.
  */
-extern __thread ucontext_t vcore_context TLS_INITIAL_EXEC;
+extern __thread ucontext_t vcore_entry_context TLS_INITIAL_EXEC;
 
 /**
  * Current user context running on each vcore, used when interrupting a

@@ -46,6 +46,9 @@ struct vcore {
   arch_tls_data_t arch_tls_data;
 };
 
+void *__stack_alloc(size_t s);
+void __stack_free(void *stack, size_t s);
+
 pthread_t internal_pthread_create(pthread_attr_t *attr,
                                   void *(*start_routine) (void *), void *arg);
 
