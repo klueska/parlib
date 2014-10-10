@@ -63,6 +63,7 @@
 #include "tls.h"
 #include "vcore.h"
 #include "mcs.h"
+#include "timing.h"
 
 /* Array of vcores using clone to masquerade. */
 struct vcore *__vcores = NULL;
@@ -191,7 +192,10 @@ static void __vcore_init(int vcoreid)
   /* Set the affinity on this vcore */
   __set_affinity(vcoreid, vcoreid);
 
-  /* Switch to that tls region */
+  /* Call get_tsc_freq() once to prime it with the right value on this core */
+  get_tsc_freq();
+
+  /* Switch to the proper tls region */
   set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
 
   /* Set that we are in vcore context */
