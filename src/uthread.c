@@ -172,9 +172,12 @@ void vcore_sigentry()
 			assert(sched_ops->thread_paused);
 			sched_ops->thread_paused(uthread);
 			current_uthread = NULL;
-			/* Notice this is straight up setcontext, not parlib_setcontext.  We
-			 * actually want the signal mask to be restored this time! */
-			setcontext(&vcore_entry_context);
+
+			sigset_t mask;
+			sigemptyset(&mask);
+			sigaddset(&mask, SIGVCORE);
+			pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
+			vcore_reenter(vcore_entry);
 		}
 		cmb();
 		uthread->flags |= NO_INTERRUPT;
