@@ -189,12 +189,12 @@ void vcore_sigentry()
 
 void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 {
-#ifndef PARLIB_NO_UTHREAD_TLS
 	assert(uthread);
 	uthread->state = UT_NOT_RUNNING;
 	uthread->flags = NO_INTERRUPT;
 	uthread->sigstack = NULL;
 
+#ifndef PARLIB_NO_UTHREAD_TLS
 	/* If a tls_desc is already set for this thread, reinit it... */
 	if (uthread->tls_desc)
 		assert(!__uthread_reinit_tls(uthread));
