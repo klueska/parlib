@@ -324,16 +324,19 @@ static bool vcore_request_init()
 
   if (!once) {
     once = true;
-    /* Update the vcore counts and set the flag for allocated */
-    atomic_set(&__vcores[0].allocated, true);
-    atomic_set(&__num_vcores, 1);
-
-    /* Vcore is awake. Jump to the vcore's entry point at the top of the
-     * vcore stack. */
-    set_tls_desc(vcore_tls_descs[0], 0);
     vcore_saved_ucontext = &main_context;
     vcore_saved_tls_desc = main_tls_desc;
-    vcore_reenter(vcore_entry);
+
+    void cb()
+    {
+      int sleepforever = true;
+      atomic_add(&__num_vcores, 1);
+      atomic_set(&__vcores[0].allocated, true);
+      futex_wakeup_one(&__vcores[0].allocated);
+      futex_wait(&sleepforever, true);
+    }
+    void *stack = malloc(PGSIZE);
+    __vcore_reenter(cb, stack);
   }
 
   return true;
@@ -424,16 +427,13 @@ int vcore_lib_init()
 	/* Set the hignal handler for signals sent to all vcores (inherited) */
 	__set_sigaction();
 
-    /* Create other vcores. */
-    for (int i = 1; i < __max_vcores; i++) {
+    /* Create all the vcores. */
+    /* Previously, we reused the main thread for vcore 0, but this causes
+     * problems with signaling for vcore 0, so now we just create them all the
+     * same way and leae the main thread alone */
+    for (int i = 0; i < __max_vcores; i++) {
       __create_vcore(i);
     }
-
-    /* Initialize zeroth vcore (i.e., us).  We do this last so that the
-     * pthreads that correspond to the vcores are contiguous in GDB. */
-    init_tls(allocate_tls(), 0);
-    __vcore_init(0);
-    set_tls_desc(main_tls_desc, 0);
 
     /* Wait until they have parked. */
     while (atomic_read(&__num_vcores) > 0)
