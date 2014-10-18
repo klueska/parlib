@@ -320,6 +320,7 @@ static bool vcore_request_init()
 
   if (!once) {
     once = true;
+    set_tls_desc(vcore_tls_descs[0], 0);
     vcore_saved_ucontext = &main_context;
     vcore_saved_tls_desc = main_tls_desc;
 
