@@ -63,7 +63,6 @@
 #include "tls.h"
 #include "vcore.h"
 #include "mcs.h"
-#include "timing.h"
 
 /* Array of vcores using clone to masquerade. */
 struct vcore *__vcores = NULL;
@@ -246,9 +245,6 @@ static void __vcore_init(int vcoreid)
 
   /* Switch to the proper tls region */
   set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
-
-  /* Call get_tsc_freq() once to prime it with the right value on this core */
-  get_tsc_freq();
 
   /* Set the signal stack for this vcore */
   __sigstack_swap(NULL);
