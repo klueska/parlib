@@ -11,11 +11,9 @@ struct wfl_slot {
 
 struct wfl {
   struct wfl_slot *head;
-  struct wfl_slot first;
+  size_t slot_size;
   size_t size;
 };
-
-#define WFL_INITIALIZER(list) {&(list).first, {0, 0}}
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,6 +21,7 @@ extern "C" {
 
 #ifdef COMPILING_PARLIB
 # define wfl_init INTERNAL(wfl_init)
+# define wfl_init_ss INTERNAL(wfl_init_ss)
 # define wfl_cleanup INTERNAL(wfl_cleanup)
 # define wfl_insert INTERNAL(wfl_insert)
 # define wfl_insert_into INTERNAL(wfl_insert_into)
@@ -35,6 +34,7 @@ extern "C" {
 
 /* Initialize a WFL. Memory for the wfl struct must be allocated externally. */
 void wfl_init(struct wfl *list);
+void wfl_init_ss(struct wfl *list, size_t slot_size);
 
 /* Cleanup a WFL. Memory for the wfl struct must be freed externally. */
 void wfl_cleanup(struct wfl *list);
