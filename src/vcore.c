@@ -63,9 +63,14 @@
 #include "tls.h"
 #include "vcore.h"
 #include "mcs.h"
+#include "event.h"
 
 /* Array of vcores using clone to masquerade. */
 struct vcore *__vcores = NULL;
+
+/* Array of markers indicating that we are not able to handle a signal
+ * immediately */
+atomic_t *__vcore_sigpending = NULL;
 
 /* Array of TLS descriptors to use for each vcore. Separate from the vcore
  * array so that we can access it transparently, as an array, outside of
@@ -112,6 +117,9 @@ volatile int EXPORT_SYMBOL __max_vcores = 0;
  * context over to vcore0 */
 static ucontext_t main_context = { 0 };
  
+ /* Some forward declarations */
+static int __vcore_request_specific(int vcoreid);
+
 /* Generic stack allocation function using mmap */
 void *__stack_alloc(size_t s)
 {
@@ -173,10 +181,16 @@ static void __set_affinity(int vcoreid, int cpuid)
   sched_yield();
 }
 
-/* Wrapper function for the entry fucntion from a vcore signal */
+/* Wrapper function for the entry function from a vcore signal */
 static void __vcore_sigentry(int sig, siginfo_t *info, void *context)
 {
 	assert(sig == SIGVCORE);
+	if (__vcore_request_specific(__vcore_id) == 0)
+		return;
+	if (in_vcore_context()) {
+		atomic_set(&__vcore_sigpending[__vcore_id], 1);
+		return;
+	}
 	vcore_sigentry();
 }
 
@@ -213,6 +227,15 @@ static void vcore_entry_gate()
   /* Update the vcore counts and set the flag for allocated to false */
   atomic_add(&__num_vcores, -1);
   atomic_set(&__vcores[vcoreid].allocated, false);
+
+  /* Restart the vcore if a signal is pending. This has to come after starting
+   * to deallocate the vcore above. Doing so allows us to never miss a signal
+   * because of the synchronization present in the __vcore_sigentry() call. */
+  if (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1) {
+    atomic_add(&__num_vcores, 1);
+    atomic_set(&__vcores[vcoreid].allocated, true);
+    vcore_reenter(vcore_entry);
+  }
 
   /* Wait for this vcore to get woken up. */
   futex_wait(&__vcores[vcoreid].allocated, false);
@@ -339,6 +362,18 @@ static bool vcore_request_init()
   return true;
 }
 
+static int __vcore_request_specific(int vcoreid)
+{
+  if (atomic_read(&__vcores[vcoreid].allocated) == false) {
+    if (atomic_swap(&__vcores[vcoreid].allocated, true) == false) {
+      atomic_add(&__num_vcores, 1);
+      futex_wakeup_one(&__vcores[vcoreid].allocated);
+      return 0;
+    }
+  }
+  return -1;
+}
+
 static int __vcore_request(int requested)
 {
   /* If there is no chance of waking up requested vcores, just bail out */
@@ -409,6 +444,7 @@ int vcore_lib_init()
      * dies since vcores should be alive for the entire lifetime of the
      * program. */
     __vcores = malloc(sizeof(struct vcore) * __max_vcores);
+    __vcore_sigpending = malloc(sizeof(atomic_t) * max_vcores());
     vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
     vcore_map = malloc(sizeof(int) * __max_vcores);
 
@@ -417,12 +453,16 @@ int vcore_lib_init()
       exit(1);
     }
 
+	/* Initialize the vcore_sigpending array */
+	for (int i=0; i<max_vcores(); i++)
+		__vcore_sigpending[i] = ATOMIC_INITIALIZER(0);
+
     /* Initialize the vcore_map to a sentinel value */
     for (int i=0; i < __max_vcores; i++)
       vcore_map[i] = VCORE_UNMAPPED;
 
-	/* Set the hignal handler for signals sent to all vcores (inherited) */
-	__set_sigaction();
+  	/* Set the hignal handler for signals sent to all vcores (inherited) */
+  	__set_sigaction();
 
     /* Create all the vcores. */
     /* Previously, we reused the main thread for vcore 0, but this causes
@@ -431,6 +471,9 @@ int vcore_lib_init()
     for (int i = 0; i < __max_vcores; i++) {
       __create_vcore(i);
     }
+
+  	/* Initialize the event subsystem */
+    event_lib_init();
 
     /* Wait until they have parked. */
     while (atomic_read(&__num_vcores) > 0)

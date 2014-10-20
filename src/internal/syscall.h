@@ -20,7 +20,7 @@ ssize_t __write(int, const void*, size_t);
 #endif
 
 #include "../uthread.h"
-#include "../syscall.h"
+#include "../event.h"
 #include "parlib.h"
 #include "pthread_pool.h"
 #include <sys/mman.h>
@@ -33,10 +33,10 @@ typedef struct {
 #define uthread_blocking_call(__func, ...) \
 ({ \
   typeof(__func(__VA_ARGS__)) ret; \
+  int vcoreid = vcore_id(); \
   void *do_##__func(void *arg) { \
     ret = __func(__VA_ARGS__); \
-    handle_event_t handler = ev_handlers[EV_SYSCALL]; \
-    handler((struct event_msg*)arg, EV_SYSCALL); \
+    send_event((struct event_msg*)arg, EV_SYSCALL, vcoreid); \
     return NULL; \
   } \
   yield_callback_arg_t arg; \

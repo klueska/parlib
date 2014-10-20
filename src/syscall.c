@@ -4,7 +4,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "syscall.h"
 
 handle_event_t EXPORT_SYMBOL ev_handlers[MAX_NR_EVENT];
 

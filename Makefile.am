@@ -16,6 +16,7 @@ LIB_CFILES = \
   @SRCDIR@/pthread_pool.c \
   @SRCDIR@/uthread.c  \
   @SRCDIR@/syscall.c  \
+  @SRCDIR@/event.c    \
   @SRCDIR@/alarm.c    \
   @SRCDIR@/vcore.c    \
   @SRCDIR@/parlib.c   \
@@ -32,7 +33,7 @@ LIB_HFILES = \
   @SRCDIR@/tls.h       \
   @SRCDIR@/dtls.h      \
   @SRCDIR@/uthread.h   \
-  @SRCDIR@/syscall.h   \
+  @SRCDIR@/event.h     \
   @SRCDIR@/alarm.h     \
   @SRCDIR@/vcore.h     \
   @SRCDIR@/export.h    \

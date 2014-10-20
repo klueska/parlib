@@ -22,28 +22,28 @@
 #include <errno.h>
 
 #include "internal/parlib.h"
+#include "internal/vcore.h"
 #include "parlib.h"
 #include "vcore.h"
 #include "uthread.h"
 #include "atomic.h"
 #include "arch.h"
 #include "tls.h"
-#include "internal/parlib.h"
-#include "internal/vcore.h"
+#include "event.h"
 
 #define printd(...)
 
 #define maybe_resignal() \
 { \
 	int vcoreid = vcore_id(); \
-	if (atomic_swap(&vcore_sigpending[vcoreid], 0) == 1) \
+	if (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1) \
 		vcore_signal(vcoreid); \
 }
 
 #define maybe_restart_vcore() \
 { \
 	int vcoreid = vcore_id(); \
-	if (atomic_swap(&vcore_sigpending[vcoreid], 0) == 1) \
+	if (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1) \
 		vcore_reenter(vcore_entry); \
 }
 
@@ -54,9 +54,6 @@ struct schedule_ops *sched_ops __attribute__((weak)) EXPORT_SYMBOL = &default_2l
 
 /* A pointer to the current thread running on a vcore */
 __thread struct uthread EXPORT_SYMBOL *current_uthread = 0;
-
-/* Mark that we are not able to handle the signal immediately */
-static atomic_t *vcore_sigpending = NULL;
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 /* static helpers: */
@@ -90,11 +87,6 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 		/* Make sure the vcore subsystem is up and running */
 		assert(!vcore_lib_init());
 	
-		/* Initialize the vcore_sigpending array */
-		vcore_sigpending = calloc(sizeof(atomic_t), max_vcores());
-		for (int i=0; i<max_vcores(); i++)
-			vcore_sigpending[i] = ATOMIC_INITIALIZER(0);
-
 		/* Set current_uthread to the uthread passed in, so we have a place to
 		 * save the main thread's context when yielding */
 		current_uthread = uthread;
@@ -130,6 +122,7 @@ void __attribute__((noreturn)) uthread_vcore_entry(void)
 {
 	assert(in_vcore_context());
 	assert(sched_ops->sched_entry);
+	handle_events();
 	sched_ops->sched_entry();
 	/* 2LS sched_entry should never return */
 	__builtin_unreachable();
@@ -157,12 +150,12 @@ void vcore_sigentry()
 	do {
 		cmb();
 		if (in_vcore_context()) {
-			atomic_set(&vcore_sigpending[vcoreid], 1);
+			atomic_set(&__vcore_sigpending[vcoreid], 1);
 			return;
 		}
 
 		if (uthread->flags & NO_INTERRUPT) {
-			atomic_set(&vcore_sigpending[vcoreid], 1);
+			atomic_set(&__vcore_sigpending[vcoreid], 1);
 			return;
 		}
 
@@ -184,7 +177,7 @@ void vcore_sigentry()
 		uthread_yield(true, cb, 0);
 		uthread->flags &= ~NO_INTERRUPT;
 		vcoreid = vcore_id();
-	} while (atomic_swap(&vcore_sigpending[vcoreid], 0) == 1);
+	} while (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1);
 }
 
 void EXPORT_SYMBOL uthread_init(struct uthread *uthread)

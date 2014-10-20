@@ -52,11 +52,15 @@ struct vcore {
 };
 /* Array of vcores */
 extern struct vcore *__vcores;
+/* Array of sigpending flags */
+extern atomic_t *__vcore_sigpending;
 
 void *__stack_alloc(size_t s);
 void __stack_free(void *stack, size_t s);
 void __sigstack_swap(void *sigstack);
 void __sigstack_free(void *sigstack);
+
+void vcore_handle_events();
 
 pthread_t internal_pthread_create(pthread_attr_t *attr,
                                   void *(*start_routine) (void *), void *arg);
