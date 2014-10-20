@@ -82,10 +82,8 @@ struct wfl_slot *wfl_insert(struct wfl *list, void *data)
 {
   struct wfl_slot *p = list->head; // list head is never null
   while (1) {
-    if (p->data == NULL) {
-      if (wfl_insert_into(list, p, data))
-        return p;
-    }
+    if (wfl_insert_into(list, p, data))
+      return p;
 
     if (p->next == NULL)
       break;
@@ -111,6 +109,8 @@ struct wfl_slot *wfl_insert(struct wfl *list, void *data)
 
 bool wfl_insert_into(struct wfl *list, struct wfl_slot *slot, void *data)
 {
+  if (slot->data != NULL)
+    return false;
   bool ret = __sync_bool_compare_and_swap(&slot->data, NULL, data);
   if (ret)
     __sync_fetch_and_add(&list->size, 1);
@@ -119,6 +119,8 @@ bool wfl_insert_into(struct wfl *list, struct wfl_slot *slot, void *data)
 
 void *wfl_remove_from(struct wfl *list, struct wfl_slot *slot)
 {
+  if (slot->data == NULL)
+    return NULL;
   void *data = atomic_swap_ptr(&slot->data, 0);
   if (data != NULL)
     __sync_fetch_and_add(&list->size, -1);
@@ -127,12 +129,12 @@ void *wfl_remove_from(struct wfl *list, struct wfl_slot *slot)
 
 void *wfl_remove(struct wfl *list)
 {
+  if (list->size == 0)
+    return NULL;
   for (struct wfl_slot *p = list->head; p != NULL; p = p->next) {
-    if (p->data != NULL) {
-      void *data = wfl_remove_from(list, p);
-      if (data != NULL)
-        return data;
-    }
+    void *data = wfl_remove_from(list, p);
+    if (data != NULL)
+      return data;
   }
   return NULL;
 }
