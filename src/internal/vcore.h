@@ -50,10 +50,19 @@ struct vcore {
   /* Pointer to the backing pthread for this vcore */
   pthread_t pthread;
 };
-/* Array of vcores */
-extern struct vcore *__vcores;
-/* Array of sigpending flags */
-extern atomic_t *__vcore_sigpending;
+
+/* Internal cache aligned, per vcore data */
+struct internal_vcore_pvc_data {
+	/* The vcore struct itself */
+	struct vcore vcore;
+
+	/* Marker indicating that the vcore is not able to handle a signal
+	 * immediately */
+	atomic_t sigpending;
+} __attribute((aligned(ARCH_CL_SIZE)));
+extern struct internal_vcore_pvc_data *internal_vcore_pvc_data;
+#define __vcores(i) (internal_vcore_pvc_data[i].vcore)
+#define __vcore_sigpending(i) (internal_vcore_pvc_data[i].sigpending)
 
 void *__stack_alloc(size_t s);
 void __stack_free(void *stack, size_t s);

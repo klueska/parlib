@@ -65,20 +65,9 @@
 #include "mcs.h"
 #include "event.h"
 
-/* Array of vcores using clone to masquerade. */
-struct vcore *__vcores = NULL;
-
-/* Array of markers indicating that we are not able to handle a signal
- * immediately */
-atomic_t *__vcore_sigpending = NULL;
-
-/* Array of TLS descriptors to use for each vcore. Separate from the vcore
- * array so that we can access it transparently, as an array, outside of
- * the vcore library. */
-void EXPORT_SYMBOL **vcore_tls_descs = NULL;
-
-/**  Array of mappings from vcore id to pcore id */
-int EXPORT_SYMBOL *vcore_map = NULL;
+/* Per vcore data */
+struct vcore_pvc_data EXPORT_SYMBOL *vcore_pvc_data;
+struct internal_vcore_pvc_data *internal_vcore_pvc_data;
 
 /* Id of the currently running vcore. */
 __thread int EXPORT_SYMBOL __vcore_id = -1;
@@ -176,7 +165,7 @@ static void __set_affinity(int vcoreid, int cpuid)
     fprintf(stderr, "vcore: could not set affinity of underlying pthread\n");
 
   /* Set the entry in the vcore_map to the cpuid */
-  vcore_map[vcoreid] = cpuid;
+  vcore_map(vcoreid) = cpuid;
 
   sched_yield();
 }
@@ -188,7 +177,7 @@ static void __vcore_sigentry(int sig, siginfo_t *info, void *context)
 	if (__vcore_request_specific(__vcore_id) == 0)
 		return;
 	if (in_vcore_context()) {
-		atomic_set(&__vcore_sigpending[__vcore_id], 1);
+		atomic_set(&__vcore_sigpending(__vcore_id), 1);
 		return;
 	}
 	vcore_sigentry();
@@ -207,7 +196,7 @@ static void __set_sigaction()
 
 /* Function for sending a signal to a vcore. */
 void EXPORT_SYMBOL vcore_signal(int vcoreid) {
-	pthread_kill(__vcores[vcoreid].pthread, SIGVCORE);
+	pthread_kill(__vcores(vcoreid).pthread, SIGVCORE);
 }
 
 /* Helper function used to reenter at the top of a vcore's stack for an
@@ -226,19 +215,19 @@ static void vcore_entry_gate()
 
   /* Update the vcore counts and set the flag for allocated to false */
   atomic_add(&__num_vcores, -1);
-  atomic_set(&__vcores[vcoreid].allocated, false);
+  atomic_set(&__vcores(vcoreid).allocated, false);
 
   /* Restart the vcore if a signal is pending. This has to come after starting
    * to deallocate the vcore above. Doing so allows us to never miss a signal
    * because of the synchronization present in the __vcore_sigentry() call. */
-  if (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1) {
+  if (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1) {
     atomic_add(&__num_vcores, 1);
-    atomic_set(&__vcores[vcoreid].allocated, true);
+    atomic_set(&__vcores(vcoreid).allocated, true);
     vcore_reenter(vcore_entry);
   }
 
   /* Wait for this vcore to get woken up. */
-  futex_wait(&__vcores[vcoreid].allocated, false);
+  futex_wait(&__vcores(vcoreid).allocated, false);
 
   /* Vcore is awake. Jump to the vcore's entry point */
   vcore_entry();
@@ -267,7 +256,7 @@ static void __vcore_init(int vcoreid)
   __set_affinity(vcoreid, vcoreid);
 
   /* Switch to the proper tls region */
-  set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
+  set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
 
   /* Set the signal stack for this vcore */
   __sigstack_swap(NULL);
@@ -279,7 +268,7 @@ static void __vcore_init(int vcoreid)
   __vcore_id = vcoreid;
 
   /* Store a pointer to the backing pthread for this vcore */
-  __vcores[vcoreid].pthread = pthread_self();
+  __vcores(vcoreid).pthread = pthread_self();
 
   /* Set up useful contexts that start at the top of the vcore stack. */
   __vcore_init_context(&vcore_entry_context, vcore_entry);
@@ -326,7 +315,7 @@ static void __create_vcore(int i)
   
   /* Up the vcore count counts and set the flag for allocated until we
    * get a chance to stop the thread and deallocate it in its entry gate */
-  atomic_set(&__vcores[i].allocated, true);
+  atomic_set(&__vcores(i).allocated, true);
   atomic_add(&__num_vcores, 1);
 
   /* Actually create the vcore's backing pthread. */
@@ -343,7 +332,7 @@ static bool vcore_request_init()
 
   if (!once) {
     once = true;
-    set_tls_desc(vcore_tls_descs[0], 0);
+    set_tls_desc(vcore_tls_descs(0), 0);
     vcore_saved_ucontext = &main_context;
     vcore_saved_tls_desc = main_tls_desc;
 
@@ -351,8 +340,8 @@ static bool vcore_request_init()
     {
       int sleepforever = true;
       atomic_add(&__num_vcores, 1);
-      atomic_set(&__vcores[0].allocated, true);
-      futex_wakeup_one(&__vcores[0].allocated);
+      atomic_set(&__vcores(0).allocated, true);
+      futex_wakeup_one(&__vcores(0).allocated);
       futex_wait(&sleepforever, true);
     }
     void *stack = malloc(PGSIZE);
@@ -364,10 +353,10 @@ static bool vcore_request_init()
 
 static int __vcore_request_specific(int vcoreid)
 {
-  if (atomic_read(&__vcores[vcoreid].allocated) == false) {
-    if (atomic_swap(&__vcores[vcoreid].allocated, true) == false) {
+  if (atomic_read(&__vcores(vcoreid).allocated) == false) {
+    if (atomic_swap(&__vcores(vcoreid).allocated, true) == false) {
       atomic_add(&__num_vcores, 1);
-      futex_wakeup_one(&__vcores[vcoreid].allocated);
+      futex_wakeup_one(&__vcores(vcoreid).allocated);
       return 0;
     }
   }
@@ -388,9 +377,9 @@ static int __vcore_request(int requested)
   int reserved = 0;
   while (1) {
     for (int i = 0; i < __max_vcores; i++) {
-      if (atomic_read(&__vcores[i].allocated) == false) {
-        if (atomic_swap(&__vcores[i].allocated, true) == false) {
-          futex_wakeup_one(&__vcores[i].allocated);
+      if (atomic_read(&__vcores(i).allocated) == false) {
+        if (atomic_swap(&__vcores(i).allocated, true) == false) {
+          futex_wakeup_one(&__vcores(i).allocated);
           if (++reserved == requested)
             return 0;
         }
@@ -417,7 +406,7 @@ void EXPORT_SYMBOL vcore_yield()
 {
 #ifndef PARLIB_NO_UTHREAD_TLS
   /* Restore the TLS associated with this vcore's context */
-  set_tls_desc(vcore_tls_descs[__vcore_id], __vcore_id);
+  set_tls_desc(vcore_tls_descs(__vcore_id), __vcore_id);
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
@@ -443,23 +432,22 @@ int vcore_lib_init()
      * themselves. Never freed though.  Just freed automatically when the program
      * dies since vcores should be alive for the entire lifetime of the
      * program. */
-    __vcores = malloc(sizeof(struct vcore) * __max_vcores);
-    __vcore_sigpending = malloc(sizeof(atomic_t) * max_vcores());
-    vcore_tls_descs = malloc(sizeof(uintptr_t) * __max_vcores);
-    vcore_map = malloc(sizeof(int) * __max_vcores);
+	vcore_pvc_data = malloc(sizeof(struct vcore_pvc_data) * __max_vcores);
+	internal_vcore_pvc_data = malloc(sizeof(struct internal_vcore_pvc_data)
+	                                 * __max_vcores);
 
-    if (__vcores == NULL || vcore_tls_descs == NULL || vcore_map == NULL) {
+    if (vcore_pvc_data == NULL) {
       fprintf(stderr, "vcore: failed to initialize vcores\n");
       exit(1);
     }
 
 	/* Initialize the vcore_sigpending array */
 	for (int i=0; i<max_vcores(); i++)
-		__vcore_sigpending[i] = ATOMIC_INITIALIZER(0);
+		__vcore_sigpending(i) = ATOMIC_INITIALIZER(0);
 
     /* Initialize the vcore_map to a sentinel value */
     for (int i=0; i < __max_vcores; i++)
-      vcore_map[i] = VCORE_UNMAPPED;
+      vcore_map(i) = VCORE_UNMAPPED;
 
   	/* Set the hignal handler for signals sent to all vcores (inherited) */
   	__set_sigaction();

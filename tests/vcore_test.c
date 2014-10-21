@@ -50,7 +50,7 @@ int main()
 {
   vcore_lib_init();
   printf("main, max_vcores: %ld\n", max_vcores());
-  set_tls_desc(vcore_tls_descs[0], 0);
+  set_tls_desc(vcore_tls_descs(0), 0);
   vcore_saved_ucontext = NULL;  
   vcore_entry();
 }

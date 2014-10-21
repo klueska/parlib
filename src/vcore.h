@@ -44,6 +44,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "arch.h"
 #include "tls.h"
 #include "atomic.h"
 #include "parlib-config.h"
@@ -63,19 +64,21 @@ extern "C" {
 # define disable_notifs INTERNAL(disable_notifs)
 #endif
 
-/* The vcore type */
-struct vcore;
-typedef struct vcore vcore_t;
+/* Cache aligned, per vcore data */
+struct vcore_pvc_data {
+	/**
+	 * Physical core id mapping of the vcore
+	 */
+	int pcore;
 
-/**
- *  Array of pointers to TLS descriptors for each vcore.
- */
-extern void **vcore_tls_descs;
-
-/**
- * Array of mappings from vcore id to pcore id.
- */
-extern int *vcore_map;
+	/**
+	 *  Pointer to the TLS descriptor for this vcore.
+	 */
+	void *tls_desc;
+} __attribute((aligned(ARCH_CL_SIZE)));
+extern struct vcore_pvc_data *vcore_pvc_data;
+#define vcore_map(i) (vcore_pvc_data[i].pcore)
+#define vcore_tls_descs(i) (vcore_pvc_data[i].tls_desc)
 
 /**
  * Per vcore context for entry at the top of the vcore stack.
@@ -182,7 +185,7 @@ void disable_notifs(uint32_t vcoreid);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
   #define vcore_begin_access_tls_vars(vcore_id) \
-    begin_access_tls_vars(vcore_tls_descs[(vcore_id)])
+    begin_access_tls_vars(vcore_tls_descs((vcore_id)))
 
   #define vcore_end_access_tls_vars() \
     end_access_tls_vars()
@@ -190,7 +193,7 @@ void disable_notifs(uint32_t vcoreid);
   #define vcore_set_tls_var(name, val)                                 \
   {                                                                    \
   	typeof(val) __val = val;                                           \
-  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);              \
+  	begin_access_tls_vars(vcore_tls_descs(vcore_id()));              \
   	name = __val;                                                      \
   	end_access_tls_vars();                                             \
   }
@@ -198,7 +201,7 @@ void disable_notifs(uint32_t vcoreid);
   #define vcore_get_tls_var(name)                                      \
   ({                                                                   \
   	typeof(name) val;                                                  \
-  	begin_access_tls_vars(vcore_tls_descs[vcore_id()]);              \
+  	begin_access_tls_vars(vcore_tls_descs(vcore_id()));              \
   	val = name;                                                        \
   	end_access_tls_vars();                                             \
   	val;                                                               \

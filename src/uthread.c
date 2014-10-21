@@ -36,14 +36,14 @@
 #define maybe_resignal() \
 { \
 	int vcoreid = vcore_id(); \
-	if (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1) \
+	if (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1) \
 		vcore_signal(vcoreid); \
 }
 
 #define maybe_restart_vcore() \
 { \
 	int vcoreid = vcore_id(); \
-	if (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1) \
+	if (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1) \
 		vcore_reenter(vcore_entry); \
 }
 
@@ -103,7 +103,7 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 		 * thread, so when vcore 0 comes up it will resume the main thread.
 		 * Note: there is no need to restore the original tls here, since we
 		 * are right about to transition onto vcore 0 anyway... */
-		set_tls_desc(vcore_tls_descs[0], 0);
+		set_tls_desc(vcore_tls_descs(0), 0);
 		safe_set_tls_var(current_uthread, uthread);
 
 		/* Request some cores ! */
@@ -150,12 +150,12 @@ void vcore_sigentry()
 	do {
 		cmb();
 		if (in_vcore_context()) {
-			atomic_set(&__vcore_sigpending[vcoreid], 1);
+			atomic_set(&__vcore_sigpending(vcoreid), 1);
 			return;
 		}
 
 		if (uthread->flags & NO_INTERRUPT) {
-			atomic_set(&__vcore_sigpending[vcoreid], 1);
+			atomic_set(&__vcore_sigpending(vcoreid), 1);
 			return;
 		}
 
@@ -177,7 +177,7 @@ void vcore_sigentry()
 		uthread_yield(true, cb, 0);
 		uthread->flags &= ~NO_INTERRUPT;
 		vcoreid = vcore_id();
-	} while (atomic_swap(&__vcore_sigpending[vcoreid], 0) == 1);
+	} while (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1);
 }
 
 void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
@@ -300,7 +300,7 @@ void EXPORT_SYMBOL uthread_yield(bool save_state,
 	yielding = FALSE; /* for when it starts back up */
 	/* Change to the transition context (both TLS and stack). */
 #ifndef PARLIB_NO_UTHREAD_TLS
-	set_tls_desc(vcore_tls_descs[vcoreid], vcoreid);
+	set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
 #else
 	extern __thread bool __in_vcore_context;
 	__in_vcore_context = true;

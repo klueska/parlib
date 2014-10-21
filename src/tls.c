@@ -110,8 +110,8 @@ int tls_lib_init()
 /* Initialize tls for use in this vcore */
 void init_tls(void *tcb, uint32_t vcoreid)
 {
-  init_arch_tls_data(&__vcores[vcoreid].arch_tls_data, tcb, vcoreid);
-  vcore_tls_descs[vcoreid] = tcb;
+  init_arch_tls_data(&(__vcores(vcoreid).arch_tls_data), tcb, vcoreid);
+  vcore_tls_descs(vcoreid) = tcb;
 }
 
 /* Passing in the vcoreid, since it'll be in TLS of the caller */
@@ -119,7 +119,7 @@ void set_tls_desc(void *tls_desc, uint32_t vcoreid)
 {
   assert(tls_desc != NULL);
 
-  set_current_tls_base(tls_desc, &__vcores[vcoreid].arch_tls_data);
+  set_current_tls_base(tls_desc, &__vcores(vcoreid).arch_tls_data);
 
   extern __thread int __vcore_id;
   current_tls_desc = tls_desc;
@@ -130,7 +130,7 @@ void set_tls_desc(void *tls_desc, uint32_t vcoreid)
  * only ever be called once the vcore has been initialized */
 void *get_tls_desc(uint32_t vcoreid)
 {
-  void *desc = TLS_DESC(__vcores[vcoreid].arch_tls_data);
+  void *desc = TLS_DESC(__vcores(vcoreid).arch_tls_data);
   assert(desc);
   return desc;
 }
