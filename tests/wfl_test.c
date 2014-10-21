@@ -36,7 +36,7 @@
 
 volatile int b1, b2;
 
-struct wfl wfl;
+struct wfl wfl = WFL_INITIALIZER(wfl);
 
 void vcore_entry()
 {
@@ -78,7 +78,6 @@ void vcore_entry()
 int main()
 {
   vcore_lib_init();
-  wfl_init(&wfl);
   printf_safe("main, max_vcores: %ld\n", max_vcores());
   vcore_request(NUM_VCORES);
   set_tls_desc(vcore_tls_descs[0], 0);

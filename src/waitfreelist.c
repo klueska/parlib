@@ -4,23 +4,18 @@
 #include <stdlib.h>
 #include "export.h"
 
-void wfl_init_ss(struct wfl *list, size_t slot_size)
-{
-  list->slot_size = slot_size;
-  list->head = malloc(list->slot_size);
-  list->head->next = NULL;
-  list->head->data = NULL;
-  list->size = 0;
-}
-
 void wfl_init(struct wfl *list)
 {
-  wfl_init_ss(list, sizeof(struct wfl_slot));
+  list->size = 0;
+  list->first.next = NULL;
+  list->first.data = NULL;
+  list->head = &list->first;
 }
 
 void wfl_cleanup(struct wfl *list)
 {
-  struct wfl_slot *p = list->head;
+  assert(list->first.data == NULL);
+  struct wfl_slot *p = list->first.next; // don't free the first element
   while (p != NULL) {
     assert(p->data == NULL);
     struct wfl_slot *tmp = p;
@@ -61,7 +56,7 @@ struct wfl_slot *wfl_insert(struct wfl *list, void *data)
     }
 
     if (new_slot == NULL) {
-      new_slot = malloc(list->slot_size);
+      new_slot = malloc(sizeof(struct wfl_slot));
       if (new_slot == NULL)
         abort();
       new_slot->data = data;
@@ -91,7 +86,7 @@ struct wfl_slot *wfl_insert(struct wfl *list, void *data)
     p = p->next;
   }
 
-  struct wfl_slot *new_slot = malloc(list->slot_size);
+  struct wfl_slot *new_slot = malloc(sizeof(struct wfl_slot));
   if (new_slot == NULL)
     abort();
   new_slot->data = data;
@@ -151,7 +146,6 @@ size_t wfl_remove_all(struct wfl *list, void *data)
 }
 
 #undef wfl_init
-#undef wfl_init_ss
 #undef wfl_cleanup
 #undef wfl_insert
 #undef wfl_insert_into
@@ -161,7 +155,6 @@ size_t wfl_remove_all(struct wfl *list, void *data)
 #undef wfl_capacity
 #undef wfl_size
 EXPORT_ALIAS(INTERNAL(wfl_init), wfl_init)
-EXPORT_ALIAS(INTERNAL(wfl_init_ss), wfl_init_ss)
 EXPORT_ALIAS(INTERNAL(wfl_cleanup), wfl_cleanup)
 EXPORT_ALIAS(INTERNAL(wfl_insert), wfl_insert)
 EXPORT_ALIAS(INTERNAL(wfl_insert_into), wfl_insert_into)
