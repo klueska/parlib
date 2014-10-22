@@ -3,7 +3,8 @@
 
 #include "internal/parlib.h"
 #include <sys/queue.h>
-#include <malloc.h>
+#include <stdlib.h>
+#include "parlib.h"
 #include "vcore.h"
 #include "event.h"
 #include "spinlock.h"
@@ -24,7 +25,8 @@ static struct vc_mgmt *vc_mgmt;
 
 void event_lib_init()
 {
-	vc_mgmt = malloc(sizeof(struct vc_mgmt) * max_vcores());
+	vc_mgmt = parlib_aligned_alloc(ARCH_CL_SIZE,
+	            sizeof(struct vc_mgmt) * max_vcores());
 	for (int i=0; i<max_vcores(); i++) {
 		STAILQ_INIT(&(vc_mgmt[i].evq));
 		spinlock_init(&(vc_mgmt[i].evq_lock));
@@ -33,7 +35,7 @@ void event_lib_init()
 
 void send_event(struct event_msg *ev_msg, unsigned ev_type, int vcoreid)
 {
-	struct pvc_event_msg *m = malloc(sizeof(struct pvc_event_msg));
+	struct pvc_event_msg *m = parlib_malloc(sizeof(struct pvc_event_msg));
 	m->ev_msg = ev_msg;
 	m->ev_type = ev_type;
 	spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));

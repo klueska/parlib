@@ -3,11 +3,12 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <parlib/arch.h>
 
 struct wfl_slot {
   struct wfl_slot *next;
   void *data;
-};
+} __attribute__((aligned(ARCH_CL_SIZE)));
 
 struct wfl {
   struct wfl_slot *head;

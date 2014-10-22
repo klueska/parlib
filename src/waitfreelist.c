@@ -2,6 +2,7 @@
 #include "waitfreelist.h"
 #include "atomic.h"
 #include <stdlib.h>
+#include "parlib.h"
 #include "export.h"
 
 void wfl_init(struct wfl *list)
@@ -56,7 +57,7 @@ struct wfl_slot *wfl_insert(struct wfl *list, void *data)
     }
 
     if (new_slot == NULL) {
-      new_slot = malloc(sizeof(struct wfl_slot));
+      new_slot = parlib_aligned_alloc(ARCH_CL_SIZE, sizeof(struct wfl_slot));
       if (new_slot == NULL)
         abort();
       new_slot->data = data;
@@ -86,7 +87,8 @@ struct wfl_slot *wfl_insert(struct wfl *list, void *data)
     p = p->next;
   }
 
-  struct wfl_slot *new_slot = malloc(sizeof(struct wfl_slot));
+  struct wfl_slot *new_slot;
+  new_slot = parlib_aligned_alloc(ARCH_CL_SIZE, sizeof(struct wfl_slot));
   if (new_slot == NULL)
     abort();
   new_slot->data = data;

@@ -50,7 +50,7 @@ typedef struct mcs_dissem_flags
 	int parity;
 	int sense;
 	char pad[ARCH_CL_SIZE];
-} mcs_dissem_flags_t;
+} __attribute__((aligned(ARCH_CL_SIZE))) mcs_dissem_flags_t;
 
 typedef struct mcs_barrier_t
 {

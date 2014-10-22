@@ -25,6 +25,7 @@
 #include <errno.h>
 
 #include "internal/parlib.h"
+#include "parlib.h"
 #include "atomic.h"
 #include "mcs.h"
 
@@ -95,7 +96,8 @@ void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode)
 void mcs_barrier_init(mcs_barrier_t* b, size_t np)
 {
 	assert(np <= max_vcores());
-	b->allnodes = (mcs_dissem_flags_t*)malloc(np*sizeof(mcs_dissem_flags_t));
+	b->allnodes = parlib_aligned_alloc(ARCH_CL_SIZE,
+	                  np*sizeof(mcs_dissem_flags_t));
 	memset(b->allnodes,0,np*sizeof(mcs_dissem_flags_t));
 	b->nprocs = np;
 

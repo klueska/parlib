@@ -136,7 +136,7 @@ void __sigstack_swap(void *sigstack)
 		__sigstack_free(sigstack);
 		sigstack = __vcore_sigstack;
 	}
-	__vcore_sigstack = malloc(SIGSTKSZ);
+	__vcore_sigstack = parlib_aligned_alloc(PGSIZE, SIGSTKSZ);
 
 	stack_t altstack;
 	altstack.ss_sp = __vcore_sigstack;
@@ -344,7 +344,7 @@ static bool vcore_request_init()
       futex_wakeup_one(&__vcores(0).allocated);
       futex_wait(&sleepforever, true);
     }
-    void *stack = malloc(PGSIZE);
+    void *stack = parlib_aligned_alloc(PGSIZE, PGSIZE);
     __vcore_reenter(cb, stack);
   }
 
@@ -432,25 +432,26 @@ int vcore_lib_init()
      * themselves. Never freed though.  Just freed automatically when the program
      * dies since vcores should be alive for the entire lifetime of the
      * program. */
-	vcore_pvc_data = malloc(sizeof(struct vcore_pvc_data) * __max_vcores);
-	internal_vcore_pvc_data = malloc(sizeof(struct internal_vcore_pvc_data)
-	                                 * __max_vcores);
+    vcore_pvc_data = parlib_aligned_alloc(ARCH_CL_SIZE,
+                         sizeof(struct vcore_pvc_data) * __max_vcores);
+    internal_vcore_pvc_data = parlib_aligned_alloc(ARCH_CL_SIZE,
+                         sizeof(struct internal_vcore_pvc_data) * __max_vcores);
 
     if (vcore_pvc_data == NULL) {
       fprintf(stderr, "vcore: failed to initialize vcores\n");
       exit(1);
     }
 
-	/* Initialize the vcore_sigpending array */
-	for (int i=0; i<max_vcores(); i++)
-		__vcore_sigpending(i) = ATOMIC_INITIALIZER(0);
+    /* Initialize the vcore_sigpending array */
+    for (int i=0; i<max_vcores(); i++)
+      __vcore_sigpending(i) = ATOMIC_INITIALIZER(0);
 
     /* Initialize the vcore_map to a sentinel value */
     for (int i=0; i < __max_vcores; i++)
       vcore_map(i) = VCORE_UNMAPPED;
 
-  	/* Set the hignal handler for signals sent to all vcores (inherited) */
-  	__set_sigaction();
+    /* Set the hignal handler for signals sent to all vcores (inherited) */
+    __set_sigaction();
 
     /* Create all the vcores. */
     /* Previously, we reused the main thread for vcore 0, but this causes
@@ -460,7 +461,7 @@ int vcore_lib_init()
       __create_vcore(i);
     }
 
-  	/* Initialize the event subsystem */
+    /* Initialize the event subsystem */
     event_lib_init();
 
     /* Wait until they have parked. */
