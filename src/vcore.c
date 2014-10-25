@@ -471,6 +471,13 @@ int vcore_lib_init()
   return 0;
 }
 
+/* When attr has PTHREAD_STACK_MIN set, Always give a thread as small of a
+stack as possible stack.  * Unfortunately, just using PTHREAD_STACK_MIN isn't
+good enough, because * glibc likes to tack on the static TLS to the stack
+allocation, meaning that * calls to pthread create with PTHREAD_STACK_MIN might
+actually fail if glibc * decides that's not enough space.  Unfortunately there
+is no good way of * asking glibc what the size of the static TLS region is, so
+we have to do * some dancing to figure out something big enough. */
 pthread_t internal_pthread_create(pthread_attr_t *attr,
                                   void *(*start_routine) (void *), void *arg)
 {
