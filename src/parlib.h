@@ -101,6 +101,14 @@ void EXPORT_SYMBOL parlib_get_main_stack(void **bottom, size_t *size);
 	(typeof(a)) (PTRROUNDDOWN((char *) (a) + __n - 1, __n));	\
 })
 
+#define __b2(x)   (     (x) | (     (x) >> 1) )
+#define __b4(x)   ( __b2(x) | ( __b2(x) >> 2) )
+#define __b8(x)   ( __b4(x) | ( __b4(x) >> 4) )
+#define __b16(x)  ( __b8(x) | ( __b8(x) >> 8) )
+#define __b32(x)  (__b16(x) | (__b16(x) >>16) )
+#define __b64(x)  (__b32(x) | (__b32(x) >>32) )
+#define NEXTPOWER2(x) (__b64((uint64_t)(x)-1) + 1)
+
 // Return the integer logarithm of the value provided rounded down
 static inline uintptr_t LOG2_DOWN(uintptr_t value)
 {
@@ -134,7 +142,7 @@ static inline uintptr_t ROUNDUPPWR2(uintptr_t value)
 #define parlib_aligned_alloc(align, size) \
 ({ \
   void *p; \
-  if (posix_memalign(&p, (align), (size))) abort(); \
+  if (posix_memalign(&p, NEXTPOWER2(align), (size))) abort(); \
   p; \
 })
 
