@@ -342,9 +342,9 @@ static bool vcore_request_init()
       atomic_add(&__num_vcores, 1);
       atomic_set(&__vcores(0).allocated, true);
       futex_wakeup_one(&__vcores(0).allocated);
-      futex_wait(&sleepforever, true);
+      while(1) futex_wait(&sleepforever, true);
     }
-    void *stack = parlib_aligned_alloc(PGSIZE, PGSIZE);
+    void *stack = malloc(PGSIZE);
     __vcore_reenter(cb, stack);
   }
 
