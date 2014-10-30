@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include <parlib/arch.h>
+#include "arch.h"
 
 struct wfl_slot {
   struct wfl_slot *next;
