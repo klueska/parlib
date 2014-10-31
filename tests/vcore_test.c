@@ -32,7 +32,7 @@ void vcore_entry()
   if(vcore_saved_ucontext) {
     void *cuc = vcore_saved_ucontext;
     printf("Restoring context: entry %d, num_vcores: %ld\n", vcore_id(), num_vcores());
-    set_tls_desc(current_tls_desc, vcore_id());
+    set_tls_desc(vcore_saved_tls_desc);
     parlib_setcontext(cuc);
     assert(0);
   }
@@ -50,7 +50,7 @@ int main()
 {
   vcore_lib_init();
   printf("main, max_vcores: %ld\n", max_vcores());
-  set_tls_desc(vcore_tls_descs(0), 0);
+  __set_tls_desc(vcore_tls_descs(0), 0);
   vcore_saved_ucontext = NULL;  
   vcore_entry();
 }

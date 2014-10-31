@@ -22,7 +22,6 @@
 #ifndef PARLIB_I386_TLS_H
 #define PARLIB_I386_TLS_H
 
-#include "parlib.h"
 #include <unistd.h>
 #include <sys/syscall.h>
 

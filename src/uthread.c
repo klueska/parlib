@@ -96,15 +96,14 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 	
 #ifndef PARLIB_NO_UTHREAD_TLS
 		/* Associate the main thread's tls with the current tls as well */
-		current_uthread->tls_desc = current_tls_desc;
+		current_uthread->tls_desc = get_current_tls_base();
 #endif
 
 		/* Finally, switch to vcore 0's tls and set current_uthread to be the main
 		 * thread, so when vcore 0 comes up it will resume the main thread.
 		 * Note: there is no need to restore the original tls here, since we
 		 * are right about to transition onto vcore 0 anyway... */
-		set_tls_desc(vcore_tls_descs(0), 0);
-		safe_set_tls_var(current_uthread, uthread);
+		*get_tls_addr(current_uthread, vcore_tls_descs(0)) = uthread;
 
 		/* Request some cores ! */
 		while (num_vcores() < 1) {
@@ -196,9 +195,7 @@ void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 		assert(!__uthread_allocate_tls(uthread));
 
 	/* Setup some thread local data for this newly initialized uthread */
-	uthread_begin_access_tls_vars(uthread)
-	current_uthread = uthread;
-	uthread_end_access_tls_vars()
+	uthread_set_tls_var(uthread, current_uthread, uthread);
 #endif
 }
 
@@ -300,7 +297,7 @@ void EXPORT_SYMBOL uthread_yield(bool save_state,
 	yielding = FALSE; /* for when it starts back up */
 	/* Change to the transition context (both TLS and stack). */
 #ifndef PARLIB_NO_UTHREAD_TLS
-	set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
+	__set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
 #else
 	extern __thread bool __in_vcore_context;
 	__in_vcore_context = true;
@@ -314,7 +311,7 @@ yield_return_path:
 	/* Will jump here when the uthread's trapframe is restarted/popped. */
 	assert(current_uthread == uthread);	
 	printd("[U] Uthread %p returning from a yield on vcore %d with tls %p!\n",
-           current_uthread, vcore_id(), get_tls_desc(vcore_id()));
+           current_uthread, vcore_id(), get_current_tls_base());
 }
 
 /* Saves the state of the current uthread from the point at which it is called */
@@ -353,7 +350,7 @@ void EXPORT_SYMBOL run_current_uthread(void)
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 	assert(current_uthread->tls_desc);
-	set_tls_desc(current_uthread->tls_desc, vcore_id());
+	set_tls_desc(current_uthread->tls_desc);
 #else
 	extern __thread bool __in_vcore_context;
 	__in_vcore_context = false;
@@ -380,7 +377,7 @@ void swap_uthreads(struct uthread *__old, struct uthread *__new)
 {
 	volatile bool swap = true;
 #ifndef PARLIB_NO_UTHREAD_TLS
-	void *tls_desc = get_tls_desc(vcore_id());
+	void *tls_desc = get_current_tls_base();
 #endif
 	ucontext_t uc;
 	parlib_getcontext(&uc);
@@ -392,7 +389,7 @@ void swap_uthreads(struct uthread *__old, struct uthread *__new)
 	}
 	vcore_set_tls_var(current_uthread, __old);
 #ifndef PARLIB_NO_UTHREAD_TLS
-	set_tls_desc(tls_desc, vcore_id());
+	set_tls_desc(tls_desc);
 #endif
 }
 

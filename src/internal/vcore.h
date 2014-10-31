@@ -30,7 +30,6 @@
 
 #include "arch.h"
 #include "parlib-config.h"
-#include "internal/tls.h"
 #include "atomic.h"
 
 #include <pthread.h>
@@ -43,9 +42,10 @@ struct vcore {
   /* For bookkeeping */
   atomic_t allocated;
 
-  /* Architecture-specific TLS context information, e.g. LDT on IA-32 or
-     the address of the TCB on other ISAs. */
+#ifdef arch_tls_data_t
+  /* Architecture-specific TLS context information, e.g. LDT on IA-32 */
   arch_tls_data_t arch_tls_data;
+#endif
 
   /* Pointer to the backing pthread for this vcore */
   pthread_t pthread;

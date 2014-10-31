@@ -24,7 +24,6 @@
 
 #include "internal/parlib.h"
 #include "internal/vcore.h"
-#include "internal/tls.h"
 #include "internal/futex.h"
 #include "atomic.h"
 #include "tls.h"
@@ -32,9 +31,6 @@
 
 /* Reference to the main thread's tls descriptor */
 void *main_tls_desc = NULL;
-
-/* Current tls_desc for each running vcore, used when swapping contexts onto a vcore */
-__thread void EXPORT_SYMBOL *current_tls_desc = NULL;
 
 static __thread int tls_futex = 0;
 
@@ -76,11 +72,9 @@ void *allocate_tls(void)
 /* Free a previously allocated TLS region */
 void free_tls(void *tcb)
 {
-  begin_access_tls_vars(tcb);
-  int *tls_futex_addr = &tls_futex;
+  int *tls_futex_addr = get_tls_addr(tls_futex, tcb);
   *tls_futex_addr = 1;
   futex_wakeup_one(tls_futex_addr);
-  end_access_tls_vars();
 }
 
 /* Reinitialize / reset / refresh a TLS to its initial values.  This doesn't do
@@ -102,40 +96,33 @@ int tls_lib_init()
 	initialized = true;
 	
 	/* Get a reference to the main program's TLS descriptor */
-	current_tls_desc = get_current_tls_base();
-	main_tls_desc = current_tls_desc;
+	main_tls_desc = get_current_tls_base();
 	return 0;
 }
 
 /* Initialize tls for use in this vcore */
 void init_tls(void *tcb, uint32_t vcoreid)
 {
+#ifdef arch_tls_data_t
   init_arch_tls_data(&(__vcores(vcoreid).arch_tls_data), tcb, vcoreid);
+#endif
   vcore_tls_descs(vcoreid) = tcb;
 }
 
 /* Passing in the vcoreid, since it'll be in TLS of the caller */
-void set_tls_desc(void *tls_desc, uint32_t vcoreid)
+void __set_tls_desc(void *tls_desc, uint32_t vcoreid)
 {
   assert(tls_desc != NULL);
 
+#ifdef arch_tls_data_t
   set_current_tls_base(tls_desc, &__vcores(vcoreid).arch_tls_data);
+#else
+  set_current_tls_base(tls_desc);
+#endif
 
   extern __thread int __vcore_id;
-  current_tls_desc = tls_desc;
   __vcore_id = vcoreid;
 }
 
-/* Get the tls descriptor currently set for a given vcore. This should
- * only ever be called once the vcore has been initialized */
-void *get_tls_desc(uint32_t vcoreid)
-{
-  void *desc = TLS_DESC(__vcores(vcoreid).arch_tls_data);
-  assert(desc);
-  return desc;
-}
-
-#undef set_tls_desc
-#undef get_tls_desc
-EXPORT_ALIAS(INTERNAL(set_tls_desc), set_tls_desc)
-EXPORT_ALIAS(INTERNAL(get_tls_desc), get_tls_desc)
+#undef __set_tls_desc
+EXPORT_ALIAS(INTERNAL(__set_tls_desc), __set_tls_desc)

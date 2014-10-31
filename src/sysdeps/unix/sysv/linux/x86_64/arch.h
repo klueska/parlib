@@ -29,6 +29,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <asm/prctl.h>
+#include <sys/prctl.h>
+#include "parlib-config.h"
 
 #include "context.h"
 typedef struct ucontext uthread_context_t;
@@ -73,6 +76,36 @@ read_pmc(uint32_t index)
 
 #define init_uthread_entry_ARCH(uth, entry) \
   parlib_makecontext(&(uth)->uc, (entry), 0)
+
+int arch_prctl(int code, unsigned long *addr);
+
+/* Get the current tls base address */
+static __inline void *get_current_tls_base()
+{
+  uintptr_t addr;
+#ifdef PARLIB_HAVE_FSGSBASE
+	asm volatile("rdfsbase %%rax"
+			: "=a" (addr)
+			:: "memory");
+#else
+  int ret = arch_prctl(ARCH_GET_FS, &addr);
+  assert(ret == 0);
+#endif
+  return (void *)addr;
+}
+
+/* Set the current tls base address */
+static __inline void set_current_tls_base(void *tls_desc)
+{
+#ifdef PARLIB_HAVE_FSGSBASE
+	asm volatile("wrfsbase %%rax"
+			:: "a" (tls_desc)
+			: "memory");
+#else
+  int ret = arch_prctl(ARCH_SET_FS, tls_desc);
+  assert(ret == 0);
+#endif
+}
 
 #else // !__linux__
   #error "Your architecture is not yet supported by parlib!"

@@ -34,16 +34,11 @@ extern "C" {
 #endif
 
 #ifdef COMPILING_PARLIB
-# define set_tls_desc INTERNAL(set_tls_desc)
-# define get_tls_desc INTERNAL(get_tls_desc)
+# define __set_tls_desc INTERNAL(__set_tls_desc)
 #endif
 
 /* Reference to the main thread's tls descriptor */
 extern void *main_tls_desc;
-
-/* Current tls_desc for each running vcore, used when swapping uthreads onto a
- * vcore */
-extern __thread void *current_tls_desc TLS_INITIAL_EXEC;
 
 /* Initialize the tls subsystem for use */
 int tls_lib_init();
@@ -63,11 +58,13 @@ void free_tls(void *tcb);
 
 /* Set the tls descriptor on the current uthread or vcore. Passing in the
  * vcoreid, since it'll be in TLS of the caller */
-void set_tls_desc(void *tls_desc, uint32_t vcoreid);
+#define set_tls_desc(tls_desc) __set_tls_desc(tls_desc, vcore_id())
+void __set_tls_desc(void *tls_desc, uint32_t vcoreid);
 
-/* Get the tls descriptor currently set for a given vcore. This should
- * only ever be called once the vcore has been initialized */
-void *get_tls_desc(uint32_t vcoreid);
+/* Get the address of another context's TLS variable.  This assumes that we
+ * aren't dlopen'ing any libraries whose variables we reference. */
+#define get_tls_addr(var, tlsdesc) \
+  ((typeof(&(var)))((char*)&(var) + ((char*)(tlsdesc) - (char*)get_current_tls_base())))
 
 #ifndef __PIC__
 
@@ -104,14 +101,14 @@ void *get_tls_desc(uint32_t vcoreid);
 
 #define begin_access_tls_vars(tls_desc)                           \
 	int vcoreid = vcore_id();                                     \
-	void *temp_tls_desc = current_tls_desc;                       \
+	void *temp_tls_desc = get_current_tls_base();                 \
 	cmb();                                                        \
-	set_tls_desc(tls_desc, vcoreid);                              \
+	__set_tls_desc(tls_desc, vcoreid);                              \
 	begin_safe_access_tls_vars();
 
 #define end_access_tls_vars()                                     \
 	end_safe_access_tls_vars();                                   \
-	set_tls_desc(temp_tls_desc, vcoreid);                         \
+	__set_tls_desc(temp_tls_desc, vcoreid);                         \
 	cmb();
 
 #define safe_set_tls_var(name, val)                               \

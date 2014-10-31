@@ -56,7 +56,6 @@
 
 #include "parlib.h"
 #include "internal/vcore.h"
-#include "internal/tls.h"
 #include "internal/futex.h"
 #include "context.h"
 #include "atomic.h"
@@ -241,7 +240,7 @@ static void __vcore_init(int vcoreid)
   __set_affinity(vcoreid, vcoreid);
 
   /* Switch to the proper tls region */
-  set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
+  __set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
 
   /* Set the signal stack for this vcore */
   __sigstack_swap(NULL);
@@ -316,7 +315,7 @@ static bool vcore_request_init()
 
   if (!once) {
     once = true;
-    set_tls_desc(vcore_tls_descs(0), 0);
+    __set_tls_desc(vcore_tls_descs(0), 0);
     vcore_saved_ucontext = &main_context;
     vcore_saved_tls_desc = main_tls_desc;
 
@@ -329,7 +328,7 @@ static bool vcore_request_init()
       while(1) futex_wait(&sleepforever, true);
     }
     void *stack = malloc(PGSIZE);
-    __vcore_reenter(cb, stack);
+    __vcore_reenter(cb, stack + PGSIZE);
   }
 
   return true;
@@ -390,7 +389,7 @@ void EXPORT_SYMBOL vcore_yield()
 {
 #ifndef PARLIB_NO_UTHREAD_TLS
   /* Restore the TLS associated with this vcore's context */
-  set_tls_desc(vcore_tls_descs(__vcore_id), __vcore_id);
+  set_tls_desc(vcore_tls_descs(__vcore_id));
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */

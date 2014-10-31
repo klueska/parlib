@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#include "internal/tls.h"
 #include "context.h"
 typedef struct ucontext uthread_context_t;
 

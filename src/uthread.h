@@ -130,31 +130,12 @@ void init_uthread_tf(uthread_t *uth, void (*entry)(void),
                      void *stack_bottom, uint32_t size);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
-  #define uthread_begin_access_tls_vars(uthread) \
-  	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc)
+  #define uthread_set_tls_var(uthread, name, val) \
+  	(*get_tls_addr(name, ((uthread_t*)(uthread))->tls_desc) = (val))
 
-  #define uthread_end_access_tls_vars() \
-    end_access_tls_vars()
-
-  #define uthread_set_tls_var(uthread, name, val)                        \
-  {                                                                      \
-  	typeof(val) __val = val;                                           \
-  	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc);          \
-  	name = __val;                                                      \
-  	end_access_tls_vars();                                             \
-  }
-
-  #define uthread_get_tls_var(uthread, name)                             \
-  ({                                                                     \
-  	typeof(name) val;                                                  \
-  	begin_access_tls_vars(((uthread_t*)(uthread))->tls_desc);          \
-  	val = name;                                                        \
-  	end_access_tls_vars();                                             \
-  	val;                                                               \
-  })
+  #define uthread_get_tls_var(uthread, name) \
+  	(*get_tls_addr(name, ((uthread_t*)(uthread))->tls_desc))
 #else
-  #define uthread_begin_access_tls_vars(uthread)
-  #define uthread_end_access_tls_vars()
   #define uthread_set_tls_var(uthread, name, val)
   #define uthread_get_tls_var(uthread, name) name
 #endif
