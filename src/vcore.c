@@ -71,8 +71,8 @@ struct internal_vcore_pvc_data *internal_vcore_pvc_data;
 /* Id of the currently running vcore. */
 __thread int EXPORT_SYMBOL __vcore_id = -1;
 
-/* Stack of the currently running vcore. */
-__thread void *__vcore_stack = NULL;
+/* Top of stack of the currently running vcore. */
+static __thread void *__vcore_stack = NULL;
 
 /* A pointer to the current signal stack in use by the vcore */
 __thread void *__vcore_sigstack = NULL;
@@ -103,24 +103,6 @@ static ucontext_t main_context = { 0 };
  
  /* Some forward declarations */
 static int __vcore_request_specific(int vcoreid);
-
-/* Generic stack allocation function using mmap */
-void *__stack_alloc(size_t s)
-{
-  void *stack_bottom = mmap(0, s, PROT_READ|PROT_WRITE|PROT_EXEC,
-                            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-  if(stack_bottom == MAP_FAILED) {
-    fprintf(stderr, "vcore: could not mmap stack!\n");
-    exit(1);
-  }
-  return stack_bottom;
-}
-
-/* Generic stack free function using mmap */
-void __stack_free(void *stack, size_t s)
-{
-  munmap(stack, s);
-}
 
 /* Allocate a new signal stack to the vcore and save a pointer to the old one
  * in the variable passed in. If the pointer passed in is NULL, then it is not
@@ -199,7 +181,7 @@ void EXPORT_SYMBOL vcore_signal(int vcoreid) {
 void vcore_reenter(void (*entry_func)(void))
 {
   assert(in_vcore_context());
-  __vcore_reenter(entry_func, __vcore_stack + VCORE_STACK_SIZE);
+  __vcore_reenter(entry_func, __vcore_stack);
 }
 
 /* The entry gate of a vcore after it's initial creation. */
@@ -234,6 +216,22 @@ static void vcore_entry_gate()
   exit(1);
 }
 
+static void *get_stack_top()
+{
+  size_t np_stack_size;
+  void *stack_limit;
+  pthread_attr_t np_attr_stack;
+
+  if (pthread_attr_init(&np_attr_stack))
+    abort();
+  if (pthread_getattr_np(pthread_self(), &np_attr_stack))
+    abort();
+  if (pthread_attr_getstack(&np_attr_stack, &stack_limit, &np_stack_size))
+    abort();
+
+  return stack_limit + np_stack_size;
+}
+
 static void __vcore_init(int vcoreid)
 {
   /* Set the affinity on this vcore */
@@ -254,8 +252,8 @@ static void __vcore_init(int vcoreid)
   /* Store a pointer to the backing pthread for this vcore */
   __vcores(vcoreid).pthread = pthread_self();
 
-  /* Allocate vcore stack */
-  __vcore_stack = __stack_alloc(VCORE_STACK_SIZE);
+  /* Determine top of vcore stack */
+  __vcore_stack = get_stack_top();
 }
 
 static void * __vcore_trampoline_entry(void *arg)

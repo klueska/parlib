@@ -64,8 +64,6 @@ extern struct internal_vcore_pvc_data *internal_vcore_pvc_data;
 #define __vcores(i) (internal_vcore_pvc_data[i].vcore)
 #define __vcore_sigpending(i) (internal_vcore_pvc_data[i].sigpending)
 
-void *__stack_alloc(size_t s);
-void __stack_free(void *stack, size_t s);
 void __sigstack_swap(void *sigstack);
 void __sigstack_free(void *sigstack);
 
