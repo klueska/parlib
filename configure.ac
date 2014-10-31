@@ -136,7 +136,7 @@ AC_RUN_IFELSE(
       static inline unsigned long rdfsbase(void)
       {
         unsigned long fs;
-        asm volatile(".byte 0xf3,0x48,0x0f,0xae,0xc0 # rdfsbaseq %%rax"
+        asm volatile("rdfsbase %%rax"
             : "=a" (fs)
             :: "memory");
         return fs;
@@ -144,7 +144,7 @@ AC_RUN_IFELSE(
       
       static inline void wrfsbase(unsigned long fs)
       {
-        asm volatile(".byte 0xf3,0x48,0x0f,0xae,0xd0 # wrfsbaseq %%rax"
+        asm volatile("wrfsbase %%rax"
             :: "a" (fs)
             : "memory");
       }
