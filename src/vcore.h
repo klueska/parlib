@@ -81,11 +81,6 @@ extern struct vcore_pvc_data *vcore_pvc_data;
 #define vcore_tls_descs(i) (vcore_pvc_data[i].tls_desc)
 
 /**
- * Per vcore context for entry at the top of the vcore stack.
- */
-extern __thread ucontext_t vcore_entry_context TLS_INITIAL_EXEC;
-
-/**
  * Current user context running on each vcore, used when interrupting a
  * user context because of async I/O or signal handling. Hard Thread 0's
  * vcore_saved_ucontext is initialized to the continuation of the main thread's

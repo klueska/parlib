@@ -78,10 +78,6 @@ __thread void *__vcore_stack = NULL;
 /* A pointer to the current signal stack in use by the vcore */
 __thread void *__vcore_sigstack = NULL;
 
-/* Per vcore contexts for entry at the top of the vcore stack */
-__thread ucontext_t EXPORT_SYMBOL vcore_entry_context = { 0 };
-__thread ucontext_t vcore_entry_gate_context = { 0 };
-
 /* Current user context running on a vcore, this used to restore a user context
  * if it is interrupted for some reason without yielding voluntarily */
 __thread ucontext_t EXPORT_SYMBOL *vcore_saved_ucontext = NULL;
@@ -239,17 +235,6 @@ static void vcore_entry_gate()
   exit(1);
 }
 
-static void __vcore_init_context(struct ucontext *context, void (*func)(void))
-{
-  if (__vcore_stack == NULL)
-    __vcore_stack = __stack_alloc(VCORE_STACK_SIZE);
-  parlib_getcontext(context);
-  context->uc_stack.ss_sp = __vcore_stack;
-  context->uc_stack.ss_size = VCORE_STACK_SIZE;
-  context->uc_link = 0;
-  parlib_makecontext(context, func, 0);
-}
-
 static void __vcore_init(int vcoreid)
 {
   /* Set the affinity on this vcore */
@@ -270,9 +255,8 @@ static void __vcore_init(int vcoreid)
   /* Store a pointer to the backing pthread for this vcore */
   __vcores(vcoreid).pthread = pthread_self();
 
-  /* Set up useful contexts that start at the top of the vcore stack. */
-  __vcore_init_context(&vcore_entry_context, vcore_entry);
-  __vcore_init_context(&vcore_entry_gate_context, vcore_entry_gate);
+  /* Allocate vcore stack */
+  __vcore_stack = __stack_alloc(VCORE_STACK_SIZE);
 }
 
 static void * __vcore_trampoline_entry(void *arg)
@@ -286,7 +270,7 @@ static void * __vcore_trampoline_entry(void *arg)
   __vcore_init(vcoreid);
 
   /* Jump to the vcore_entry_gate() and wait to be allocated */
-  parlib_setcontext(&vcore_entry_gate_context);
+  vcore_reenter(vcore_entry_gate);
 
   /* We never exit a vcore ... we always park them and therefore
    * we never exit them. If we did we would need to take care not to
@@ -410,7 +394,7 @@ void EXPORT_SYMBOL vcore_yield()
 #endif
   /* Jump to the transition stack allocated on this vcore's underlying
    * stack. This is only used very quickly so we can run the setcontext code */
-  parlib_setcontext(&vcore_entry_gate_context);
+  vcore_reenter(vcore_entry_gate);
 }
 
 int vcore_lib_init()
