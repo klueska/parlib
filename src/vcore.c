@@ -413,9 +413,9 @@ int vcore_lib_init()
      * themselves. Never freed though.  Just freed automatically when the program
      * dies since vcores should be alive for the entire lifetime of the
      * program. */
-    vcore_pvc_data = parlib_aligned_alloc(ARCH_CL_SIZE,
+    vcore_pvc_data = parlib_aligned_alloc(PGSIZE,
                          sizeof(struct vcore_pvc_data) * __max_vcores);
-    internal_vcore_pvc_data = parlib_aligned_alloc(ARCH_CL_SIZE,
+    internal_vcore_pvc_data = parlib_aligned_alloc(PGSIZE,
                          sizeof(struct internal_vcore_pvc_data) * __max_vcores);
 
     if (vcore_pvc_data == NULL) {

@@ -25,7 +25,7 @@ static struct vc_mgmt *vc_mgmt;
 
 void event_lib_init()
 {
-	vc_mgmt = parlib_aligned_alloc(ARCH_CL_SIZE,
+	vc_mgmt = parlib_aligned_alloc(PGSIZE,
 	            sizeof(struct vc_mgmt) * max_vcores());
 	for (int i=0; i<max_vcores(); i++) {
 		STAILQ_INIT(&(vc_mgmt[i].evq));
