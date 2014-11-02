@@ -222,6 +222,7 @@ static void *get_stack_top()
   void *stack_limit;
   pthread_attr_t np_attr_stack;
 
+  /* Get the stack and its size. */
   if (pthread_attr_init(&np_attr_stack))
     abort();
   if (pthread_getattr_np(pthread_self(), &np_attr_stack))
@@ -229,7 +230,16 @@ static void *get_stack_top()
   if (pthread_attr_getstack(&np_attr_stack, &stack_limit, &np_stack_size))
     abort();
 
-  return stack_limit + np_stack_size;
+  /* Account for the TLS sitting at the top of the stack. */
+  extern void _dl_get_tls_static_info(size_t*, size_t*) internal_function;
+  size_t tlssize, tlsalign;
+  _dl_get_tls_static_info(&tlssize, &tlsalign);
+
+  /* Randomly offset the stacks slightly so they don't interfere with one
+   * another if they end up running in lock step. */
+  int offset = __vcore_id * ARCH_CL_SIZE;
+
+  return stack_limit + np_stack_size - tlssize - offset;
 }
 
 static void __vcore_init(int vcoreid)
@@ -285,7 +295,7 @@ static void __create_vcore(int i)
   pthread_attr_t attr;
   pthread_attr_init(&attr);
 
-  if ((errno = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN)) != 0) {
+  if ((errno = pthread_attr_setstacksize(&attr, VCORE_STACK_SIZE)) != 0) {
     fprintf(stderr, "vcore: could not set stack size of underlying pthread\n");
     exit(1);
   }
