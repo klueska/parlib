@@ -43,7 +43,7 @@ typedef struct ucontext uthread_context_t;
 #endif
 
 #define PGSIZE getpagesize()
-#define ARCH_CL_SIZE 64
+#define ARCH_CL_SIZE 128 // 2*64 to account for Adjacent CL Prefetcher
 
 static __inline void
 breakpoint(void)
