@@ -44,6 +44,7 @@
  * the proper arch.h file */
 struct uthread {
     uthread_context_t uc;
+    void (*entry_func)(void);
     void (*yield_func)(struct uthread*, void*);
     void *yield_arg;
     int flags;
@@ -109,10 +110,10 @@ void uthread_disable_interrupts();
  * to be interrupted by a vcore signal. */
 void uthread_enable_interrupts();
 
-/* By default, none of the uthread operations above are safe from interrupts.
- * If you call any of these functions in a context where it is NOT OK to be
- * interrupted by a signal, you must wrap these calls in enable/disable
- * interrrupt calls.  This macro provides a conveninet manner of doing so. */
+/* By default, all of the uthread operations are safe from interrupts.  If you
+ * have other calls that you know should not be interrupted by an event, you
+ * must wrap these calls in enable/disable interrupt calls.  This macro
+ * provides a convenient manner of doing so. */
 #define uthread_interrupt_safe(func) \
 { \
 	uthread_disable_interrupts(); \

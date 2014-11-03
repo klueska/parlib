@@ -62,10 +62,17 @@ static int __uthread_reinit_tls(struct uthread *uthread);
 static void __uthread_free_tls(struct uthread *uthread);
 #endif
 
+/* Forward declarations. */
+static inline void unsafe_uthread_yield(
+                       bool save_state,
+                       void (*yield_func)(struct uthread*, void*),
+                       void *yield_arg);
+
 /* Allow this uthread to be interrupted by an incoming vcore signal. This is
  * the default once a uthread starts running. */
 void EXPORT_SYMBOL uthread_enable_interrupts()
 {
+	assert(!in_vcore_context());
 	current_uthread->flags &= ~NO_INTERRUPT;
 	maybe_resignal();
 }
@@ -73,6 +80,7 @@ void EXPORT_SYMBOL uthread_enable_interrupts()
 /* Don't allow this uthread to be interrupted by an incoming vcore signal */
 void EXPORT_SYMBOL uthread_disable_interrupts()
 {
+	assert(!in_vcore_context());
 	current_uthread->flags |= NO_INTERRUPT;
 }
 
@@ -112,6 +120,7 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 			vcore_request(1);
 			cpu_relax();
 		}
+		uthread_enable_interrupts();
 	);
 	/* We are now running on vcore 0 */
 }
@@ -173,7 +182,7 @@ void vcore_sigentry()
 		}
 		cmb();
 		uthread->flags |= NO_INTERRUPT;
-		uthread_yield(true, cb, 0);
+		unsafe_uthread_yield(true, cb, 0);
 		uthread->flags &= ~NO_INTERRUPT;
 		vcoreid = vcore_id();
 	} while (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1);
@@ -187,15 +196,17 @@ void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 	uthread->sigstack = NULL;
 
 #ifndef PARLIB_NO_UTHREAD_TLS
-	/* If a tls_desc is already set for this thread, reinit it... */
-	if (uthread->tls_desc)
-		assert(!__uthread_reinit_tls(uthread));
-	/* Otherwise get a TLS for the new thread */
-	else
-		assert(!__uthread_allocate_tls(uthread));
+	uthread_interrupt_safe(
+		/* If a tls_desc is already set for this thread, reinit it... */
+		if (uthread->tls_desc)
+			assert(!__uthread_reinit_tls(uthread));
+		/* Otherwise get a TLS for the new thread */
+		else
+			assert(!__uthread_allocate_tls(uthread));
 
-	/* Setup some thread local data for this newly initialized uthread */
-	uthread_set_tls_var(uthread, current_uthread, uthread);
+		/* Setup some thread local data for this newly initialized uthread */
+		uthread_set_tls_var(uthread, current_uthread, uthread);
+	)
 #endif
 }
 
@@ -204,8 +215,8 @@ void EXPORT_SYMBOL uthread_cleanup(struct uthread *uthread)
 #ifndef PARLIB_NO_UTHREAD_TLS
 	printd("[U] thread %08p on vcore %d is DYING!\n", uthread, vcore_id());
 	/* Free the uthread's tls descriptor */
-	assert(uthread->tls_desc);
-	__uthread_free_tls(uthread);
+		assert(uthread->tls_desc);
+		__uthread_free_tls(uthread);
 #endif
 	/* Free the uthread sigaltstack */
 	__sigstack_free(uthread->sigstack);
@@ -267,9 +278,11 @@ __uthread_yield(void)
  * If you do *not* pass a 2LS sched op or other 2LS function as yield_func,
  * then you must also call uthread_has_blocked(flags), which will let the 2LS
  * know a thread blocked beyond its control (and why). */
-void EXPORT_SYMBOL uthread_yield(bool save_state,
-                                 void (*yield_func)(struct uthread*, void*),
-                                 void *yield_arg)
+static inline void unsafe_uthread_yield(
+                       bool save_state,
+                       void (*yield_func)(struct uthread*, void*),
+                       void *yield_arg
+                   )
 {
 	struct uthread *uthread = current_uthread;
 	volatile bool yielding = TRUE; /* signal to short circuit when restarting */
@@ -302,18 +315,26 @@ void EXPORT_SYMBOL uthread_yield(bool save_state,
 	extern __thread bool __in_vcore_context;
 	__in_vcore_context = true;
 #endif
-	assert(current_uthread == uthread);	
+	assert(current_uthread == uthread);
 	assert(in_vcore_context());	/* technically, we aren't fully in vcore context */
 	/* After this, make sure you don't use local variables. */
 	vcore_reenter(__uthread_yield);
 	/* Should never get here */
 yield_return_path:
 	/* Will jump here when the uthread's trapframe is restarted/popped. */
-	assert(current_uthread == uthread);	
+	assert(current_uthread == uthread);
 	printd("[U] Uthread %p returning from a yield on vcore %d with tls %p!\n",
-           current_uthread, vcore_id(), get_current_tls_base());
+	       current_uthread, vcore_id(), get_current_tls_base());
 }
 
+void EXPORT_SYMBOL uthread_yield(bool save_state,
+                                 void (*yield_func)(struct uthread*, void*),
+                                 void *yield_arg)
+{
+	uthread_interrupt_safe(
+		unsafe_uthread_yield(save_state, yield_func, yield_arg);
+	)
+}
 /* Saves the state of the current uthread from the point at which it is called */
 void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
 {
@@ -328,16 +349,18 @@ void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
 */
 void EXPORT_SYMBOL hijack_current_uthread(struct uthread *uthread)
 {
-	assert(uthread != current_uthread);
-	current_uthread->state = UT_HIJACKED;
-	uthread->state = UT_RUNNING;
+	uthread_interrupt_safe(
+		assert(uthread != current_uthread);
+		current_uthread->state = UT_HIJACKED;
+		uthread->state = UT_RUNNING;
 #ifdef PARLIB_NO_UTHREAD_TLS
-	uthread->dtls_data = current_uthread->dtls_data;
+		uthread->dtls_data = current_uthread->dtls_data;
 #else
-	uthread->tls_desc = current_uthread->tls_desc;
-	current_uthread = uthread;
+		uthread->tls_desc = current_uthread->tls_desc;
+		current_uthread = uthread;
 #endif
-	vcore_set_tls_var(current_uthread, uthread);
+		vcore_set_tls_var(current_uthread, uthread);
+	)
 }
 
 /* Runs whatever thread is vcore's current_uthread */
@@ -375,22 +398,24 @@ void EXPORT_SYMBOL run_uthread(struct uthread *uthread)
  * current uthread in the process */
 void swap_uthreads(struct uthread *__old, struct uthread *__new)
 {
-	volatile bool swap = true;
+	uthread_interrupt_safe(
+		volatile bool swap = true;
 #ifndef PARLIB_NO_UTHREAD_TLS
-	void *tls_desc = get_current_tls_base();
+		void *tls_desc = get_current_tls_base();
 #endif
-	ucontext_t uc;
-	parlib_getcontext(&uc);
-	cmb();
-	if(swap) {
-		swap = false;
-		memcpy(&__old->uc, &uc, sizeof(ucontext_t));
-		run_uthread(__new);
-	}
-	vcore_set_tls_var(current_uthread, __old);
+		ucontext_t uc;
+		parlib_getcontext(&uc);
+		cmb();
+		if(swap) {
+			swap = false;
+			memcpy(&__old->uc, &uc, sizeof(ucontext_t));
+			run_uthread(__new);
+		}
+		vcore_set_tls_var(current_uthread, __old);
 #ifndef PARLIB_NO_UTHREAD_TLS
-	set_tls_desc(tls_desc);
+		set_tls_desc(tls_desc);
 #endif
+	)
 }
 
 /* Deals with a pending preemption (checks, responds).  If the 2LS registered a
@@ -415,8 +440,14 @@ bool EXPORT_SYMBOL check_preempt_pending(uint32_t vcoreid)
 void EXPORT_SYMBOL init_uthread_tf(uthread_t *uth, void (*entry)(void),
                                    void *stack_bottom, uint32_t size)
 {
-  init_uthread_stack_ARCH(uth, stack_bottom, size);
-  init_uthread_entry_ARCH(uth, entry);
+	void cb()
+	{
+		uthread_enable_interrupts();
+		current_uthread->entry_func();
+	}
+	uth->entry_func = entry;
+	init_uthread_stack_ARCH(uth, stack_bottom, size);
+	init_uthread_entry_ARCH(uth, cb);
 }
 
 #ifndef PARLIB_NO_UTHREAD_TLS
