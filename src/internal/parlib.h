@@ -9,10 +9,13 @@
 #ifndef PARLIB_DEBUG
 # undef assert
 # define assert(x) (__builtin_constant_p(x) && (x) == 0 ? __builtin_unreachable() : (x))
+#else
+# undef assert
+# define assert(x) (x)
 #endif
 
-#endif
+#endif // __ASSEMBLER__
 
 #define INTERNAL(name) plt_bypass_ ## name
 
-#endif
+#endif // PARLIB_INTERNAL_ASSERT_H
