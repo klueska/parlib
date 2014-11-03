@@ -67,8 +67,6 @@ extern struct internal_vcore_pvc_data *internal_vcore_pvc_data;
 void __sigstack_swap(void *sigstack);
 void __sigstack_free(void *sigstack);
 
-void vcore_handle_events();
-
 pthread_t internal_pthread_create(pthread_attr_t *attr,
                                   void *(*start_routine) (void *), void *arg);
 
