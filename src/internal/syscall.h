@@ -34,32 +34,45 @@ typedef struct {
 #define uthread_blocking_call(__func, ...) \
 ({ \
   typeof(__func(__VA_ARGS__)) ret; \
+  yield_callback_arg_t arg = { NULL, {0} }; \
   int vcoreid = vcore_id(); \
   void *do_##__func(void *arg) { \
     ret = __func(__VA_ARGS__); \
     send_event((struct event_msg*)arg, EV_SYSCALL, vcoreid); \
     return NULL; \
   } \
-  yield_callback_arg_t arg; \
-  arg.func = &do_##__func; \
+  ret = __func(__VA_ARGS__); \
+  if ((ret == -1) && (errno == EWOULDBLOCK)) { \
+    arg.func = &do_##__func; \
+  } \
   uthread_yield(true, __uthread_yield_callback, &arg); \
   ret; \
 })
 
 static void __uthread_yield_callback(struct uthread *uthread, void *__arg) {
-  assert(sched_ops->thread_blockon_sysc);
-
   yield_callback_arg_t *arg = (yield_callback_arg_t*)__arg;
-  arg->ev_msg.ev_arg3 = &arg->ev_msg.sysc;
-  uthread->sysc = &arg->ev_msg.sysc;
 
-  sched_ops->thread_blockon_sysc(uthread, &arg->ev_msg.sysc);
+  if (arg->func == NULL) {
+    /* If we were able to do this syscall without blocking, then this is just a
+     * simple cooperative yield, do nothing further. */
+    uthread_has_blocked(uthread, 0);
+    uthread_runnable(uthread);
+  } else {
+    /* Otherwise, we need to invoke the magic of our backing pthread to perform
+     * the syscall as a simulated async I/O operation, and send us an event
+     * when it is complete. */
+    arg->ev_msg.ev_arg3 = &arg->ev_msg.sysc;
+    uthread->sysc = &arg->ev_msg.sysc;
 
-  struct backing_pthread *bp = get_tls_addr(__backing_pthread, uthread->tls_desc);
-  bp->syscall = arg->func;
-  bp->arg = &arg->ev_msg;
-  bp->futex = BACKING_THREAD_SYSCALL;
-  futex_wakeup_one(&bp->futex);
+    assert(sched_ops->thread_blockon_sysc);
+    sched_ops->thread_blockon_sysc(uthread, &arg->ev_msg.sysc);
+
+    struct backing_pthread *bp = get_tls_addr(__backing_pthread, uthread->tls_desc);
+    bp->syscall = arg->func;
+    bp->arg = &arg->ev_msg;
+    bp->futex = BACKING_THREAD_SYSCALL;
+    futex_wakeup_one(&bp->futex);
+  }
 }
 
 #endif // __PARLIB_INTERNAL_SYSCALL_H__

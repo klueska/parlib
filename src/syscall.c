@@ -1,7 +1,9 @@
 #include "internal/parlib.h"
 #include "internal/syscall.h"
 #include <stdbool.h>
-#include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -16,8 +18,10 @@ int EXPORT_SYMBOL open(const char* path, int oflag, ...)
   int mode = va_arg(vl, int);
   va_end(vl);
 
-  if (current_uthread)
+  if (current_uthread) {
+    oflag |= O_NONBLOCK;
     return uthread_blocking_call(__internal_open, path, oflag, mode);
+  }
   return __internal_open(path, oflag, mode);
 }
 
