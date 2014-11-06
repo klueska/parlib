@@ -22,6 +22,7 @@ ssize_t __write(int, const void*, size_t);
 #include "../uthread.h"
 #include "../event.h"
 #include "parlib.h"
+#include "futex.h"
 #include "pthread_pool.h"
 #include <sys/mman.h>
 
@@ -54,7 +55,11 @@ static void __uthread_yield_callback(struct uthread *uthread, void *__arg) {
 
   sched_ops->thread_blockon_sysc(uthread, &arg->ev_msg.sysc);
 
-  pooled_pthread_start(arg->func, &arg->ev_msg);
+  struct backing_pthread *bp = get_tls_addr(__backing_pthread, uthread->tls_desc);
+  bp->syscall = arg->func;
+  bp->arg = &arg->ev_msg;
+  bp->futex = BACKING_THREAD_SYSCALL;
+  futex_wakeup_one(&bp->futex);
 }
 
 #endif // __PARLIB_INTERNAL_SYSCALL_H__

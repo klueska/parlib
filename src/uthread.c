@@ -104,7 +104,7 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 	
 #ifndef PARLIB_NO_UTHREAD_TLS
 		/* Associate the main thread's tls with the current tls as well */
-		current_uthread->tls_desc = get_current_tls_base();
+		current_uthread->tls_desc = get_main_tls();
 #endif
 
 		/* Finally, switch to vcore 0's tls and set current_uthread to be the main

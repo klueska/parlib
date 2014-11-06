@@ -56,6 +56,9 @@ void *reinit_tls(void *tcb);
 /* Free a previously allocated TLS region */
 void free_tls(void *tcb);
 
+/* Get the main thread's tls */
+void *get_main_tls();
+
 /* Set the tls descriptor on the current uthread or vcore. Passing in the
  * vcoreid, since it'll be in TLS of the caller */
 #define set_tls_desc(tls_desc) __set_tls_desc(tls_desc, vcore_id())

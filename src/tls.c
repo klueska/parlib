@@ -18,13 +18,18 @@
  * See COPYING for details on the GNU General Public License.
  */
 
+#define _GNU_SOURCE
 #include <stddef.h>
 #include <sys/syscall.h>
 #include <pthread.h>
+#include <sched.h>
+#include <limits.h>
+#include <sys/sysinfo.h>
 
 #include "internal/parlib.h"
 #include "internal/vcore.h"
 #include "internal/futex.h"
+#include "timing.h"
 #include "atomic.h"
 #include "tls.h"
 #include "vcore.h"
@@ -32,11 +37,10 @@
 /* Reference to the main thread's tls descriptor */
 void *main_tls_desc = NULL;
 
-static __thread int tls_futex = 0;
+/* TLS variables used by the pthread backing each uthread. */
+__thread struct backing_pthread __backing_pthread;
 
-/* Get a TLS, returns 0 on failure.  Any thread created by a user-level
- * scheduler needs to create a TLS. */
-void *allocate_tls(void)
+static void *__create_backing_thread(void *tls_addr)
 {
   /* This code has gone through many iterations of trying to create tls
    * regions and get them set up properly so that arbitrary user-level thread
@@ -49,15 +53,54 @@ void *allocate_tls(void)
    * pthread is its properly initialized tls region.  The pthread itself,
    * simply spins up and parks itself on a futex until its tls region is no
    * longer needed. This slows things down on tls creation, but does not
-   * affect any user-level scheduling that may go one above this. */
+   * affect any user-level scheduling that may go one above this. We also 
+   * overload this thread to simulate async I/O on behalf of the uthread it is
+   * backing. */
   void *start_routine(void *arg)
   {
+    /* Allow this to run on any core. */
+    cpu_set_t c;
+    CPU_ZERO(&c);
+    for (int i=0; i<max_vcores(); i++)
+      CPU_SET(i, &c);
+    sched_setaffinity(0, sizeof(cpu_set_t), &c);
+    sched_yield();
+
     void **tcb = (void **)arg;
-    *tcb = get_current_tls_base();
+    if (tls_addr == NULL) {
+      /* Grab a reference to our tls_base and set it in the argument. */
+      *tcb = get_current_tls_base();
+    } else {
+      /* Set our tls base to the tls passed in and set it in the argument. */
+      *tcb = tls_addr;
+      set_current_tls_base(*tcb);
+    }
+
+    /* Set it up so we can run syscalls on behalf of the uthread we are
+     * backing with this pthread. */
+    __backing_pthread.futex = BACKING_THREAD_SLEEP;
+    __backing_pthread.syscall = NULL;
+    __backing_pthread.arg = NULL;
+
+    /* Wakeup the caller of this function with the newly set tls via a weird
+     * usage of a futex. */
     futex_wakeup_one(tcb);
 
-    futex_wait(&tls_futex, 0);
-    return NULL;
+    /* Process syscalls or sleep until we are told to exit. */
+    while(1) {
+      switch(__backing_pthread.futex) {
+        case BACKING_THREAD_SYSCALL:
+          __backing_pthread.futex = BACKING_THREAD_SLEEP;
+          __backing_pthread.syscall(__backing_pthread.arg);
+          break;
+        case BACKING_THREAD_SLEEP:
+          futex_wait(&__backing_pthread.futex, BACKING_THREAD_SLEEP);
+          break;
+        case BACKING_THREAD_EXIT:
+          goto exit;
+      }
+    }
+    exit: return NULL;
   }
 
   void *tcb = NULL;
@@ -69,12 +112,26 @@ void *allocate_tls(void)
   return tcb;
 }
 
+/* Get a TLS, returns 0 on failure.  Any thread created by a user-level
+ * scheduler needs to create a TLS. */
+void *allocate_tls(void)
+{
+  return __create_backing_thread(NULL);
+}
+
+/* We need a backing pthread for the main thread too so that syscalls can run
+ * somehwere when it makes them.  Piggyback that on this call. */
+void *get_main_tls()
+{
+  return __create_backing_thread(main_tls_desc);
+}
+
 /* Free a previously allocated TLS region */
 void free_tls(void *tcb)
 {
-  int *tls_futex_addr = get_tls_addr(tls_futex, tcb);
-  *tls_futex_addr = 1;
-  futex_wakeup_one(tls_futex_addr);
+  int *futex = get_tls_addr(__backing_pthread.futex, tcb);
+  *futex = BACKING_THREAD_EXIT;
+  futex_wakeup_one(futex);
 }
 
 /* Reinitialize / reset / refresh a TLS to its initial values.  This doesn't do
@@ -82,8 +139,8 @@ void free_tls(void *tcb)
  * slightly ghetto and return the pointer you should use for the TCB. */
 void *reinit_tls(void *tcb)
 {
-    free_tls(tcb);
-    return allocate_tls();
+  free_tls(tcb);
+  return allocate_tls();
 }
 
 /* Constructor to get a reference to the main thread's TLS descriptor */
