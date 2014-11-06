@@ -173,7 +173,8 @@ static void __set_sigaction()
 
 /* Function for sending a signal to a vcore. */
 void EXPORT_SYMBOL vcore_signal(int vcoreid) {
-	pthread_kill(__vcores(vcoreid).pthread, SIGVCORE);
+  if (!__vcore_sigpending(vcoreid))
+	  pthread_kill(__vcores(vcoreid).pthread, SIGVCORE);
 }
 
 /* Helper function used to reenter at the top of a vcore's stack for an
@@ -503,45 +504,9 @@ pthread_t internal_pthread_create(pthread_attr_t *attr,
   return pthread;
 }
 
-/* Clear pending, and try to handle events that came in between a previous call
- * to handle_events() and the clearing of pending.  While it's not a big deal,
- * we'll loop in case we catch any.  Will break out of this once there are no
- * events, and we will have send pending to 0. 
- *
- * Note that this won't catch every race/case of an incoming event.  Future
- * events will get caught in pop_ros_tf() */
-void clear_notif_pending(uint32_t vcoreid)
-{
-//	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
-}
-
-/* Only call this if you know what you are doing. */
-static inline void __enable_notifs(uint32_t vcoreid)
-{
-//	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
-}
-
-/* Enables notifs, and deals with missed notifs by self notifying.  This should
- * be rare, so the syscall overhead isn't a big deal. */
-void enable_notifs(uint32_t vcoreid)
-{
-//	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
-}
-
-void disable_notifs(uint32_t vcoreid)
-{
-//	printf("Figure out how to properly implement %s on linux!\n", __FUNCTION__);
-}
-
 #undef vcore_lib_init
 #undef vcore_request
 #undef vcore_reenter
-#undef clear_notif_pending
-#undef enable_notifs
-#undef disable_notifs
 EXPORT_ALIAS(INTERNAL(vcore_lib_init), vcore_lib_init)
 EXPORT_ALIAS(INTERNAL(vcore_request), vcore_request)
 EXPORT_ALIAS(INTERNAL(vcore_reenter), vcore_reenter)
-EXPORT_ALIAS(INTERNAL(clear_notif_pending), clear_notif_pending)
-EXPORT_ALIAS(INTERNAL(enable_notifs), enable_notifs)
-EXPORT_ALIAS(INTERNAL(disable_notifs), disable_notifs)

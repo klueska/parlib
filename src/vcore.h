@@ -49,6 +49,7 @@
 #include "atomic.h"
 #include "parlib-config.h"
 #include "context.h"
+#include "event.h"
 #include "export.h"
 
 #ifdef __cplusplus
@@ -162,21 +163,6 @@ static inline bool in_vcore_context() {
 	extern __thread bool __in_vcore_context TLS_INITIAL_EXEC;
 	return __in_vcore_context;
 }
-
-/**
- * Clears the flag for pending notifications
- */
-void clear_notif_pending(uint32_t vcoreid);
-
-/**
- * Enable Notifications
- */
-void enable_notifs(uint32_t vcoreid);
-
-/**
- * Disable Notifications
- */
-void disable_notifs(uint32_t vcoreid);
 
 #ifndef PARLIB_NO_UTHREAD_TLS
   #define vcore_begin_access_tls_vars(vcore_id) \
