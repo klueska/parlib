@@ -473,30 +473,27 @@ we have to do * some dancing to figure out something big enough. */
 pthread_t internal_pthread_create(pthread_attr_t *attr,
                                   void *(*start_routine) (void *), void *arg)
 {
+  static size_t min_stack_size = PTHREAD_STACK_MIN;
   pthread_t pthread;
 
   if (attr != NULL) {
     size_t stack_size;
     if (pthread_attr_getstacksize(attr, &stack_size) != 0)
       abort();
-    /* PTHREAD_STACK_MIN is not actually always sufficient because
-     * the static TLS, whose size is program-dependent, is allocated
-     * at the top of the stack.  Determine a sufficient value. */
-    if (stack_size == PTHREAD_STACK_MIN) {
-      static size_t min_stack_size = 0;
-      if (min_stack_size == 0) {
-        min_stack_size = PTHREAD_STACK_MIN;
-        /* We assume pthread_create can only fail due to stack shortage.
-         * Make sure your other attributes are legit! */
-        while (pthread_create(&pthread, attr, start_routine, arg) != 0) {
-          min_stack_size *= 2;
-          pthread_attr_setstacksize(attr, min_stack_size);
-        }
-        return pthread;
-      }
-      if (pthread_attr_setstacksize(attr, min_stack_size) != 0)
-        abort();
+
+    /* Increase our stack to at least the minimum so we don't fail. */
+    if (stack_size < min_stack_size)
+      pthread_attr_setstacksize(attr, min_stack_size);
+
+    /* We may need to up min_stack_size the first time through though, because
+     * PTHREAD_STACK_MIN is not actually always sufficient because the static
+     * TLS, whose size is program-dependent, is allocated at the top of the
+     * stack.  Determine a sufficient value. */
+    while (pthread_create(&pthread, attr, start_routine, arg) != 0) {
+      min_stack_size *= 2;
+      pthread_attr_setstacksize(attr, min_stack_size);
     }
+    return pthread;
   }
 
   if (pthread_create(&pthread, attr, start_routine, arg) != 0)
