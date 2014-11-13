@@ -55,8 +55,8 @@ static void __uthread_yield_callback(struct uthread *uthread, void *__arg) {
   if (arg->func == NULL) {
     /* If we were able to do this syscall without blocking, then this is just a
      * simple cooperative yield, do nothing further. */
-    uthread_has_blocked(uthread, 0);
-    uthread_runnable(uthread);
+    assert(sched_ops->thread_paused);
+    sched_ops->thread_paused(uthread);
   } else {
     /* Otherwise, we need to invoke the magic of our backing pthread to perform
      * the syscall as a simulated async I/O operation, and send us an event
