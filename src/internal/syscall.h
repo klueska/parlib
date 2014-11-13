@@ -6,6 +6,7 @@
 #define __PARLIB_INTERNAL_SYSCALL_H__
 
 #include <unistd.h>
+#include <stdio.h>
 
 #ifdef __GLIBC__
 #define __SUPPORTED_C_LIBRARY__
@@ -13,10 +14,16 @@
 #define __internal_close __close
 #define __internal_read __read
 #define __internal_write __write
+#define __internal_fopen _IO_fopen
+#define __internal_fread _IO_fread
+#define __internal_fwrite _IO_fwrite
 int __open(const char*, int, ...);
 int __close(int);
 ssize_t __read(int, void*, size_t);
 ssize_t __write(int, const void*, size_t);
+FILE *_IO_fopen(const char *path, const char *mode);
+size_t _IO_fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t _IO_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 #endif
 
 #include "../uthread.h"
