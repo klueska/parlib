@@ -46,6 +46,7 @@ void send_event(struct event_msg *ev_msg, unsigned ev_type, int vcoreid)
 	spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));
 	STAILQ_INSERT_TAIL(&(vc_mgmt[vcoreid].evq), m, next);
 	spinlock_unlock(&(vc_mgmt[vcoreid].evq_lock));
+
 	atomic_set(&vc_mgmt[vcoreid].notif_pending, 1);
 	if (atomic_read(&vc_mgmt[vcoreid].notifs_enabled)) {
 		atomic_set(&vc_mgmt[vcoreid].notif_pending, 0);
@@ -57,18 +58,16 @@ void handle_events()
 {
 	struct pvc_event_msg *m;
 	int vcoreid = vcore_id();
-	spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));
-	while((m = STAILQ_FIRST(&(vc_mgmt[vcoreid].evq)))) {
+	/* Only we will ever dequeue, so race with m is ok. */
+	while ((m = STAILQ_FIRST(&(vc_mgmt[vcoreid].evq)))) {
+		spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));
 		STAILQ_REMOVE_HEAD(&(vc_mgmt[vcoreid].evq), next);
 		spinlock_unlock(&(vc_mgmt[vcoreid].evq_lock));
 
 		handle_event_t handler = ev_handlers[m->ev_type];
 		handler(m->ev_msg, m->ev_type);
 		free(m);
-
-		spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));
 	}
-	spinlock_unlock(&(vc_mgmt[vcoreid].evq_lock));
 }
 
 /* Enables notifs, and deals with missed notifs by self notifying.  This should
