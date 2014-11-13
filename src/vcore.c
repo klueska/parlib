@@ -101,9 +101,6 @@ volatile int EXPORT_SYMBOL __max_vcores = 0;
  * context over to vcore0 */
 static ucontext_t main_context = { 0 };
  
- /* Some forward declarations */
-static int __vcore_request_specific(int vcoreid);
-
 /* Allocate a new signal stack to the vcore and save a pointer to the old one
  * in the variable passed in. If the pointer passed in is NULL, then it is not
  * assigned.  */
@@ -151,7 +148,7 @@ static void __set_affinity(int vcoreid, int cpuid)
 static void __vcore_sigentry(int sig, siginfo_t *info, void *context)
 {
 	assert(sig == SIGVCORE);
-	if (__vcore_request_specific(__vcore_id) == 0)
+	if (vcore_request_specific(__vcore_id) == 0)
 		return;
 	if (in_vcore_context()) {
 		atomic_set(&__vcore_sigpending(__vcore_id), 1);
@@ -194,6 +191,14 @@ static void vcore_entry_gate()
   /* Update the vcore counts and set the flag for allocated to false */
   atomic_add(&__num_vcores, -1);
   atomic_set(&__vcores(vcoreid).allocated, false);
+
+  /* Restart the vcore if it has been requested between trying to deallocate it
+   * above and yielding below. */
+  if (atomic_swap(&__vcores(vcoreid).requested, false) == true) {
+    atomic_set(&__vcores(vcoreid).allocated, true);
+    atomic_add(&__num_vcores, 1);
+    vcore_reenter(vcore_entry);
+  }
 
   /* Restart the vcore if a signal is pending. This has to come after starting
    * to deallocate the vcore above. Doing so allows us to never miss a signal
@@ -308,6 +313,7 @@ static void __create_vcore(int i)
   /* Up the vcore count counts and set the flag for allocated until we
    * get a chance to stop the thread and deallocate it in its entry gate */
   atomic_set(&__vcores(i).allocated, true);
+  atomic_set(&__vcores(i).requested, false);
   atomic_add(&__num_vcores, 1);
 
   /* Actually create the vcore's backing pthread. */
@@ -343,14 +349,14 @@ static bool vcore_request_init()
   return true;
 }
 
-static int __vcore_request_specific(int vcoreid)
+int vcore_request_specific(int vcoreid)
 {
-  if (atomic_read(&__vcores(vcoreid).allocated) == false) {
-    if (atomic_swap(&__vcores(vcoreid).allocated, true) == false) {
-      atomic_add(&__num_vcores, 1);
-      futex_wakeup_one(&__vcores(vcoreid).allocated);
-      return 0;
-    }
+  atomic_set(&__vcores(vcoreid).requested, true);
+  if (atomic_swap(&__vcores(vcoreid).allocated, true) == false) {
+    atomic_set(&__vcores(vcoreid).requested, false);
+    atomic_add(&__num_vcores, 1);
+    futex_wakeup_one(&__vcores(vcoreid).allocated);
+    return 0;
   }
   return -1;
 }
@@ -503,7 +509,9 @@ pthread_t internal_pthread_create(pthread_attr_t *attr,
 
 #undef vcore_lib_init
 #undef vcore_request
+#undef vcore_request_specific
 #undef vcore_reenter
 EXPORT_ALIAS(INTERNAL(vcore_lib_init), vcore_lib_init)
 EXPORT_ALIAS(INTERNAL(vcore_request), vcore_request)
+EXPORT_ALIAS(INTERNAL(vcore_request_specific), vcore_request_specific)
 EXPORT_ALIAS(INTERNAL(vcore_reenter), vcore_reenter)

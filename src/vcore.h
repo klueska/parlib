@@ -59,6 +59,7 @@ extern "C" {
 #ifdef COMPILING_PARLIB
 # define vcore_lib_init INTERNAL(vcore_lib_init)
 # define vcore_request INTERNAL(vcore_request)
+# define vcore_request_specific INTERNAL(vcore_request_specific)
 # define vcore_reenter INTERNAL(vcore_reenter)
 # define clear_notif_pending INTERNAL(clear_notif_pending)
 # define enable_notifs INTERNAL(enable_notifs)
@@ -123,6 +124,11 @@ void vcore_reenter(void (*entry_func)(void));
  * Otherwise, blocks calling vcore until the request is granted and returns 0.
 */
 extern int vcore_request(int k);
+
+/**
+ * Request a specific vcore to be resumed
+ */
+extern int vcore_request_specific(int vcoreid);
 
 /**
  * Relinquishes the calling vcore.
