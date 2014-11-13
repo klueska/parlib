@@ -75,7 +75,7 @@ void handle_events()
  * be rare, so the syscall overhead isn't a big deal. */
 void enable_notifs(uint32_t vcoreid)
 {
-	if (atomic_cas(&vc_mgmt[vcoreid].notif_pending, 1, 0))
+	if (atomic_swap(&vc_mgmt[vcoreid].notif_pending, 0) == 1)
 		vcore_signal(vcoreid);
 	atomic_set(&vc_mgmt[vcoreid].notifs_enabled, 1);
 }
