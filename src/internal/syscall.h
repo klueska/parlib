@@ -11,17 +11,15 @@
 #ifdef __GLIBC__
 #define __SUPPORTED_C_LIBRARY__
 #define __internal_open __open
-#define __internal_close __close
 #define __internal_read __read
 #define __internal_write __write
 #define __internal_fopen _IO_fopen
 #define __internal_fread _IO_fread
 #define __internal_fwrite _IO_fwrite
 int __open(const char*, int, ...);
-int __close(int);
+FILE *_IO_fopen(const char *path, const char *mode);
 ssize_t __read(int, void*, size_t);
 ssize_t __write(int, const void*, size_t);
-FILE *_IO_fopen(const char *path, const char *mode);
 size_t _IO_fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t _IO_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 #endif
@@ -38,21 +36,21 @@ typedef struct {
   struct event_msg ev_msg;
 } yield_callback_arg_t;
 
-#define uthread_blocking_call(__func, ...) \
+#define uthread_blocking_call(__func_nonblock, __func_block, ...) \
 ({ \
-  typeof(__func(__VA_ARGS__)) ret; \
+  typeof(__func_block(__VA_ARGS__)) ret; \
   yield_callback_arg_t arg = { NULL, {0} }; \
   int vcoreid = vcore_id(); \
   void *do_##__func(void *arg) { \
-    ret = __func(__VA_ARGS__); \
+    ret = __func_block(__VA_ARGS__); \
     send_event((struct event_msg*)arg, EV_SYSCALL, vcoreid); \
     return NULL; \
   } \
-  ret = __func(__VA_ARGS__); \
+  ret = __func_nonblock(__VA_ARGS__); \
   if ((ret == -1) && (errno == EWOULDBLOCK)) { \
     arg.func = &do_##__func; \
+    uthread_yield(true, __uthread_yield_callback, &arg); \
   } \
-  uthread_yield(true, __uthread_yield_callback, &arg); \
   ret; \
 })
 

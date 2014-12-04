@@ -58,14 +58,6 @@ static void *__create_backing_thread(void *tls_addr)
    * backing. */
   void *start_routine(void *arg)
   {
-    /* Allow this to run on any core. */
-    cpu_set_t c;
-    CPU_ZERO(&c);
-    for (int i=0; i<max_vcores(); i++)
-      CPU_SET(i, &c);
-    sched_setaffinity(0, sizeof(cpu_set_t), &c);
-    sched_yield();
-
     void **tcb = (void **)arg;
     if (tls_addr == NULL) {
       /* Grab a reference to our tls_base and set it in the argument. */
@@ -89,10 +81,15 @@ static void *__create_backing_thread(void *tls_addr)
     /* Process syscalls or sleep until we are told to exit. */
     while(1) {
       switch(__backing_pthread.futex) {
-        case BACKING_THREAD_SYSCALL:
+        case BACKING_THREAD_SYSCALL: {
+          cpu_set_t c;
+          CPU_ZERO(&c);
+          CPU_SET(vcore_id(), &c);
+          sched_setaffinity(0, sizeof(cpu_set_t), &c);
           __backing_pthread.futex = BACKING_THREAD_SLEEP;
           __backing_pthread.syscall(__backing_pthread.arg);
           break;
+        }
         case BACKING_THREAD_SLEEP:
           futex_wait(&__backing_pthread.futex, BACKING_THREAD_SLEEP);
           break;
