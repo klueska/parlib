@@ -101,10 +101,7 @@ static void *__create_backing_thread(void *tls_addr)
   }
 
   void *tcb = NULL;
-  pthread_attr_t attr;
-  pthread_attr_init(&attr);
-  pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
-  internal_pthread_create(&attr, start_routine, &tcb);
+  internal_pthread_create(PTHREAD_STACK_MIN, start_routine, &tcb);
   futex_wait(&tcb, 0);
   return tcb;
 }

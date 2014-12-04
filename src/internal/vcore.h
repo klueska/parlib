@@ -68,7 +68,7 @@ extern struct internal_vcore_pvc_data *internal_vcore_pvc_data;
 void __sigstack_swap(void *sigstack);
 void __sigstack_free(void *sigstack);
 
-pthread_t internal_pthread_create(pthread_attr_t *attr,
+pthread_t internal_pthread_create(size_t stack_size,
                                   void *(*start_routine) (void *), void *arg);
 
 /* Architecture-specific function to reenter atop the stack. */

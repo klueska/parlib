@@ -100,7 +100,16 @@ volatile int EXPORT_SYMBOL __max_vcores = 0;
 /* Global context associated with the main thread.  Used when swapping this
  * context over to vcore0 */
 static ucontext_t main_context = { 0 };
+
+/* Global constants indicating the size and alignment of the static TLS
+ * region. Needs to be initialized at run time and done in vcore_lib_init(). */
+static size_t __static_tls_size = -1;
+static size_t __static_tls_align = -1;
  
+/* Minimum possible stack size.  Needs to be set based on the
+ * __static_tls_size at runtime. */
+static size_t __min_stack_size = -1;
+
 /* Allocate a new signal stack to the vcore and save a pointer to the old one
  * in the variable passed in. If the pointer passed in is NULL, then it is not
  * assigned.  */
@@ -236,16 +245,12 @@ static void *get_stack_top()
   if (pthread_attr_getstack(&np_attr_stack, &stack_limit, &np_stack_size))
     abort();
 
-  /* Account for the TLS sitting at the top of the stack. */
-  extern void _dl_get_tls_static_info(size_t*, size_t*) internal_function;
-  size_t tlssize, tlsalign;
-  _dl_get_tls_static_info(&tlssize, &tlsalign);
-
   /* Randomly offset the stacks slightly so they don't interfere with one
    * another if they end up running in lock step. */
   int offset = __vcore_id * ARCH_CL_SIZE;
 
-  return stack_limit + np_stack_size - tlssize - offset;
+  /* Account for the TLS sitting at the top of the stack. */
+  return stack_limit + np_stack_size - __static_tls_size - offset;
 }
 
 static void __vcore_init(int vcoreid)
@@ -301,15 +306,6 @@ static void __create_vcore(int i)
   pthread_attr_t attr;
   pthread_attr_init(&attr);
 
-  if ((errno = pthread_attr_setstacksize(&attr, VCORE_STACK_SIZE)) != 0) {
-    fprintf(stderr, "vcore: could not set stack size of underlying pthread\n");
-    exit(1);
-  }
-  if ((errno = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) != 0) {
-    fprintf(stderr, "vcore: could not set stack size of underlying pthread\n");
-    exit(1);
-  }
-  
   /* Up the vcore count counts and set the flag for allocated until we
    * get a chance to stop the thread and deallocate it in its entry gate */
   atomic_set(&__vcores(i).allocated, true);
@@ -317,7 +313,7 @@ static void __create_vcore(int i)
   atomic_add(&__num_vcores, 1);
 
   /* Actually create the vcore's backing pthread. */
-  internal_pthread_create(&attr, __vcore_trampoline_entry, (void *) (long) i);
+  internal_pthread_create(VCORE_STACK_SIZE, __vcore_trampoline_entry, (void*)(long)i);
 }
 
 /* If this is the first vcore requested, do something special */
@@ -418,6 +414,11 @@ int vcore_lib_init()
     /* Make sure the tls subsystem is up and running */
     assert(!tls_lib_init());
 
+	/* Get the static tls size and alignment, and calculate min stack size */
+    extern void _dl_get_tls_static_info(size_t*, size_t*) internal_function;
+    _dl_get_tls_static_info(&__static_tls_size, &__static_tls_align);
+    __min_stack_size = PTHREAD_STACK_MIN + __static_tls_size;
+
     /* Get the number of available vcores in the system */
     char *limit = getenv("VCORE_LIMIT");
     if (limit != NULL) {
@@ -469,41 +470,35 @@ int vcore_lib_init()
   return 0;
 }
 
-/* When attr has PTHREAD_STACK_MIN set, Always give a thread as small of a
-stack as possible stack.  * Unfortunately, just using PTHREAD_STACK_MIN isn't
-good enough, because * glibc likes to tack on the static TLS to the stack
-allocation, meaning that * calls to pthread create with PTHREAD_STACK_MIN might
-actually fail if glibc * decides that's not enough space.  Unfortunately there
-is no good way of * asking glibc what the size of the static TLS region is, so
-we have to do * some dancing to figure out something big enough. */
-pthread_t internal_pthread_create(pthread_attr_t *attr,
+/* An internal version of pthread create that always takes a stack size and 
+ * returns the pthread created.  All stack sizes are adjusted to make sure
+ * that pthread_create will not fail, and all threads are launched in the
+ * detached state.  This function call cannot fail. */
+pthread_t internal_pthread_create(size_t stack_size,
                                   void *(*start_routine) (void *), void *arg)
 {
-  static size_t min_stack_size = PTHREAD_STACK_MIN;
   pthread_t pthread;
+  pthread_attr_t attr;
 
-  if (attr != NULL) {
-    size_t stack_size;
-    if (pthread_attr_getstacksize(attr, &stack_size) != 0)
-      abort();
+  /* Increase our stack to at least the minimum so we don't fail. */
+  if (stack_size < __min_stack_size)
+    stack_size = __min_stack_size;
 
-    /* Increase our stack to at least the minimum so we don't fail. */
-    if (stack_size < min_stack_size)
-      pthread_attr_setstacksize(attr, min_stack_size);
-
-    /* We may need to up min_stack_size the first time through though, because
-     * PTHREAD_STACK_MIN is not actually always sufficient because the static
-     * TLS, whose size is program-dependent, is allocated at the top of the
-     * stack.  Determine a sufficient value. */
-    while (pthread_create(&pthread, attr, start_routine, arg) != 0) {
-      min_stack_size *= 2;
-      pthread_attr_setstacksize(attr, min_stack_size);
-    }
-    return pthread;
+  /* Set the pthread attributes */
+  pthread_attr_init(&attr);
+  if ((errno = pthread_attr_setstacksize(&attr, stack_size)) != 0) {
+    fprintf(stderr, "Could not set stack size of underlying pthread\n");
+    exit(1);
   }
-
-  if (pthread_create(&pthread, attr, start_routine, arg) != 0)
-    abort();
+  if ((errno = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) != 0) {
+    fprintf(stderr, "Could not set underlying pthread to detached state\n");
+    exit(1);
+  }
+  /* Create the pthread */
+  if ((errno = pthread_create(&pthread, &attr, start_routine, arg)) != 0) {
+    fprintf(stderr, "Could not create pthread\n");
+    exit(1);
+  }
   return pthread;
 }
 
