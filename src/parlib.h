@@ -44,6 +44,9 @@
 #include "dtls.h"
 #include "spinlock.h"
 
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+
 #ifndef NULL
 #define NULL ((void*) 0)
 #endif
