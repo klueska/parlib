@@ -70,17 +70,22 @@ static inline void unsafe_uthread_yield(
 
 /* Allow this uthread to be interrupted by an incoming vcore signal. This is
  * the default once a uthread starts running. */
-void EXPORT_SYMBOL uthread_enable_interrupts()
+void EXPORT_SYMBOL uth_enable_notifs()
 {
-	assert(!in_vcore_context());
-	current_uthread->flags &= ~NO_INTERRUPT;
-	maybe_resignal();
+	assert(current_uthread);
+	current_uthread->disable_depth--;
+	assert(current_uthread->disable_depth);
+	if (current_uthread->disable_depth == 0) {
+		current_uthread->flags &= ~NO_INTERRUPT;
+		maybe_resignal();
+	}
 }
 
 /* Don't allow this uthread to be interrupted by an incoming vcore signal */
-void EXPORT_SYMBOL uthread_disable_interrupts()
+void EXPORT_SYMBOL uth_disable_notifs()
 {
-	assert(!in_vcore_context());
+	assert(current_uthread);
+	current_uthread->disable_depth++;
 	current_uthread->flags |= NO_INTERRUPT;
 }
 
@@ -101,6 +106,7 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 		uthread->state = UT_RUNNING;
 		uthread->flags = NO_INTERRUPT;
 		uthread->sigstack = NULL;
+		uthread->disable_depth = 1;
 	
 #ifndef PARLIB_NO_UTHREAD_TLS
 		/* Associate the main thread's tls with the current tls as well */
@@ -120,7 +126,7 @@ void EXPORT_SYMBOL uthread_lib_init(struct uthread* uthread)
 			vcore_request(1);
 			cpu_relax();
 		}
-		uthread_enable_interrupts();
+		uth_enable_notifs();
 	);
 	/* We are now running on vcore 0 */
 }
@@ -170,9 +176,6 @@ void vcore_sigentry()
 		void cb(struct uthread *uthread, void *arg)
 		{
 			__sigstack_swap(uthread->sigstack);
-			assert(sched_ops->thread_paused);
-			sched_ops->thread_paused(uthread);
-			current_uthread = NULL;
 
 			sigset_t mask;
 			sigemptyset(&mask);
@@ -181,9 +184,12 @@ void vcore_sigentry()
 			vcore_reenter(vcore_entry);
 		}
 		cmb();
+		current_uthread->disable_depth++;
 		uthread->flags |= NO_INTERRUPT;
 		unsafe_uthread_yield(true, cb, 0);
-		uthread->flags &= ~NO_INTERRUPT;
+		current_uthread->disable_depth--;
+		if (current_uthread->disable_depth == 0)
+			uthread->flags &= ~NO_INTERRUPT;
 		vcoreid = vcore_id();
 	} while (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1);
 }
@@ -194,6 +200,7 @@ void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 	uthread->state = UT_NOT_RUNNING;
 	uthread->flags = NO_INTERRUPT;
 	uthread->sigstack = NULL;
+	uthread->disable_depth = 1;
 
 #ifndef PARLIB_NO_UTHREAD_TLS
 	uthread_interrupt_safe(
@@ -442,7 +449,7 @@ void EXPORT_SYMBOL init_uthread_tf(uthread_t *uth, void (*entry)(void),
 {
 	void cb()
 	{
-		uthread_enable_interrupts();
+		uth_enable_notifs();
 		current_uthread->entry_func();
 	}
 	uth->entry_func = entry;

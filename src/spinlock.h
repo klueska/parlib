@@ -23,14 +23,20 @@
 #define SPINLOCK_H
 
 #include <errno.h>
+#include "uthread.h"
 #include "atomic.h"
 #include "arch.h"
 
 #define SPINLOCK_INITIALIZER {0}
+#define SPINPDR_INITIALIZER {0}
 
 typedef struct spinlock {
   int lock;
 } spinlock_t;
+
+typedef struct spin_pdr_lock {
+  int lock;
+} spin_pdr_lock_t;
 
 static inline void spinlock_init(spinlock_t *lock)
 {
@@ -51,6 +57,25 @@ static inline void spinlock_lock(spinlock_t *lock)
 static inline void spinlock_unlock(spinlock_t *lock)
 {
   __sync_lock_release(&lock->lock, 0);
+}
+
+static void spin_pdr_init(struct spin_pdr_lock *pdr_lock)
+{
+  pdr_lock->lock = 0;
+}
+
+static void spin_pdr_lock(struct spin_pdr_lock *pdr_lock)
+{
+  if (current_uthread)
+    uth_disable_notifs();
+  spinlock_lock((spinlock_t*)pdr_lock);
+}
+
+static void spin_pdr_unlock(struct spin_pdr_lock *pdr_lock)
+{
+  spinlock_unlock((spinlock_t*)pdr_lock);
+  if (current_uthread)
+    uth_enable_notifs();
 }
 
 #endif // SPINLOCK_H

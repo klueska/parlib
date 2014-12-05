@@ -49,6 +49,7 @@ struct uthread {
     void *yield_arg;
     int flags;
     int state;
+    int disable_depth;
     void *sigstack;
 #ifndef PARLIB_NO_UTHREAD_TLS
     void *tls_desc;
@@ -101,14 +102,14 @@ void uthread_runnable(struct uthread *uthread);
 void uthread_yield(bool save_state, void (*yield_func)(struct uthread*, void*),
                    void *yield_arg);
 
-/* Don't allow this uthread to be interrupted by an incoming vcore signal. This
- * is the default once a uthread starts running. */
-void uthread_disable_interrupts();
+/* Don't allow this uthread to be interrupted by an incoming vcore
+ * notification. This is the default once a uthread starts running. */
+void uth_disable_notifs();
 
-/* Allow this uthread to be interrupted by an incoming vcore signal. You should
- * call this early on in your startup code if you want to allow your uthreads
- * to be interrupted by a vcore signal. */
-void uthread_enable_interrupts();
+/* Allow this uthread to be interrupted by an incoming vcore notification. You
+ * should call this early on in your startup code if you want to allow your
+ * uthreads to be interrupted by a vcore signal. */
+void uth_enable_notifs();
 
 /* By default, all of the uthread operations are safe from interrupts.  If you
  * have other calls that you know should not be interrupted by an event, you
@@ -116,9 +117,9 @@ void uthread_enable_interrupts();
  * provides a convenient manner of doing so. */
 #define uthread_interrupt_safe(func) \
 { \
-	uthread_disable_interrupts(); \
+	uth_disable_notifs(); \
 	func; \
-	uthread_enable_interrupts(); \
+	uth_enable_notifs(); \
 }
 
 /* Helpers, which sched_entry() can call */
