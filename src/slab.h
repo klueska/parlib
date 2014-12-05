@@ -73,7 +73,7 @@ TAILQ_HEAD(slab_list, slab);
 /* Actual cache */
 typedef struct slab_cache {
 	SLIST_ENTRY(slab_cache) link;
-	spinlock_t cache_lock;
+	spin_pdr_lock_t cache_lock;
 	const char *name;
 	size_t obj_size;
 	int align;

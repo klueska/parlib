@@ -19,7 +19,7 @@ STAILQ_HEAD(pvc_event_queue, pvc_event_msg);
 
 struct vc_mgmt {
 	struct pvc_event_queue evq;
-	spinlock_t evq_lock;
+	spin_pdr_lock_t evq_lock;
 	atomic_t notifs_enabled;
 	atomic_t notif_pending;
 } __attribute__((aligned(ARCH_CL_SIZE)));
@@ -32,7 +32,7 @@ void event_lib_init()
 	            sizeof(struct vc_mgmt) * max_vcores());
 	for (int i=0; i<max_vcores(); i++) {
 		STAILQ_INIT(&(vc_mgmt[i].evq));
-		spinlock_init(&(vc_mgmt[i].evq_lock));
+		spin_pdr_init(&(vc_mgmt[i].evq_lock));
 		vc_mgmt[i].notifs_enabled = ATOMIC_INITIALIZER(1);
 		vc_mgmt[i].notif_pending = ATOMIC_INITIALIZER(0);
 	}
@@ -43,9 +43,9 @@ void send_event(struct event_msg *ev_msg, unsigned ev_type, int vcoreid)
 	struct pvc_event_msg *m = parlib_malloc(sizeof(struct pvc_event_msg));
 	m->ev_msg = ev_msg;
 	m->ev_type = ev_type;
-	spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));
+	spin_pdr_lock(&(vc_mgmt[vcoreid].evq_lock));
 	STAILQ_INSERT_TAIL(&(vc_mgmt[vcoreid].evq), m, next);
-	spinlock_unlock(&(vc_mgmt[vcoreid].evq_lock));
+	spin_pdr_unlock(&(vc_mgmt[vcoreid].evq_lock));
 
 	atomic_set(&vc_mgmt[vcoreid].notif_pending, 1);
 	if (atomic_read(&vc_mgmt[vcoreid].notifs_enabled)) {
@@ -60,9 +60,9 @@ void handle_events()
 	int vcoreid = vcore_id();
 	/* Only we will ever dequeue, so race with m is ok. */
 	while ((m = STAILQ_FIRST(&(vc_mgmt[vcoreid].evq)))) {
-		spinlock_lock(&(vc_mgmt[vcoreid].evq_lock));
+		spin_pdr_lock(&(vc_mgmt[vcoreid].evq_lock));
 		STAILQ_REMOVE_HEAD(&(vc_mgmt[vcoreid].evq), next);
-		spinlock_unlock(&(vc_mgmt[vcoreid].evq_lock));
+		spin_pdr_unlock(&(vc_mgmt[vcoreid].evq_lock));
 
 		handle_event_t handler = ev_handlers[m->ev_type];
 		handler(m->ev_msg, m->ev_type);

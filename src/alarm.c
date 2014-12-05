@@ -18,9 +18,9 @@ static void *__waiting_thread(void *arg)
 		now = time_usec();
 		if (wakeup_time < now)
 			break;
-	    spinlock_unlock(&waiter->lock);
+		spinlock_unlock(&waiter->lock);
 		usleep(wakeup_time-now);
-	    spinlock_lock(&waiter->lock);
+		spinlock_lock(&waiter->lock);
 	} while(waiter->wakeup_time != wakeup_time);
 	waiter->done = true;
 	spinlock_unlock(&waiter->lock);

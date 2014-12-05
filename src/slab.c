@@ -18,7 +18,7 @@
 #include "slab.h"
 
 struct slab_cache_list slab_caches;
-spinlock_t slab_caches_lock;
+spin_pdr_lock_t slab_caches_lock;
 
 /* Backend/internal functions, defined later.  Grab the lock before calling
  * these. */
@@ -35,7 +35,7 @@ static void __slab_cache_create(struct slab_cache *kc, const char *name,
 {
 	assert(kc);
 	assert(align);
-	spinlock_init(&kc->cache_lock);
+	spin_pdr_init(&kc->cache_lock);
 	kc->name = name;
 	kc->obj_size = obj_size;
 	kc->align = align;
@@ -49,7 +49,7 @@ static void __slab_cache_create(struct slab_cache *kc, const char *name,
 	
 	/* put in cache list based on it's size */
 	struct slab_cache *i, *prev = NULL;
-	spinlock_lock(&slab_caches_lock);
+	spin_pdr_lock(&slab_caches_lock);
 	/* find the slab_cache before us in the list.  yes, this is O(n). */
 	SLIST_FOREACH(i, &slab_caches, link) {
 		if (i->obj_size < kc->obj_size)
@@ -61,12 +61,12 @@ static void __slab_cache_create(struct slab_cache *kc, const char *name,
 		SLIST_INSERT_AFTER(prev, kc, link);
 	else
 		SLIST_INSERT_HEAD(&slab_caches, kc, link);
-	spinlock_unlock(&slab_caches_lock);
+	spin_pdr_unlock(&slab_caches_lock);
 }
 
 void slab_cache_init(void)
 {
-	spinlock_init(&slab_caches_lock);
+	spin_pdr_init(&slab_caches_lock);
 	SLIST_INIT(&slab_caches);
 	/* We need to call the __ version directly to bootstrap the global
 	 * slab_cache_cache. */
@@ -137,7 +137,7 @@ void slab_cache_destroy(struct slab_cache *cp)
 {
 	struct slab *a_slab, *next;
 
-	spinlock_lock(&cp->cache_lock);
+	spin_pdr_lock(&cp->cache_lock);
 	assert(TAILQ_EMPTY(&cp->full_slab_list));
 	assert(TAILQ_EMPTY(&cp->partial_slab_list));
 	/* Clean out the empty list.  We can't use a regular FOREACH here, since the
@@ -149,18 +149,18 @@ void slab_cache_destroy(struct slab_cache *cp)
 		slab_destroy(cp, a_slab);
 		a_slab = next;
 	}
-	spinlock_lock(&slab_caches_lock);
+	spin_pdr_lock(&slab_caches_lock);
 	SLIST_REMOVE(&slab_caches, cp, slab_cache, link);
-	spinlock_unlock(&slab_caches_lock);
+	spin_pdr_unlock(&slab_caches_lock);
 	slab_cache_free(&slab_cache_cache, cp); 
-	spinlock_unlock(&cp->cache_lock);
+	spin_pdr_unlock(&cp->cache_lock);
 }
 
 /* Front end: clients of caches use these */
 void *slab_cache_alloc(struct slab_cache *cp, int flags)
 {
 	void *retval = NULL;
-	spinlock_lock(&cp->cache_lock);
+	spin_pdr_lock(&cp->cache_lock);
 	// look at partial list
 	struct slab *a_slab = TAILQ_FIRST(&cp->partial_slab_list);
 	// 	if none, go to empty list and get an empty and make it partial
@@ -193,7 +193,7 @@ void *slab_cache_alloc(struct slab_cache *cp, int flags)
 		TAILQ_INSERT_HEAD(&cp->full_slab_list, a_slab, link);
 	}
 	cp->nr_cur_alloc++;
-	spinlock_unlock(&cp->cache_lock);
+	spin_pdr_unlock(&cp->cache_lock);
 	return retval;
 }
 
@@ -208,7 +208,7 @@ void slab_cache_free(struct slab_cache *cp, void *buf)
 	struct slab *a_slab;
 	struct slab_bufctl *a_bufctl;
 
-	spinlock_lock(&cp->cache_lock);
+	spin_pdr_lock(&cp->cache_lock);
 	if (cp->obj_size <= SLAB_LARGE_CUTOFF) {
 		// find its slab
 		a_slab = (struct slab*)(ROUNDDOWN(buf, PGSIZE) + PGSIZE -
@@ -235,7 +235,7 @@ void slab_cache_free(struct slab_cache *cp, void *buf)
 		TAILQ_REMOVE(&cp->partial_slab_list, a_slab, link);
 		TAILQ_INSERT_HEAD(&cp->empty_slab_list, a_slab, link);
 	}
-	spinlock_unlock(&cp->cache_lock);
+	spin_pdr_unlock(&cp->cache_lock);
 }
 
 /* Back end: internal functions */
@@ -317,19 +317,19 @@ void slab_cache_reap(struct slab_cache *cp)
 	struct slab *a_slab, *next;
 	
 	// Destroy all empty slabs.  Refer to the notes about the while loop
-	spinlock_lock(&cp->cache_lock);
+	spin_pdr_lock(&cp->cache_lock);
 	a_slab = TAILQ_FIRST(&cp->empty_slab_list);
 	while (a_slab) {
 		next = TAILQ_NEXT(a_slab, link);
 		slab_destroy(cp, a_slab);
 		a_slab = next;
 	}
-	spinlock_unlock(&cp->cache_lock);
+	spin_pdr_unlock(&cp->cache_lock);
 }
 
 void EXPORT_SYMBOL print_slab_cache(struct slab_cache *cp)
 {
-	spinlock_lock(&cp->cache_lock);
+	spin_pdr_lock(&cp->cache_lock);
 	printf("\nPrinting slab_cache:\n---------------------\n");
 	printf("Name: %s\n", cp->name);
 	printf("Objsize: %zu\n", cp->obj_size);
@@ -341,7 +341,7 @@ void EXPORT_SYMBOL print_slab_cache(struct slab_cache *cp)
 	printf("Slab Partial: %p\n", &cp->partial_slab_list);
 	printf("Slab Empty:%p\n", &cp->empty_slab_list);
 	printf("Current Allocations: %lu\n", cp->nr_cur_alloc);
-	spinlock_unlock(&cp->cache_lock);
+	spin_pdr_unlock(&cp->cache_lock);
 }
 
 void EXPORT_SYMBOL print_slab(struct slab *slab)

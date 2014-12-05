@@ -63,7 +63,7 @@ struct slab_cache *__dtls_values_cache;
 struct slab_cache *__dtls_data_cache;
   
 /* A lock protecting access to the caches above */
-static spinlock_t __slab_lock;
+static spin_pdr_lock_t __slab_lock;
 
 static __thread dtls_data_t __dtls_data;
 static __thread bool __dtls_initialized = false;
@@ -74,9 +74,9 @@ static __thread bool __dtls_initialized = false;
 
 static dtls_key_t __allocate_dtls_key() 
 {
-  spinlock_lock(&__slab_lock);
+  spin_pdr_lock(&__slab_lock);
   dtls_key_t key = slab_cache_alloc(__dtls_keys_cache, 0);
-  spinlock_unlock(&__slab_lock);
+  spin_pdr_unlock(&__slab_lock);
   assert(key);
   key->ref_count = 1;
   return key;
@@ -86,9 +86,9 @@ static void __maybe_free_dtls_key(dtls_key_t key)
 {
   __sync_fetch_and_add(&key->ref_count, -1);
   if(key->ref_count == 0) {
-    spinlock_lock(&__slab_lock);
+    spin_pdr_lock(&__slab_lock);
     slab_cache_free(__dtls_keys_cache, key);
-    spinlock_unlock(&__slab_lock);
+    spin_pdr_unlock(&__slab_lock);
   }
 }
 
@@ -108,7 +108,7 @@ static void dtls_lib_init()
         sizeof(struct dtls_data), __alignof__(struct dtls_data), 0, NULL, NULL);
 
     /* Initialize the lock that protects the cache */
-    spinlock_init(&__slab_lock);
+    spin_pdr_init(&__slab_lock);
   );
 }
 
@@ -138,9 +138,9 @@ static inline void __set_dtls(dtls_data_t *dtls_data, dtls_key_t key, void *dtls
     if(v->key == key) break;
 
   if(!v) {
-    spinlock_lock(&__slab_lock);
+    spin_pdr_lock(&__slab_lock);
     v = slab_cache_alloc(__dtls_values_cache, 0);
-    spinlock_unlock(&__slab_lock);
+    spin_pdr_unlock(&__slab_lock);
     assert(v);
     v->key = key;
     TAILQ_INSERT_HEAD(&dtls_data->list, v, link);
@@ -181,9 +181,9 @@ static inline void __destroy_dtls(dtls_data_t *dtls_data)
 
     n = TAILQ_NEXT(v, link);
     TAILQ_REMOVE(&dtls_data->list, v, link);
-    spinlock_lock(&__slab_lock);
+    spin_pdr_lock(&__slab_lock);
     slab_cache_free(__dtls_values_cache, v);
-    spinlock_unlock(&__slab_lock);
+    spin_pdr_unlock(&__slab_lock);
     v = n;
   }
 }
@@ -196,9 +196,9 @@ void EXPORT_SYMBOL set_dtls(dtls_key_t key, void *dtls)
   if(!in_vcore_context()) {
     assert(current_uthread);
     if(current_uthread->dtls_data == NULL) {
-      spinlock_lock(&__slab_lock);
+      spin_pdr_lock(&__slab_lock);
       current_uthread->dtls_data = slab_cache_alloc(__dtls_data_cache, 0);
-      spinlock_unlock(&__slab_lock);
+      spin_pdr_unlock(&__slab_lock);
       initialized = false;
     }
     dtls_data = current_uthread->dtls_data;
@@ -261,9 +261,9 @@ void EXPORT_SYMBOL destroy_dtls()
   __destroy_dtls(dtls_data);
 
 #ifdef PARLIB_NO_UTHREAD_TLS
-  spinlock_lock(&__slab_lock);
+  spin_pdr_lock(&__slab_lock);
   slab_cache_free(__dtls_data_cache, dtls_data);
-  spinlock_unlock(&__slab_lock);
+  spin_pdr_unlock(&__slab_lock);
 #endif
 }
 
