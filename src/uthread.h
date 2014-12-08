@@ -37,7 +37,7 @@
 #define UTH_EXT_BLK_MUTEX         1
 #define UTH_EXT_BLK_JUSTICE       2   /* whatever.  might need more options */
 
-/* Bare necessities of a user thread.  2LSs should allocate a bigger struct and
+/* Bare necessities of a user thread.  1LSs should allocate a bigger struct and
  * cast their threads to uthreads when talking with vcore code.  Vcore/default
  * 2LS code won't touch udata or beyond. */
 /* The definition of uthread_context_t is system dependant and located under
@@ -57,6 +57,7 @@ struct uthread {
     void *dtls_data;
 #endif
     struct syscall *sysc;
+    uint64_t sysc_timeout;
 };
 typedef struct uthread uthread_t;
 

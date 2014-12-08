@@ -36,4 +36,9 @@ void clear_notif_pending(uint32_t vcoreid);
 void enable_notifs(uint32_t vcoreid);
 void disable_notifs(uint32_t vcoreid);
 
+/* This call only exists in the linux port of parlib.  In Akaros, timeouts can
+ * be set on syscalls using the normal alarm stuff, but this would be
+ * prohibitively slow on linux with our current alarm implementation. */
+void EXPORT_SYMBOL set_syscall_timeout(uint64_t timeout_usec);
+
 #endif // PARLIB_EVENT_H
