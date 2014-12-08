@@ -113,11 +113,11 @@ static size_t __min_stack_size = -1;
 /* Allocate a new signal stack to the vcore and save a pointer to the old one
  * in the variable passed in. If the pointer passed in is NULL, then it is not
  * assigned.  */
-void __sigstack_swap(void *sigstack)
+void __sigstack_swap(void **sigstack)
 {
 	if (sigstack) {
-		__sigstack_free(sigstack);
-		sigstack = __vcore_sigstack;
+		__sigstack_free(*sigstack);
+		*sigstack = __vcore_sigstack;
 	}
 	__vcore_sigstack = parlib_aligned_alloc(PGSIZE, SIGSTKSZ);
 

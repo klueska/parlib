@@ -175,7 +175,7 @@ void vcore_sigentry()
 
 		void cb(struct uthread *uthread, void *arg)
 		{
-			__sigstack_swap(uthread->sigstack);
+			__sigstack_swap(&uthread->sigstack);
 
 			sigset_t mask;
 			sigemptyset(&mask);
