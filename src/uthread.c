@@ -73,6 +73,7 @@ static inline void unsafe_uthread_yield(
 void EXPORT_SYMBOL uth_enable_notifs()
 {
 	assert(current_uthread);
+	assert(current_uthread->disable_depth > 0);
 	current_uthread->disable_depth--;
 	assert(current_uthread->disable_depth);
 	if (current_uthread->disable_depth == 0) {
@@ -85,8 +86,9 @@ void EXPORT_SYMBOL uth_enable_notifs()
 void EXPORT_SYMBOL uth_disable_notifs()
 {
 	assert(current_uthread);
-	current_uthread->disable_depth++;
 	current_uthread->flags |= NO_INTERRUPT;
+	wmb();
+	current_uthread->disable_depth++;
 }
 
 /* The real 2LS calls this, passing in a uthread representing thread0.  When it
@@ -184,12 +186,17 @@ void vcore_sigentry()
 			vcore_reenter(vcore_entry);
 		}
 		cmb();
-		current_uthread->disable_depth++;
 		uthread->flags |= NO_INTERRUPT;
+		wmb();
+		uthread->disable_depth++;
+
 		unsafe_uthread_yield(true, cb, 0);
-		current_uthread->disable_depth--;
-		if (current_uthread->disable_depth == 0)
+
+		assert(uthread->disable_depth > 0);
+		uthread->disable_depth--;
+		if (uthread->disable_depth == 0)
 			uthread->flags &= ~NO_INTERRUPT;
+
 		vcoreid = vcore_id();
 	} while (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1);
 }
