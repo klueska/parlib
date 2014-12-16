@@ -57,10 +57,12 @@ int EXPORT_SYMBOL open(const char* path, int oflag, ...)
 FILE EXPORT_SYMBOL *fopen(const char *path, const char *mode)
 {
   FILE *stream = __internal_fopen(path, mode);
-  int fd = fileno(stream);
-  int fl = fcntl(fd, F_GETFL, 0);
-  fl |= O_NONBLOCK;
-  fcntl(fd, F_SETFL, fl);
+  if (current_uthread) {
+    int fd = fileno(stream);
+    int fl = fcntl(fd, F_GETFL, 0);
+    fl |= O_NONBLOCK;
+    fcntl(fd, F_SETFL, fl);
+  }
   return stream;
 }
 
