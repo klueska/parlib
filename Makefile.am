@@ -98,8 +98,10 @@ libparlib_la_CFLAGS = $(LIB_CFLAGS)
 libparlib_la_CPPFLAGS = -I$(SYSDEPDIR) -I$(srcdir)/src -DCOMPILING_PARLIB
 libparlib_la_SOURCES = $(LIB_FILES)
 libparlib_la_LIBADD = -lpthread -lrt
+libparlib_la_LDFLAGS  = -Wl,-wrap,socket
+libparlib_la_LDFLAGS += -Wl,-wrap,accept
 if STATIC_ONLY
-libparlib_la_LDFLAGS = -all-static
+libparlib_la_LDFLAGS += -all-static
 endif
 
 # Setup a directory where all of the include files will be installed

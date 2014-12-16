@@ -124,4 +124,29 @@ size_t EXPORT_SYMBOL fwrite(const void *ptr, size_t size,
   return __internal_fwrite(ptr, size, nmemb, stream);
 }
 
+int EXPORT_SYMBOL __wrap_socket(int sfamily, int stype, int prot)
+{
+  int fd = __internal_socket(sfamily, stype, prot);
+  if (current_uthread) {
+    int fl = fcntl(fd, F_GETFL, 0);
+    fl |= O_NONBLOCK;
+    fcntl(fd, F_SETFL, fl);
+  }
+  return fd;
+}
+
+int EXPORT_SYMBOL __wrap_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+  int __blocking_accept(int __fd, struct sockaddr *__addr, socklen_t *__addrlen)
+  {
+    __select(__fd, SELECT_READ);
+    return __internal_accept(__fd, __addr, __addrlen);
+  }
+
+  if (current_uthread)
+    return uthread_blocking_call(__internal_accept, __blocking_accept,
+                                 sockfd, addr, addrlen);
+  return __internal_accept(sockfd, addr, addrlen);
+}
+
 #endif
