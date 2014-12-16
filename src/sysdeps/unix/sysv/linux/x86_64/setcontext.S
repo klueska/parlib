@@ -33,12 +33,12 @@
   other than the PRESERVED state.  */
 
 HIDDEN_ENTRY(parlib_setcontext)
-	/* Save argument since syscall will destroy it.  */
-	pushq	%rdi
-	cfi_adjust_cfa_offset(8)
-
-	/* Set the signal mask with
-	   rt_sigprocmask (SIG_SETMASK, mask, NULL, _NSIG/8).  */
+#	/* Save argument since syscall will destroy it.  */
+#	pushq	%rdi
+#	cfi_adjust_cfa_offset(8)
+#
+#	/* Set the signal mask with
+#	   rt_sigprocmask (SIG_SETMASK, mask, NULL, _NSIG/8).  */
 #	leaq	oSIGMASK(%rdi), %rsi
 #	xorl	%edx, %edx
 #	movl	$SIG_SETMASK, %edi
@@ -50,12 +50,16 @@ HIDDEN_ENTRY(parlib_setcontext)
 #	cmpq	$-4095, %rax		/* Check %rax for error.  */
 #	jae	SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
 
-	/* Restore the floating-point context.  Not the registers, only the
-	   rest.  */
-	movq	oFPREGS(%rdi), %rcx
-	fldenv	(%rcx)
-	ldmxcsr oMXCSR(%rdi)
+#	/* Restore the floating-point context.  Not the registers, only the
+#	   rest.  */
+#	movq	oFPREGS(%rdi), %rcx
+#	fldenv	(%rcx)
+#	ldmxcsr oMXCSR(%rdi)
 
+	/* We only need to actually restore the x87 CWD and the mxcsr. */
+	movq	oFPREGS(%rdi), %rcx
+	fldcw  (%rcx) # the first field in oFPREGSMEM is the CWD
+	ldmxcsr oMXCSR(%rdi)
 
 	/* Load the new stack pointer, the preserved registers and
 	   registers used for passing args.  */
@@ -82,14 +86,14 @@ HIDDEN_ENTRY(parlib_setcontext)
 	movq	oRIP(%rdi), %rcx
 	pushq	%rcx
 
-	movq	oRSI(%rdi), %rsi
-	movq	oRDX(%rdi), %rdx
-	movq	oRCX(%rdi), %rcx
-	movq	oR8(%rdi), %r8
-	movq	oR9(%rdi), %r9
-
-	/* Setup finally  %rdi.  */
-	movq	oRDI(%rdi), %rdi
+#	movq	oRSI(%rdi), %rsi
+#	movq	oRDX(%rdi), %rdx
+#	movq	oRCX(%rdi), %rcx
+#	movq	oR8(%rdi), %r8
+#	movq	oR9(%rdi), %r9
+#
+#	/* Setup finally  %rdi.  */
+#	movq	oRDI(%rdi), %rdi
 
 	/* End FDE here, we fall into another context.  */
 	cfi_endproc

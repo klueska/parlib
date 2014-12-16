@@ -43,12 +43,12 @@ HIDDEN_ENTRY(parlib_getcontext)
 	movq	%r14, oR14(%rdi)
 	movq	%r15, oR15(%rdi)
 
-	movq	%rdi, oRDI(%rdi)
-	movq	%rsi, oRSI(%rdi)
-	movq	%rdx, oRDX(%rdi)
-	movq	%rcx, oRCX(%rdi)
-	movq	%r8, oR8(%rdi)
-	movq	%r9, oR9(%rdi)
+#	movq	%rdi, oRDI(%rdi)
+#	movq	%rsi, oRSI(%rdi)
+#	movq	%rdx, oRDX(%rdi)
+#	movq	%rcx, oRCX(%rdi)
+#	movq	%r8, oR8(%rdi)
+#	movq	%r9, oR9(%rdi)
 
 	movq	(%rsp), %rcx
 	movq	%rcx, oRIP(%rdi)
@@ -61,9 +61,14 @@ HIDDEN_ENTRY(parlib_getcontext)
 
 	leaq	oFPREGSMEM(%rdi), %rcx
 	movq	%rcx, oFPREGS(%rdi)
-	/* Save the floating-point environment.  */
-	fnstenv	(%rcx)
-	fldenv	(%rcx)
+
+#	/* Save the floating-point environment.  */
+#	fnstenv	(%rcx)
+#	fldenv	(%rcx)
+#	stmxcsr oMXCSR(%rdi)
+
+	/* We only need to actually save the x87 CWD and the mxcsr. */
+	fnstcw  (%rcx) # the first field in oFPREGSMEM is the CWD
 	stmxcsr oMXCSR(%rdi)
 
 	/* Save the current signal mask with

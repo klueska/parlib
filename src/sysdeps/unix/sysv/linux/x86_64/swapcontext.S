@@ -44,12 +44,12 @@ HIDDEN_ENTRY(parlib_swapcontext)
 	movq	%r14, oR14(%rdi)
 	movq	%r15, oR15(%rdi)
 
-	movq	%rdi, oRDI(%rdi)
-	movq	%rsi, oRSI(%rdi)
-	movq	%rdx, oRDX(%rdi)
-	movq	%rcx, oRCX(%rdi)
-	movq	%r8, oR8(%rdi)
-	movq	%r9, oR9(%rdi)
+#	movq	%rdi, oRDI(%rdi)
+#	movq	%rsi, oRSI(%rdi)
+#	movq	%rdx, oRDX(%rdi)
+#	movq	%rcx, oRCX(%rdi)
+#	movq	%r8, oR8(%rdi)
+#	movq	%r9, oR9(%rdi)
 
 	movq	(%rsp), %rcx
 	movq	%rcx, oRIP(%rdi)
@@ -61,12 +61,15 @@ HIDDEN_ENTRY(parlib_swapcontext)
 	   links up correctly.  */
 	leaq	oFPREGSMEM(%rdi), %rcx
 	movq	%rcx, oFPREGS(%rdi)
-	/* Save the floating-point environment.  */
-	fnstenv	(%rcx)
+#	/* Save the floating-point environment.  */
+#	fnstenv	(%rcx)
+#	stmxcsr oMXCSR(%rdi)
+
+	/* We only need to actually save the x87 CWD and the mxcsr. */
+	fnstcw  (%rcx) # the first field in oFPREGSMEM is the CWD
 	stmxcsr oMXCSR(%rdi)
 
-
-	/* The syscall destroys some registers, save them.  */
+#	/* The syscall destroys some registers, save them.  */
 #	movq	%rsi, %r12
 #
 #	/* Save the current signal mask and install the new one with
@@ -83,11 +86,16 @@ HIDDEN_ENTRY(parlib_swapcontext)
 #	/* Restore destroyed registers.  */
 #	movq	%r12, %rsi
 
-	/* Restore the floating-point context.  Not the registers, only the
-	   rest.  */
-	movq	oFPREGS(%rsi), %rcx
-	fldenv	(%rcx)
-	ldmxcsr oMXCSR(%rsi)
+#	/* Restore the floating-point context.  Not the registers, only the
+#	   rest.  */
+#	movq	oFPREGS(%rsi), %rcx
+#	fldenv	(%rcx)
+#	ldmxcsr oMXCSR(%rsi)
+
+	/* We only need to actually restore the x87 CWD and the mxcsr. */
+	movq	oFPREGS(%rdi), %rcx
+	fldcw  (%rcx) # the first field in oFPREGSMEM is the CWD
+	ldmxcsr oMXCSR(%rdi)
 
 	/* Load the new stack pointer and the preserved registers.  */
 	movq	oRSP(%rsi), %rsp
@@ -103,15 +111,15 @@ HIDDEN_ENTRY(parlib_swapcontext)
 	movq	oRIP(%rsi), %rcx
 	pushq	%rcx
 
-	/* Setup registers used for passing args.  */
-	movq	oRDI(%rsi), %rdi
-	movq	oRDX(%rsi), %rdx
-	movq	oRCX(%rsi), %rcx
-	movq	oR8(%rsi), %r8
-	movq	oR9(%rsi), %r9
-
-	/* Setup finally  %rsi.  */
-	movq	oRSI(%rsi), %rsi
+#	/* Setup registers used for passing args.  */
+#	movq	oRDI(%rsi), %rdi
+#	movq	oRDX(%rsi), %rdx
+#	movq	oRCX(%rsi), %rcx
+#	movq	oR8(%rsi), %r8
+#	movq	oR9(%rsi), %r9
+#
+#	/* Setup finally  %rsi.  */
+#	movq	oRSI(%rsi), %rsi
 
 	/* Clear rax to indicate success.  */
 	xorl	%eax, %eax
