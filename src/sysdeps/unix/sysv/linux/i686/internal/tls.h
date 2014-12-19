@@ -24,6 +24,7 @@
 
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <asm/ldt.h>
 
 #define TLS_SET_SEGMENT_REGISTER(entry, ldt) \
   asm volatile("movl %0, %%gs" :: "r" ((entry<<3)|(0x4&(ldt<<2))|0x3) : "memory")
@@ -45,7 +46,7 @@
  * are reserved, just to be safe */
 #define RESERVED_LDT_ENTRIES 5
 
-typedef struct user_desc arch_tls_data_t;
+#define arch_tls_data_t struct user_desc
 #define TLS_DESC(tls_data) ((void *)(unsigned long)((tls_data).base_addr))
 #define CLONE_TLS_PARAM(tls_data) (&(tls_data))
 
@@ -64,10 +65,20 @@ static __inline void *get_current_tls_base()
 static __inline void set_current_tls_base(void *tls_desc,
                                           arch_tls_data_t *data)
 {
-  data->base_addr = (unsigned int)tls_desc;
-  int ret = syscall(SYS_modify_ldt, 1, data, sizeof(struct user_desc));
-  assert(ret == 0);
-  TLS_SET_SEGMENT_REGISTER(data->entry_number, 1);
+  if (data == NULL) {
+    struct user_desc ud;
+    ud.entry_number = DEFAULT_TLS_GDT_ENTRY;
+    int ret = syscall(SYS_get_thread_area, &ud);
+    assert(ret == 0);
+    ud.base_addr = (uintptr_t)tls_desc;
+    ret = syscall(SYS_set_thread_area, &ud);
+    assert(ret == 0);
+  } else {
+    data->base_addr = (unsigned int)tls_desc;
+    int ret = syscall(SYS_modify_ldt, 1, data, sizeof(struct user_desc));
+    assert(ret == 0);
+    TLS_SET_SEGMENT_REGISTER(data->entry_number, 1);
+  }
 }
 
 static void init_arch_tls_data(arch_tls_data_t *data, void *tls_desc,

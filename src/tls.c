@@ -65,7 +65,11 @@ static void *__create_backing_thread(void *tls_addr)
     } else {
       /* Set our tls base to the tls passed in and set it in the argument. */
       *tcb = tls_addr;
-      set_current_tls_base(*tcb);
+      #ifdef arch_tls_data_t
+        set_current_tls_base(*tcb, NULL);
+      #else
+        set_current_tls_base(*tcb);
+      #endif
     }
 
     /* Set it up so we can run syscalls on behalf of the uthread we are
