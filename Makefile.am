@@ -70,7 +70,7 @@ LIB_HFILES += \
   @SYSDEPDIR_i686@/atomic.h
 
 LIB_INTERNAL_FILES += \
-  @SYSDEPDIR_i686@/internal/ucontext_i.h
+  @SYSDEPDIR_i686@/internal/asm.h
 
 endif
 
@@ -88,7 +88,8 @@ LIB_HFILES += \
   @SYSDEPDIR_x86_64@/ucontext.h \
   @SYSDEPDIR_x86_64@/atomic.h
 
-LIB_INTERNAL_FILES +=
+LIB_INTERNAL_FILES += \
+  @SYSDEPDIR_x86_64@/internal/asm.h
 
 endif
 LIB_FILES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES) $(LIB_INTERNAL_FILES)

@@ -17,8 +17,8 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
+#include "internal/asm.h"
 #include "internal/parlib.h"
-#include "internal/ucontext_i.h"
 #include "context.h"
 #include "export.h"
 
@@ -106,7 +106,7 @@ HIDDEN_ENTRY(parlib_swapcontext)
 
 L(pseudo_end):
 	ret
-PSEUDO_END(__parlib_swapcontext)
+PSEUDO_END(parlib_swapcontext)
 
 #undef parlib_swapcontext
 weak_alias (INTERNAL(parlib_swapcontext), parlib_swapcontext)

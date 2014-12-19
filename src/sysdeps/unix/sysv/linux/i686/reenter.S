@@ -1,4 +1,4 @@
-#include "internal/ucontext_i.h"
+#include "internal/asm.h"
 
 /* void __vcore_reenter(void (*entry_func)(), void *stack_pointer) */
 

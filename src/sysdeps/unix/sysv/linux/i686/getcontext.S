@@ -19,8 +19,8 @@
    02111-1307 USA.  */
 
 
+#include "internal/asm.h"
 #include "internal/parlib.h"
-#include "internal/ucontext_i.h"
 #include "context.h"
 #include "export.h"
 
