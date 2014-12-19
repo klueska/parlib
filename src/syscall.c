@@ -39,7 +39,6 @@ static void __select(int fd, int which)
     select(fd + 1, &fdset, NULL, &fdset, ptimeout);
   else if (which == SELECT_WRITE)
     select(fd + 1, NULL, &fdset, &fdset, ptimeout);
-  current_uthread->sysc_timeout = 0;
 }
 
 int EXPORT_SYMBOL open(const char* path, int oflag, ...)

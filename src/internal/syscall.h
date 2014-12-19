@@ -56,6 +56,7 @@ typedef struct {
     arg.func = &do_##__func; \
     uthread_yield(true, __uthread_yield_callback, &arg); \
   } \
+  current_uthread->sysc_timeout = 0; \
   ret; \
 })
 
