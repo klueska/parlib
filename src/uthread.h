@@ -23,6 +23,7 @@
 #define _UTHREAD_H
 
 #include "arch.h"
+#include "context.h"
 #include "vcore.h"
 
 /* Thread States */
@@ -40,10 +41,10 @@
 /* Bare necessities of a user thread.  1LSs should allocate a bigger struct and
  * cast their threads to uthreads when talking with vcore code.  Vcore/default
  * 2LS code won't touch udata or beyond. */
-/* The definition of uthread_context_t is system dependant and located under
+/* The definition of user_context is system dependant and located under
  * the proper arch.h file */
 struct uthread {
-    uthread_context_t uc;
+    struct user_context uc;
     void (*entry_func)(void);
     void (*yield_func)(struct uthread*, void*);
     void *yield_arg;

@@ -18,79 +18,49 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+/* Modified from glibc's getcontext for our custom user_context.
+
+struct user_context {
+    uint64_t tf_rbx;
+    uint64_t tf_rbp;
+    uint64_t tf_r12;
+    uint64_t tf_r13;
+    uint64_t tf_r14;
+    uint64_t tf_r15;
+    uint64_t tf_rip;
+    uint64_t tf_rsp;
+    uint32_t tf_mxcsr;
+    uint16_t tf_fpucw;
+} __attribute__((aligned(ARCH_CL_SIZE)));
+*/
+
+#include "internal/asm.h"
 #include "internal/parlib.h"
-#include "internal/ucontext_i.h"
 #include "context.h"
 #include "export.h"
 
-/*  int parlib_getcontext (ucontext_t *ucp)
-
-  Saves the machine context in UCP such that when it is activated,
-  it appears as if parlib_getcontext() returned again.
-
-  This implementation is intended to be used for *synchronous* context
-  switches only.  Therefore, it does not have to save anything
-  other than the PRESERVED state.  */
-
-
+/*  void parlib_getcontext(struct user_context *ucp) */
 HIDDEN_ENTRY(parlib_getcontext)
-	/* Save the preserved registers, the registers used for passing
-	   args, and the return address.  */
-	movq	%rbx, oRBX(%rdi)
-	movq	%rbp, oRBP(%rdi)
-	movq	%r12, oR12(%rdi)
-	movq	%r13, oR13(%rdi)
-	movq	%r14, oR14(%rdi)
-	movq	%r15, oR15(%rdi)
+	/* Save the callee-saved registers */
+	movq %rbx, oRBX(%rdi)
+	movq %rbp, oRBP(%rdi)
+	movq %r12, oR12(%rdi)
+	movq %r13, oR13(%rdi)
+	movq %r14, oR14(%rdi)
+	movq %r15, oR15(%rdi)
 
-#	movq	%rdi, oRDI(%rdi)
-#	movq	%rsi, oRSI(%rdi)
-#	movq	%rdx, oRDX(%rdi)
-#	movq	%rcx, oRCX(%rdi)
-#	movq	%r8, oR8(%rdi)
-#	movq	%r9, oR9(%rdi)
+	/* Save the rip and rsp of the next instruction in the calling frame. */
+	movq (%rsp), %rcx
+	movq %rcx, oRIP(%rdi)
+	leaq 8(%rsp), %rcx    /* Exclude the return address.  */
+	movq %rcx, oRSP(%rdi)
 
-	movq	(%rsp), %rcx
-	movq	%rcx, oRIP(%rdi)
-	leaq	8(%rsp), %rcx		/* Exclude the return address.  */
-	movq	%rcx, oRSP(%rdi)
-
-	/* We have separate floating-point register content memory on the
-	   stack.  We use the __fpregs_mem block in the context.  Set the
-	   links up correctly.  */
-
-	leaq	oFPREGSMEM(%rdi), %rcx
-	movq	%rcx, oFPREGS(%rdi)
-
-#	/* Save the floating-point environment.  */
-#	fnstenv	(%rcx)
-#	fldenv	(%rcx)
-#	stmxcsr oMXCSR(%rdi)
-
-	/* We only need to actually save the x87 CWD and the mxcsr. */
-	fnstcw  (%rcx) # the first field in oFPREGSMEM is the CWD
+	/* Save the necessary floating-point state.  */
 	stmxcsr oMXCSR(%rdi)
+	fnstcw oFPUCW(%rdi)
 
-	/* Save the current signal mask with
-	   rt_sigprocmask (SIG_BLOCK, NULL, set,_NSIG/8).  */
-#	leaq	oSIGMASK(%rdi), %rdx
-#	xorl	%esi,%esi
-##if SIG_BLOCK == 0
-#	xorl	%edi, %edi
-##else
-#	movl	$SIG_BLOCK, %edi
-##endif
-#	movl	$_NSIG8,%r10d
-#	movl	$__NR_rt_sigprocmask, %eax
-#	syscall
-#	cmpq	$-4095, %rax		/* Check %rax for error.  */
-#	jae	SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
-
-	/* All done, return 0 for success.  */
-	xorl	%eax, %eax
-L(pseudo_end):
+	/* Return */
 	ret
-SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
 PSEUDO_END(parlib_getcontext)
 
 #undef parlib_getcontext

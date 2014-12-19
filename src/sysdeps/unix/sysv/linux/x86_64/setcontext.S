@@ -18,51 +18,34 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+/* Modified from glibc's setcontext for our custom user_context.
+
+struct user_context {
+    uint64_t tf_rbx;
+    uint64_t tf_rbp;
+    uint64_t tf_r12;
+    uint64_t tf_r13;
+    uint64_t tf_r14;
+    uint64_t tf_r15;
+    uint64_t tf_rip;
+    uint64_t tf_rsp;
+    uint32_t tf_mxcsr;
+    uint16_t tf_fpucw;
+} __attribute__((aligned(ARCH_CL_SIZE)));
+*/
+
+#include "internal/asm.h"
 #include "internal/parlib.h"
-#include "internal/ucontext_i.h"
 #include "context.h"
 #include "export.h"
 
-/*  int parlib_setcontext (const ucontext_t *ucp)
-
-  Restores the machine context in UCP and thereby resumes execution
-  in that context.
-
-  This implementation is intended to be used for *synchronous* context
-  switches only.  Therefore, it does not have to restore anything
-  other than the PRESERVED state.  */
-
+/* void parlib_setcontext (struct user_context *ucp) */
 HIDDEN_ENTRY(parlib_setcontext)
-#	/* Save argument since syscall will destroy it.  */
-#	pushq	%rdi
-#	cfi_adjust_cfa_offset(8)
-#
-#	/* Set the signal mask with
-#	   rt_sigprocmask (SIG_SETMASK, mask, NULL, _NSIG/8).  */
-#	leaq	oSIGMASK(%rdi), %rsi
-#	xorl	%edx, %edx
-#	movl	$SIG_SETMASK, %edi
-#	movl	$_NSIG8,%r10d
-#	movl	$__NR_rt_sigprocmask, %eax
-#	syscall
-#	popq	%rdi			/* Reload %rdi, adjust stack.  */
-#	cfi_adjust_cfa_offset(-8)
-#	cmpq	$-4095, %rax		/* Check %rax for error.  */
-#	jae	SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
-
-#	/* Restore the floating-point context.  Not the registers, only the
-#	   rest.  */
-#	movq	oFPREGS(%rdi), %rcx
-#	fldenv	(%rcx)
-#	ldmxcsr oMXCSR(%rdi)
-
-	/* We only need to actually restore the x87 CWD and the mxcsr. */
-	movq	oFPREGS(%rdi), %rcx
-	fldcw  (%rcx) # the first field in oFPREGSMEM is the CWD
+	/* Restore the floating point state. */
+	fldcw oFPUCW(%rdi)
 	ldmxcsr oMXCSR(%rdi)
 
-	/* Load the new stack pointer, the preserved registers and
-	   registers used for passing args.  */
+	/* Load the new stack pointer, and the callee saved registers. */
 	cfi_def_cfa(%rdi, 0)
 	cfi_offset(%rbx,oRBX)
 	cfi_offset(%rbp,oRBP)
@@ -73,38 +56,25 @@ HIDDEN_ENTRY(parlib_setcontext)
 	cfi_offset(%rsp,oRSP)
 	cfi_offset(%rip,oRIP)
 
-	movq	oRSP(%rdi), %rsp
-	movq	oRBX(%rdi), %rbx
-	movq	oRBP(%rdi), %rbp
-	movq	oR12(%rdi), %r12
-	movq	oR13(%rdi), %r13
-	movq	oR14(%rdi), %r14
-	movq	oR15(%rdi), %r15
+	movq oRSP(%rdi), %rsp
+	movq oRBX(%rdi), %rbx
+	movq oRBP(%rdi), %rbp
+	movq oR12(%rdi), %r12
+	movq oR13(%rdi), %r13
+	movq oR14(%rdi), %r14
+	movq oR15(%rdi), %r15
 
 	/* The following ret should return to the address set with
 	getcontext.  Therefore push the address on the stack.  */
 	movq	oRIP(%rdi), %rcx
 	pushq	%rcx
 
-#	movq	oRSI(%rdi), %rsi
-#	movq	oRDX(%rdi), %rdx
-#	movq	oRCX(%rdi), %rcx
-#	movq	oR8(%rdi), %r8
-#	movq	oR9(%rdi), %r9
-#
-#	/* Setup finally  %rdi.  */
-#	movq	oRDI(%rdi), %rdi
-
 	/* End FDE here, we fall into another context.  */
 	cfi_endproc
 	cfi_startproc
 
-	/* Clear rax to indicate success.  */
-	xorl	%eax, %eax
-
-L(pseudo_end):
+	/* Return */
 	ret
-SYSCALL_ERROR_LABEL: #SYSCALL_ERROR()
 PSEUDO_END(parlib_setcontext)
 
 #undef parlib_setcontext

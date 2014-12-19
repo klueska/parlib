@@ -33,14 +33,7 @@
 #include <sys/prctl.h>
 #include "parlib-config.h"
 
-#include "context.h"
-typedef struct ucontext uthread_context_t;
-
-#ifdef __i386__
-  #define internal_function __attribute ((regparm (3), stdcall))
-#elif __x86_64__
-  #define internal_function
-#endif
+#define internal_function
 
 #define PGSIZE getpagesize()
 #define ARCH_CL_SIZE 128 // 2*64 to account for Adjacent CL Prefetcher
@@ -65,17 +58,6 @@ read_pmc(uint32_t index)
     __asm __volatile("rdpmc" : "=A" (pmc) : "c" (index)); 
     return pmc;                                                                                      
 }
-
-#define init_uthread_stack_ARCH(uth, stack_top, size)   \
-{                                                       \
-	ucontext_t *uc = &(uth)->uc;                        \
-	parlib_getcontext(uc);                              \
-	uc->uc_stack.ss_sp = (void*)(stack_top);            \
-	uc->uc_stack.ss_size = (uint32_t)(size);            \
-}
-
-#define init_uthread_entry_ARCH(uth, entry) \
-  parlib_makecontext(&(uth)->uc, (entry), 0)
 
 int arch_prctl(int code, unsigned long *addr);
 

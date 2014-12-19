@@ -19,7 +19,7 @@
 /* System V ABI compliant user-level context switching support.  */
 
 #ifndef _PARLIB_CONTEXT_H
-#define _PARLIB_CONTEXT_H	1
+#define _PARLIB_CONTEXT_H
 
 #ifdef COMPILING_PARLIB
 # define parlib_getcontext INTERNAL(parlib_getcontext)
@@ -30,31 +30,34 @@
 #ifndef __ASSEMBLER__
 
 /* Get machine dependent definition of data structures.  */
-#include <ucontext.h>
+#include "arch.h"
+#include "ucontext.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* Defined in architecture specific ucontext.h
+static inline void parlib_makecontext(struct user_context *ucp,
+                                      void (*entry)(void),
+                                      void *stack_bottom,
+                                      size_t stack_size)
+*/
+
+/* The following MUST be function calls (i.e. not inlined functions), otherwise
+   the compiler might play tricks on us and we will save / restore stuff
+   incorrectly. */
+
 /* Get user context and store it in variable pointed to by UCP.  */
-extern int parlib_getcontext (ucontext_t *__ucp) __THROWNL;
+extern void parlib_getcontext(struct user_context *__ucp);
 
 /* Set user context from information of variable pointed to by UCP.  */
-extern int parlib_setcontext (__const ucontext_t *__ucp) __THROWNL __attribute__((noreturn));
+extern void parlib_setcontext(struct user_context *__ucp);
 
 /* Save current context in context variable pointed to by OUCP and set
-   context from variable pointed to by UCP.  */
-extern int parlib_swapcontext (ucontext_t *__restrict __oucp,
-			__const ucontext_t *__restrict __ucp) __THROWNL;
-
-/* Manipulate user context UCP to continue with calling functions FUNC
-   and the ARGC-1 parameters following ARGC when the context is used
-   the next time in `setcontext' or `swapcontext'.
-
-   We cannot say anything about the parameters FUNC takes; `void'
-   is as good as any other choice.  */
-#define parlib_makecontext(__ucp, __func, __argc, ...) \
-  makecontext(__ucp, __func, __argc, ##__VA_ARGS__)
+   context from variable pointed to by NUCP.  */
+extern void parlib_swapcontext(struct user_context *__oucp,
+                               struct user_context *__nucp);
 
 #ifdef __cplusplus
 }

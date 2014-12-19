@@ -27,6 +27,7 @@ LIB_HFILES = \
   $(LIBNAME)-config.h  \
   @SRCDIR@/spinlock.h  \
   @SRCDIR@/parlib.h    \
+  @SRCDIR@/common.h    \
   @SRCDIR@/mcs.h       \
   @SRCDIR@/slab.h      \
   @SRCDIR@/pool.h      \
@@ -84,10 +85,10 @@ LIB_SFILES += \
 
 LIB_HFILES += \
   @SYSDEPDIR_x86_64@/arch.h   \
+  @SYSDEPDIR_x86_64@/ucontext.h \
   @SYSDEPDIR_x86_64@/atomic.h
 
-LIB_INTERNAL_FILES += \
-  @SYSDEPDIR_x86_64@/internal/ucontext_i.h
+LIB_INTERNAL_FILES +=
 
 endif
 LIB_FILES = $(LIB_CFILES) $(LIB_SFILES) $(LIB_HFILES) $(LIB_INTERNAL_FILES)

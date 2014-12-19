@@ -79,7 +79,7 @@ __thread void *__vcore_sigstack = NULL;
 
 /* Current user context running on a vcore, this used to restore a user context
  * if it is interrupted for some reason without yielding voluntarily */
-__thread ucontext_t EXPORT_SYMBOL *vcore_saved_ucontext = NULL;
+__thread struct user_context EXPORT_SYMBOL *vcore_saved_ucontext = NULL;
 
 /* Current tls_desc of the user context running on a vcore, this used to restore
  * a user's tls_desc if it is interrupted for some reason without yielding
@@ -99,7 +99,7 @@ volatile int EXPORT_SYMBOL __max_vcores = 0;
 
 /* Global context associated with the main thread.  Used when swapping this
  * context over to vcore0 */
-static ucontext_t main_context = { 0 };
+static struct user_context main_context = { 0 };
 
 /* Global constants indicating the size and alignment of the static TLS
  * region. Needs to be initialized at run time and done in vcore_lib_init(). */

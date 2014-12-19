@@ -48,7 +48,6 @@
 #include "tls.h"
 #include "atomic.h"
 #include "parlib-config.h"
-#include "context.h"
 #include "event.h"
 #include "export.h"
 
@@ -65,6 +64,9 @@ extern "C" {
 # define enable_notifs INTERNAL(enable_notifs)
 # define disable_notifs INTERNAL(disable_notifs)
 #endif
+
+/* Architecture dependant internal user_context. */
+struct user_context;
 
 /* Cache aligned, per vcore data */
 struct vcore_pvc_data {
@@ -88,7 +90,7 @@ extern struct vcore_pvc_data *vcore_pvc_data;
  * vcore_saved_ucontext is initialized to the continuation of the main thread's
  * context the first time it's vcore_entry() function is invoked.
  */
-extern __thread ucontext_t *vcore_saved_ucontext TLS_INITIAL_EXEC;
+extern __thread struct user_context *vcore_saved_ucontext TLS_INITIAL_EXEC;
 
 /**
  * Current tls_desc of the user context running on each vcore, used when

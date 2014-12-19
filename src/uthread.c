@@ -147,7 +147,8 @@ void __attribute__((noreturn)) uthread_vcore_entry(void)
 static void __vcore_entry() {
 	if(vcore_saved_ucontext) {
 		assert(current_uthread);
-		memcpy(&current_uthread->uc, vcore_saved_ucontext, sizeof(struct ucontext));
+		size_t size = sizeof(struct user_context);
+		memcpy(&current_uthread->uc, vcore_saved_ucontext, size);
 #ifndef PARLIB_NO_UTHREAD_TLS
 		current_uthread->tls_desc = vcore_saved_tls_desc;
 #endif
@@ -315,10 +316,8 @@ static inline void unsafe_uthread_yield(
 	/* Take the current state and save it into uthread->uc when this pthread
 	 * restarts, it will continue from right after this, see yielding is false,
 	 * and short circuit the function. */
-	if(save_state) {
-		int ret = parlib_getcontext(&uthread->uc);
-		assert(ret == 0);
-	}
+	if(save_state)
+		parlib_getcontext(&uthread->uc);
 	if (!yielding)
 		goto yield_return_path;
 	yielding = FALSE; /* for when it starts back up */
@@ -352,8 +351,7 @@ void EXPORT_SYMBOL uthread_yield(bool save_state,
 /* Saves the state of the current uthread from the point at which it is called */
 void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
 {
-	int ret = parlib_getcontext(&uthread->uc);
-	assert(ret == 0);
+	parlib_getcontext(&uthread->uc);
 }
 
 /* Simply sets current uthread to be whatever the value of uthread is.  This
@@ -417,12 +415,12 @@ void swap_uthreads(struct uthread *__old, struct uthread *__new)
 #ifndef PARLIB_NO_UTHREAD_TLS
 		void *tls_desc = get_current_tls_base();
 #endif
-		ucontext_t uc;
+		struct user_context uc;
 		parlib_getcontext(&uc);
 		cmb();
 		if(swap) {
 			swap = false;
-			memcpy(&__old->uc, &uc, sizeof(ucontext_t));
+			memcpy(&__old->uc, &uc, sizeof(struct user_context));
 			run_uthread(__new);
 		}
 		vcore_set_tls_var(current_uthread, __old);
@@ -460,8 +458,7 @@ void EXPORT_SYMBOL init_uthread_tf(uthread_t *uth, void (*entry)(void),
 		current_uthread->entry_func();
 	}
 	uth->entry_func = entry;
-	init_uthread_stack_ARCH(uth, stack_bottom, size);
-	init_uthread_entry_ARCH(uth, cb);
+	parlib_makecontext(&uth->uc, cb, stack_bottom, size);
 }
 
 #ifndef PARLIB_NO_UTHREAD_TLS
