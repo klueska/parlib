@@ -10,9 +10,6 @@
 #ifndef PARLIB_DEBUG
 # undef assert
 # define assert(x) (__builtin_constant_p(x) && (x) == 0 ? __builtin_unreachable() : (x))
-#else
-# undef assert
-# define assert(x) (x)
 #endif
 
 /* TLS variables used by the pthread backing each uthread. */
