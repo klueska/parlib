@@ -184,7 +184,9 @@ void vcore_sigentry()
 			sigemptyset(&mask);
 			sigaddset(&mask, SIGVCORE);
 			pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
-			vcore_reenter(vcore_entry);
+
+			uthread->state = UT_RUNNING;
+			uthread_vcore_entry();
 		}
 		cmb();
 		uthread->flags |= NO_INTERRUPT;
