@@ -56,9 +56,16 @@ static void *__create_backing_thread(void *tls_addr)
    * affect any user-level scheduling that may go one above this. We also 
    * overload this thread to simulate async I/O on behalf of the uthread it is
    * backing. */
-  void *start_routine(void *arg)
+  void *start_routine(void *__arg)
   {
-    void **tcb = (void **)arg;
+    /* Parse the arg passed in. */
+    struct {
+      void *tls_addr;
+      void *tcb;
+    } *arg = __arg;
+    void *tls_addr = arg->tls_addr;
+    void **tcb = &arg->tcb;
+
     if (tls_addr == NULL) {
       /* Grab a reference to our tls_base and set it in the argument. */
       *tcb = get_current_tls_base();
@@ -104,10 +111,19 @@ static void *__create_backing_thread(void *tls_addr)
     exit: return NULL;
   }
 
-  void *tcb = NULL;
-  internal_pthread_create(PTHREAD_STACK_MIN, start_routine, &tcb);
-  futex_wait(&tcb, 0);
-  return tcb;
+  /* Set up the argument to pass into the backing thread. */
+  struct {
+    void *tls_addr;
+    void *tcb;
+  } arg = { tls_addr, NULL };
+
+  /* Create the backing thread and wait for it to package up its tls_addr and
+   * signal that it is ready for us to restart. */
+  internal_pthread_create(PTHREAD_STACK_MIN, start_routine, &arg);
+  futex_wait(&arg.tcb, 0);
+
+  /* Return the backing pthreads tls_base. */
+  return arg.tcb;
 }
 
 /* Get a TLS, returns 0 on failure.  Any thread created by a user-level
