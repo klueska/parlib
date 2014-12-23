@@ -342,7 +342,7 @@ void EXPORT_SYMBOL uthread_yield(bool save_state,
                                  void (*yield_func)(struct uthread*, void*),
                                  void *yield_arg)
 {
-	uthread_interrupt_safe(
+	uthread_notif_safe(
 		unsafe_uthread_yield(save_state, yield_func, yield_arg);
 	)
 }
@@ -359,7 +359,7 @@ void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
 */
 void EXPORT_SYMBOL hijack_current_uthread(struct uthread *uthread)
 {
-	uthread_interrupt_safe(
+	uthread_notif_safe(
 		assert(uthread != current_uthread);
 		current_uthread->state = UT_HIJACKED;
 		uthread->state = UT_RUNNING;
@@ -408,7 +408,7 @@ void EXPORT_SYMBOL run_uthread(struct uthread *uthread)
  * current uthread in the process */
 void swap_uthreads(struct uthread *__old, struct uthread *__new)
 {
-	uthread_interrupt_safe(
+	uthread_notif_safe(
 		volatile bool swap = true;
 #ifndef PARLIB_NO_UTHREAD_TLS
 		void *tls_desc = get_current_tls_base();

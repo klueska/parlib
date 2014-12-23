@@ -117,7 +117,7 @@ void uth_enable_notifs();
  * have other calls that you know should not be interrupted by an event, you
  * must wrap these calls in enable/disable interrupt calls.  This macro
  * provides a convenient manner of doing so. */
-#define uthread_interrupt_safe(func) \
+#define uthread_notif_safe(func) \
 { \
 	uth_disable_notifs(); \
 	func; \
