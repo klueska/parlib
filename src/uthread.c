@@ -211,17 +211,15 @@ void EXPORT_SYMBOL uthread_init(struct uthread *uthread)
 	uthread->disable_depth = 1;
 
 #ifndef PARLIB_NO_UTHREAD_TLS
-	uthread_interrupt_safe(
-		/* If a tls_desc is already set for this thread, reinit it... */
-		if (uthread->tls_desc)
-			assert(!__uthread_reinit_tls(uthread));
-		/* Otherwise get a TLS for the new thread */
-		else
-			assert(!__uthread_allocate_tls(uthread));
+	/* If a tls_desc is already set for this thread, reinit it... */
+	if (uthread->tls_desc)
+		assert(!__uthread_reinit_tls(uthread));
+	/* Otherwise get a TLS for the new thread */
+	else
+		assert(!__uthread_allocate_tls(uthread));
 
-		/* Setup some thread local data for this newly initialized uthread */
-		uthread_set_tls_var(uthread, current_uthread, uthread);
-	)
+	/* Setup some thread local data for this newly initialized uthread */
+	uthread_set_tls_var(uthread, current_uthread, uthread);
 #endif
 }
 
