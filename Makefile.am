@@ -16,6 +16,7 @@ LIB_CFILES = \
   @SRCDIR@/pthread_pool.c \
   @SRCDIR@/uthread.c  \
   @SRCDIR@/syscall.c  \
+  @SRCDIR@/syscall_real.c  \
   @SRCDIR@/event.c    \
   @SRCDIR@/alarm.c    \
   @SRCDIR@/vcore.c    \
