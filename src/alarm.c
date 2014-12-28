@@ -25,19 +25,36 @@ static void *__waiting_thread(void *arg)
 	waiter->done = true;
 	spinlock_unlock(&waiter->lock);
 
-	if (!waiter->unset)
-		waiter->func(waiter);
-
+	if (!waiter->unset) {
+		struct event_msg *ev_msg = parlib_malloc(sizeof(struct event_msg));
+		ev_msg->ev_arg3 = waiter;
+		send_event(ev_msg, EV_ALARM, waiter->vcoreid);
+	}
 	return NULL;
+}
+
+static void init_alarm_service(void)
+{
+	void handler(struct event_msg *ev_msg, unsigned int ev_type)
+	{
+		assert(in_vcore_context());
+		assert(ev_msg);
+		struct alarm_waiter *waiter = (struct alarm_waiter*)ev_msg->ev_arg3;
+		free(ev_msg);
+		waiter->func(waiter);
+	}
+	ev_handlers[EV_ALARM] = handler;
 }
 
 void EXPORT_SYMBOL init_awaiter(struct alarm_waiter *waiter,
                                 void (*func) (struct alarm_waiter *))
 {
+	run_once_racy(init_alarm_service());
 	waiter->func = func;
 	waiter->wakeup_time = 0;
 	waiter->unset = false;
 	waiter->done = false;
+	waiter->vcoreid = vcore_id();
 	spinlock_init(&waiter->lock);
 }
 

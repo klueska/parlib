@@ -12,6 +12,7 @@ struct alarm_waiter {
     bool     unset;
     bool     done;
     void     *data;
+    int      vcoreid;
     spinlock_t lock;
 };
 
