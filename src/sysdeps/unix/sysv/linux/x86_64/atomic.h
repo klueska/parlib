@@ -114,6 +114,12 @@ static inline bool atomic_cas(atomic_t *addr, long exp_val, long new_val)
     return __sync_bool_compare_and_swap(addr, exp_val, new_val);
 }
 
+static inline bool atomic_cas_u32(uint32_t *addr, uint32_t exp_val,
+                                  uint32_t new_val)
+{
+    return __sync_bool_compare_and_swap(addr, exp_val, new_val);
+}
+
 static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
 {
     return (long)__sync_val_compare_and_swap(addr, exp_val, new_val);
