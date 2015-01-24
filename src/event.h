@@ -18,13 +18,19 @@ struct syscall {
   void *u_data;
 };
 struct event_msg {
+  unsigned ev_type;
+  uint16_t ev_arg1;
+  uint32_t ev_arg2;
   void *ev_arg3;
+  uint64_t ev_arg4;
   struct syscall sysc;
 };
 
-#define EV_SYSCALL 0
-#define EV_ALARM 1
-#define MAX_NR_EVENT 2
+#define EV_NONE 0
+#define EV_SYSCALL 1
+#define EV_ALARM 2
+#define EV_USER_IPI 3
+#define MAX_NR_EVENT 4
 
 typedef void (*handle_event_t)(struct event_msg *ev_msg, unsigned ev_type);
 extern handle_event_t ev_handlers[MAX_NR_EVENT];

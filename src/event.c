@@ -12,7 +12,6 @@
 
 struct pvc_event_msg {
 	struct event_msg *ev_msg;
-	unsigned ev_type;
 	STAILQ_ENTRY(pvc_event_msg) next;
 };
 STAILQ_HEAD(pvc_event_queue, pvc_event_msg);
@@ -42,7 +41,7 @@ void send_event(struct event_msg *ev_msg, unsigned ev_type, int vcoreid)
 {
 	struct pvc_event_msg *m = parlib_malloc(sizeof(struct pvc_event_msg));
 	m->ev_msg = ev_msg;
-	m->ev_type = ev_type;
+	m->ev_msg->ev_type = ev_type;
 	spin_pdr_lock(&(vc_mgmt[vcoreid].evq_lock));
 	STAILQ_INSERT_TAIL(&(vc_mgmt[vcoreid].evq), m, next);
 	spin_pdr_unlock(&(vc_mgmt[vcoreid].evq_lock));
@@ -64,8 +63,10 @@ void handle_events()
 		STAILQ_REMOVE_HEAD(&(vc_mgmt[vcoreid].evq), next);
 		spin_pdr_unlock(&(vc_mgmt[vcoreid].evq_lock));
 
-		handle_event_t handler = ev_handlers[m->ev_type];
-		handler(m->ev_msg, m->ev_type);
+		if (m->ev_msg->ev_type != EV_NONE) {
+			handle_event_t handler = ev_handlers[m->ev_msg->ev_type];
+			handler(m->ev_msg, m->ev_msg->ev_type);
+		}
 		free(m);
 	}
 }
