@@ -17,6 +17,7 @@ struct backing_pthread {
 	int futex;
 	void *(*syscall) (void*);
 	void *arg;
+	void *initial_tls;
 };
 extern __thread struct backing_pthread __backing_pthread TLS_INITIAL_EXEC;
 

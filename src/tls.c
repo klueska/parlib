@@ -79,6 +79,14 @@ static void *__create_backing_thread(void *tls_addr)
       #endif
     }
 
+    /* Save the initial state of our tls so we can use it to reinitialize our
+     * tls later. */
+    extern void _dl_get_tls_static_info(size_t*, size_t*) internal_function;
+    size_t tls_size, tls_align;
+    _dl_get_tls_static_info(&tls_size, &tls_align);
+    __backing_pthread.initial_tls = malloc(tls_size);
+    memcpy(__backing_pthread.initial_tls, tcb, tls_size);
+
     /* Set it up so we can run syscalls on behalf of the uthread we are
      * backing with this pthread. */
     __backing_pthread.futex = BACKING_THREAD_SLEEP;
@@ -106,6 +114,7 @@ static void *__create_backing_thread(void *tls_addr)
           futex_wait(&__backing_pthread.futex, BACKING_THREAD_SLEEP);
           break;
         case BACKING_THREAD_EXIT:
+          free(__backing_pthread.initial_tls);
           goto exit;
       }
     }
@@ -149,13 +158,17 @@ void free_tls(void *tcb)
   futex_wakeup_one(futex);
 }
 
-/* Reinitialize / reset / refresh a TLS to its initial values.  This doesn't do
- * it properly yet, it merely frees and re-allocates the TLS, which is why we're
- * slightly ghetto and return the pointer you should use for the TCB. */
+/* Reinitialize / reset / refresh a TLS to its initial values.
+ * Return the pointer you should use for the TCB (since in old versions it
+ * actually might have changed). */
 void *reinit_tls(void *tcb)
 {
-  free_tls(tcb);
-  return allocate_tls();
+  extern void _dl_get_tls_static_info(size_t*, size_t*) internal_function;
+  size_t tls_size, tls_align;
+  _dl_get_tls_static_info(&tls_size, &tls_align);
+  void *initial_tls = *get_tls_addr(__backing_pthread.initial_tls, tcb);
+  memcpy(tcb, initial_tls, tls_size);
+  return tcb;
 }
 
 /* Constructor to get a reference to the main thread's TLS descriptor */
