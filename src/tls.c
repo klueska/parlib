@@ -64,18 +64,18 @@ static void *__create_backing_thread(void *tls_addr)
       void *tcb;
     } *arg = __arg;
     void *tls_addr = arg->tls_addr;
-    void **tcb = &arg->tcb;
+    void *tcb = NULL;
 
     if (tls_addr == NULL) {
       /* Grab a reference to our tls_base and set it in the argument. */
-      *tcb = get_current_tls_base();
+      tcb = get_current_tls_base();
     } else {
       /* Set our tls base to the tls passed in and set it in the argument. */
-      *tcb = tls_addr;
+      tcb = tls_addr;
       #ifdef arch_tls_data_t
-        set_current_tls_base(*tcb, NULL);
+        set_current_tls_base(tcb, NULL);
       #else
-        set_current_tls_base(*tcb);
+        set_current_tls_base(tcb);
       #endif
     }
 
@@ -87,7 +87,8 @@ static void *__create_backing_thread(void *tls_addr)
 
     /* Wakeup the caller of this function with the newly set tls via a weird
      * usage of a futex. */
-    futex_wakeup_one(tcb);
+    arg->tcb = tcb;
+    futex_wakeup_one(&arg->tcb);
 
     /* Process syscalls or sleep until we are told to exit. */
     while(1) {
