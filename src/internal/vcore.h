@@ -41,7 +41,7 @@
 struct vcore {
   /* For bookkeeping */
   atomic_t allocated;
-  atomic_t requested;
+  atomic_t reserved;
 
 #ifdef arch_tls_data_t
   /* Architecture-specific TLS context information, e.g. LDT on IA-32 */
