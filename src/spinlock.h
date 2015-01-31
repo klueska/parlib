@@ -66,7 +66,7 @@ static void spin_pdr_init(struct spin_pdr_lock *pdr_lock)
 
 static void spin_pdr_lock(struct spin_pdr_lock *pdr_lock)
 {
-  if (current_uthread)
+  if (!in_vcore_context() && current_uthread)
     uth_disable_notifs();
   spinlock_lock((spinlock_t*)pdr_lock);
 }
@@ -74,7 +74,7 @@ static void spin_pdr_lock(struct spin_pdr_lock *pdr_lock)
 static void spin_pdr_unlock(struct spin_pdr_lock *pdr_lock)
 {
   spinlock_unlock((spinlock_t*)pdr_lock);
-  if (current_uthread)
+  if (!in_vcore_context() && current_uthread)
     uth_enable_notifs();
 }
 
