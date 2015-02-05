@@ -50,17 +50,8 @@
 
 inline static void futex_wait(void *futex, int comparand)
 {
-  /* Sometimes the system call may return EAGAIN, so we loop to make sure that
-   * it blocks when it is supposed to. */
-  while (1) {
-    int r = syscall(SYS_futex, futex, FUTEX_WAIT, comparand, NULL, NULL, 0);
-    if (r == 0 || errno == EWOULDBLOCK)
-      break;
-    /* If there are any other types of errors, we die */
-    if (errno != EINTR) {
-      fprintf(stderr, "futex: futex_wait failed");
-      exit(1);
-    }
+  while (*(int*)futex == comparand) {
+    syscall(SYS_futex, futex, FUTEX_WAIT, comparand, NULL, NULL, 0);
   }
 }
 
@@ -69,7 +60,7 @@ inline static void futex_wakeup_one(void *futex)
 {
   int r = syscall(SYS_futex, futex, FUTEX_WAKE, 1, NULL, NULL, 0);
   if (!(r == 0 || r == 1)) {
-    fprintf(stderr, "futex: futex_wakeup_on failed");
+    fprintf(stderr, "futex: futex_wakeup_one failed");
     exit(1);
   }
 }
