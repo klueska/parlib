@@ -73,12 +73,23 @@ static inline long atomic_swap(atomic_t *addr, long val)
     return __sync_lock_test_and_set((long*)addr, val);
 }
 
+static inline uint16_t atomic_swap_u16(uint16_t *addr, uint16_t val)
+{
+    return __sync_lock_test_and_set(addr, val);
+}
+
 static inline uint32_t atomic_swap_u32(uint32_t *addr, uint32_t val)
 {
     return __sync_lock_test_and_set(addr, val);
 }
 
 static inline bool atomic_cas(atomic_t *addr, long exp_val, long new_val)
+{
+    return __sync_bool_compare_and_swap(addr, exp_val, new_val);
+}
+
+static inline bool atomic_cas_u16(uint16_t *addr, uint16_t exp_val,
+                                  uint16_t new_val)
 {
     return __sync_bool_compare_and_swap(addr, exp_val, new_val);
 }
