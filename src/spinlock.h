@@ -23,6 +23,7 @@
 #define SPINLOCK_H
 
 #include <errno.h>
+#include <string.h>
 #include "uthread.h"
 #include "atomic.h"
 #include "arch.h"
@@ -37,6 +38,13 @@ typedef struct spinlock {
 typedef struct spin_pdr_lock {
   int lock;
 } spin_pdr_lock_t;
+
+typedef struct {
+  size_t num_vcores;
+  volatile size_t count;
+  volatile char CACHE_LINE_ALIGNED sense;
+  char CACHE_LINE_ALIGNED local_sense[ARCH_CL_SIZE * MAX_VCORES];
+} spin_barrier_t;
 
 static inline void spinlock_init(spinlock_t *lock)
 {
@@ -76,6 +84,29 @@ static void spin_pdr_unlock(struct spin_pdr_lock *pdr_lock)
   spinlock_unlock((spinlock_t*)pdr_lock);
   if (!in_vcore_context() && current_uthread)
     uth_enable_notifs();
+}
+
+static void spin_barrier_init(spin_barrier_t *b, size_t num_vcores)
+{
+  b->num_vcores = num_vcores;
+  b->count = num_vcores;
+  b->sense = 0;
+  memset(b->local_sense, 0, ARCH_CL_SIZE * MAX_VCORES);
+}
+
+static void spin_barrier_wait(spin_barrier_t *b)
+{
+  char *local_sense = b->local_sense + ARCH_CL_SIZE * vcore_id();
+  char current_local_sense = !*local_sense;
+  *local_sense = current_local_sense;
+
+  if (__sync_fetch_and_add(&b->count, -1) == 1) {
+    b->count = b->num_vcores;
+    b->sense = current_local_sense;
+  } else {
+    while (b->sense != current_local_sense)
+      cpu_relax();
+  }
 }
 
 #endif // SPINLOCK_H
