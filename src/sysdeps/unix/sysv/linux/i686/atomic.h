@@ -105,6 +105,22 @@ static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
     return (long)__sync_val_compare_and_swap(addr, exp_val, new_val);
 }
 
+/* Adds val to number, so long as number was not zero.  Returns TRUE if the
+ * operation succeeded (added, not zero), returns FALSE if number is zero. */
+static inline bool atomic_add_not_zero(atomic_t *number, long val)
+{
+    long old_num, new_num;
+    do {
+        old_num = atomic_read(number);
+        if (!old_num)
+            return false;
+        new_num = old_num + val;
+    } while (!atomic_cas(number, old_num, new_num));
+    return true;
+}
+
+#define atomic_add(mem, value) __sync_fetch_and_add(mem, value)
+
 /* Full CPU memory barrier */
 #define mb() ({ asm volatile("mfence" ::: "memory"); })
 /* Compiler memory barrier (optimization barrier) */
@@ -198,7 +214,6 @@ static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
 			 : "0" ((long) (newvalue)), "m" (*mem));	      \
      result; })
 
-
 #define atomic_exchange_and_add(mem, value) \
   ({ __typeof (*mem) result;						      \
      if (sizeof (*mem) == 1)						      \
@@ -218,31 +233,6 @@ static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
 			 : "=r" (result), "=m" (*mem)			      \
 			 : "0" ((long) (value)), "m" (*mem));		      \
      result; })
-
-
-#define atomic_add(mem, value) \
-  (void) ({ if (__builtin_constant_p (value) && (value) == 1)		      \
-	      atomic_increment (mem);					      \
-	    else if (__builtin_constant_p (value) && (value) == 1)	      \
-	      atomic_decrement (mem);					      \
-	    else if (sizeof (*mem) == 1)				      \
-	      __asm __volatile ("lock;" "addb %b1, %0"  	    	      \
-				: "=m" (*mem)				      \
-				: "ir" (value), "m" (*mem));		      \
-	    else if (sizeof (*mem) == 2)				      \
-	      __asm __volatile ("lock;" "addw %w1, %0"  		      \
-				: "=m" (*mem)				      \
-				: "ir" (value), "m" (*mem));		      \
-	    else if (sizeof (*mem) == 4)				      \
-	      __asm __volatile ("lock;" "addl %1, %0"   		      \
-				: "=m" (*mem)				      \
-				: "ir" (value), "m" (*mem));		      \
-	    else							      \
-	      __asm __volatile ("lock;" "addq %q1, %0"		              \
-				: "=m" (*mem)				      \
-				: "ir" ((long) (value)), "m" (*mem));	      \
-	    })
-
 
 #define atomic_add_negative(mem, value) \
   ({ unsigned char __result;						      \
@@ -286,26 +276,6 @@ static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
      __result; })
 
 
-#define atomic_increment(mem) \
-  (void) ({ if (sizeof (*mem) == 1)					      \
-	      __asm __volatile ("lock;" "incb %b0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    else if (sizeof (*mem) == 2)				      \
-	      __asm __volatile ("lock;" "incw %w0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    else if (sizeof (*mem) == 4)				      \
-	      __asm __volatile ("lock;" "incl %0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    else							      \
-	      __asm __volatile ("lock;" "incq %q0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    })
-
-
 #define atomic_increment_and_test(mem) \
   ({ unsigned char __result;						      \
      if (sizeof (*mem) == 1)						      \
@@ -325,26 +295,6 @@ static inline long atomic_cas_val(atomic_t *addr, long exp_val, long new_val)
 			 : "=m" (*mem), "=qm" (__result)		      \
 			 : "m" (*mem));					      \
      __result; })
-
-
-#define atomic_decrement(mem) \
-  (void) ({ if (sizeof (*mem) == 1)					      \
-	      __asm __volatile ("lock;" "decb %b0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    else if (sizeof (*mem) == 2)				      \
-	      __asm __volatile ("lock;" "decw %w0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    else if (sizeof (*mem) == 4)				      \
-	      __asm __volatile ("lock;" "decl %0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    else							      \
-	      __asm __volatile ("lock;" "decq %q0"			      \
-				: "=m" (*mem)				      \
-				: "m" (*mem));				      \
-	    })
 
 
 #define atomic_decrement_and_test(mem) \
