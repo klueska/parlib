@@ -63,6 +63,8 @@ typedef struct mcs_barrier_t
 # define mcs_lock_init INTERNAL(mcs_lock_init)
 # define mcs_lock_lock INTERNAL(mcs_lock_lock)
 # define mcs_lock_unlock INTERNAL(mcs_lock_unlock)
+# define mcs_barrier_init INTERNAL(mcs_barrier_init)
+# define mcs_barrier_wait INTERNAL(mcs_barrier_wait)
 #endif
 
 void mcs_lock_init(struct mcs_lock *lock);

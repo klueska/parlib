@@ -137,6 +137,10 @@ void mcs_barrier_wait(mcs_barrier_t* b, size_t pid)
 #undef mcs_lock_init
 #undef mcs_lock_lock
 #undef mcs_lock_unlock
+#undef mcs_barrier_init
+#undef mcs_barrier_wait
 EXPORT_ALIAS(INTERNAL(mcs_lock_init), mcs_lock_init)
 EXPORT_ALIAS(INTERNAL(mcs_lock_lock), mcs_lock_lock)
 EXPORT_ALIAS(INTERNAL(mcs_lock_unlock), mcs_lock_unlock)
+EXPORT_ALIAS(INTERNAL(mcs_barrier_init), mcs_barrier_init)
+EXPORT_ALIAS(INTERNAL(mcs_barrier_wait), mcs_barrier_wait)
