@@ -406,7 +406,7 @@ static int __vcore_request(int requested)
 
 int vcore_request(int requested)
 {
-  if (requested < 0)
+  if (requested < 0 || requested > max_vcores() - num_vcores())
     return -1;
 
   if (requested > 0)
