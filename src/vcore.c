@@ -204,19 +204,19 @@ static void vcore_entry_gate()
   assert(__in_vcore_context);
   int vcoreid = __vcore_id;
 
-  /* Deallocate the vcore. */
+  /* Update the vcore counts and set the flag for allocated to false */
   atomic_set(&__vcores(vcoreid).allocated, false);
   atomic_add(&__num_vcores, -1);
 
   /* Rerequest the vcore if a signal is pending. This has to come after
-   * deallocating the vcore above. Doing so allows us to never miss a signal
-   * because of the synchronization present in the __vcore_sigentry() call. */
+   * starting to deallocate the vcore above. Doing so allows us to never miss a
+   * signal because of the synchronization present in the __vcore_sigentry()
+   * call. */
   if (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1)
     vcore_request_specific(vcoreid);
 
   /* Wait for this vcore to get woken up. */
   futex_wait(&__vcores(vcoreid).allocated, false);
-  atomic_add(&__num_vcores, 1);
 
   /* Vcore is awake. Jump to the vcore's entry point */
   vcore_entry();
@@ -307,7 +307,6 @@ static void __create_vcore(int i)
    * get a chance to stop the thread and deallocate it in its entry gate */
   atomic_add(&__num_vcores, 1);
   atomic_set(&__vcores(i).allocated, true);
-  atomic_set(&__vcores(i).reserved, false);
 
   /* Actually create the vcore's backing pthread. */
   internal_pthread_create(VCORE_STACK_SIZE, __vcore_trampoline_entry, (void*)(long)i);
@@ -340,68 +339,58 @@ static bool vcore_request_init()
   return true;
 }
 
-static bool vcore_reserve_specific(int vcoreid)
+static bool reserve_vcores(int count)
 {
-  if (atomic_read(&__vcores(vcoreid).allocated) == false) {
-    if (atomic_swap(&__vcores(vcoreid).reserved, true) == false) {
-      return true;
-    }
-  }
-  return false;
+  long nvc;
+  do {
+    nvc = atomic_read(&__num_vcores);
+    if(count > (__max_vcores - nvc))
+      return false;
+  } while (!atomic_cas(&__num_vcores, nvc, nvc + count));
+  return true;
 }
 
-static bool reserve_vcores(int count, bool *list)
+static void cancel_vcore_reservation(int count)
 {
-  /* Try and reserve exactly 'count' vcores. If we can, return true. */
-  int reserved = 0;
-  for (int i=0; i < max_vcores(); i++) {
-    if (vcore_reserve_specific(i)) {
-       list[i] = true;
-       if (++reserved == count)
-        return true;
-    }
-  }
-
-  /* If we weren't able to reserve all 'count' vcores, then cancel the ones we
-   * were able to reserve, and return false. */
-  for (int i=0; reserved && (i < max_vcores()); i++) {
-    if (list[i]) {
-      atomic_set(&__vcores(i).reserved, false);
-      reserved--;
-    }
-  }
-  return false;
+  atomic_add(&__num_vcores, -count);
 }
 
 int vcore_request_specific(int vcoreid)
 {
-  if (vcore_reserve_specific(vcoreid)) {
-    atomic_set(&__vcores(vcoreid).reserved, false);
-    atomic_set(&__vcores(vcoreid).allocated, true);
+  // Preemptively try and reserve a vcore so we can request it
+  if (!reserve_vcores(1))
+    return -1;
+
+  // If we succeed, then try and allocate 'vcoreid' specifically.
+  if (atomic_swap(&__vcores(vcoreid).allocated, true) == false) {
     futex_wakeup_one(&__vcores(vcoreid).allocated);
     return 0;
   }
+
+  // Otherwise, cancel the reservation
+  cancel_vcore_reservation(1);
   return -1;
 }
 
 static int __vcore_request(int requested)
 {
-  /* If we aren't able to reserve all of the requested vcores for allocation,
-   * then we fail without allocating any of them.. */
-  bool reserved[max_vcores()];
-  if (!reserve_vcores(requested, reserved))
+  /* If there is no chance of waking up requested vcores, just bail out */
+  if (!reserve_vcores(requested))
     return -1;
 
-  /* Otherwise wake up exactly the number of vcores we just reserved, and
-   * return success. */
-  for (int i = 0; i < __max_vcores; i++) {
-    if (reserved[i]) {
-      atomic_set(&__vcores(i).reserved, false);
-      atomic_set(&__vcores(i).allocated, true);
-      futex_wakeup_one(&__vcores(i).allocated);
+  /* Otherwise wake up exactly the number of vcores we just reserved. */
+  int allocated = 0;
+  while (1) {
+    for (int i = 0; i < __max_vcores; i++) {
+      if (atomic_read(&__vcores(i).allocated) == false) {
+        if (atomic_swap(&__vcores(i).allocated, true) == false) {
+          futex_wakeup_one(&__vcores(i).allocated);
+          if (++allocated == requested)
+            return 0;
+        }
+      }
     }
   }
-  return 0;
 }
 
 int vcore_request(int requested)
