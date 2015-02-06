@@ -70,30 +70,42 @@ static inline void unsafe_uthread_yield(
 
 /* Allow this uthread to be interrupted by an incoming vcore signal. This is
  * the default once a uthread starts running. */
-static inline bool uth_enable_notifs_raw()
+static inline bool __uth_enable_notifs_raw(uthread_t *uthread)
 {
-	assert(current_uthread);
-	assert(current_uthread->disable_depth > 0);
-	bool ret = atomic_decrement_and_test(&current_uthread->disable_depth);
-	if (ret)
-		current_uthread->flags &= ~NO_INTERRUPT;
-	return ret;
+	assert(uthread);
+	assert(uthread->disable_depth > 0);
+	size_t new_depth = atomic_add(&uthread->disable_depth, -1) - 1;
+	if (new_depth == 0) {
+		uthread->flags &= ~NO_INTERRUPT;
+		return true;
+	}
+	return false;
+}
+
+static inline void __uth_enable_notifs(uthread_t *uthread)
+{
+	if (__uth_enable_notifs_raw(uthread))
+		maybe_resignal();
 }
 
 void EXPORT_SYMBOL uth_enable_notifs()
 {
-	if (uth_enable_notifs_raw())
-		maybe_resignal();
+	__uth_enable_notifs(current_uthread);
 }
 
 /* Don't allow this uthread to be interrupted by an incoming vcore signal */
+static inline void __uth_disable_notifs(uthread_t *uthread)
+{
+	assert(uthread);
+	atomic_add(&uthread->disable_depth, 1);
+	wmb();
+	uthread->flags |= NO_INTERRUPT;
+	assert(uthread->disable_depth > 0);
+}
+
 void EXPORT_SYMBOL uth_disable_notifs()
 {
-	assert(current_uthread);
-	atomic_increment(&current_uthread->disable_depth);
-	wmb();
-	current_uthread->flags |= NO_INTERRUPT;
-	assert(current_uthread->disable_depth > 0);
+	__uth_disable_notifs(current_uthread);
 }
 
 /* The real 2LS calls this, passing in a uthread representing thread0.  When it
@@ -196,7 +208,7 @@ void vcore_sigentry()
 		cmb();
 		uth_disable_notifs();
 		unsafe_uthread_yield(true, cb, 0);
-		uth_enable_notifs_raw();
+		__uth_enable_notifs_raw(current_uthread);
 
 		vcoreid = vcore_id();
 	} while (atomic_swap(&__vcore_sigpending(vcoreid), 0) == 1);
