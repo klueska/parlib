@@ -369,20 +369,24 @@ void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
  * and make sure that the new uthread struct is used to store this context upon
  * yielding, etc. USE WITH EXTREME CAUTION!
 */
-void EXPORT_SYMBOL hijack_current_uthread(struct uthread *uthread)
+void EXPORT_SYMBOL hijack_current_uthread(struct uthread *new_uthread)
 {
-	uthread_notif_safe(
-		assert(uthread != current_uthread);
-		current_uthread->state = UT_HIJACKED;
-		uthread->state = UT_RUNNING;
+	struct uthread *old_uthread = current_uthread;
+	assert(new_uthread != old_uthread);
+
+	__uth_disable_notifs(new_uthread);
+	__uth_disable_notifs(old_uthread);
+		old_uthread->state = UT_NOT_RUNNING;
+		new_uthread->state = UT_RUNNING;
 #ifdef PARLIB_NO_UTHREAD_TLS
-		uthread->dtls_data = current_uthread->dtls_data;
+		new_uthread->dtls_data = old_uthread->dtls_data;
 #else
-		uthread->tls_desc = current_uthread->tls_desc;
-		current_uthread = uthread;
+		new_uthread->tls_desc = old_uthread->tls_desc;
+		current_uthread = new_uthread;
 #endif
-		vcore_set_tls_var(current_uthread, uthread);
-	)
+		vcore_set_tls_var(current_uthread, new_uthread);
+	__uth_enable_notifs(old_uthread);
+	__uth_enable_notifs(new_uthread);
 }
 
 /* Runs whatever thread is vcore's current_uthread */

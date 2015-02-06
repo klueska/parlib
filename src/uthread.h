@@ -29,7 +29,6 @@
 /* Thread States */
 #define UT_RUNNING      1
 #define UT_NOT_RUNNING  2
-#define UT_HIJACKED     3
 
 /* Thread flags */
 #define NO_INTERRUPT		0x0001
