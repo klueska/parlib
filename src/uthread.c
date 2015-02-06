@@ -279,6 +279,7 @@ static void __attribute__((noinline, noreturn))
 __uthread_yield(void)
 {
 	assert(in_vcore_context());
+	assert(current_uthread);
 
 	struct uthread *uthread = current_uthread;
 
