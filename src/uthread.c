@@ -50,7 +50,7 @@
 /* Which operations we'll call for the 2LS.  Will change a bit with Lithe.  For
  * now, there are no defaults.  2LSs can override sched_ops. */
 static struct schedule_ops default_2ls_ops = {0};
-struct schedule_ops *sched_ops __attribute__((weak)) EXPORT_SYMBOL = &default_2ls_ops;
+struct schedule_ops *sched_ops EXPORT_SYMBOL = &default_2ls_ops;
 
 /* A pointer to the current thread running on a vcore */
 __thread struct uthread EXPORT_SYMBOL *current_uthread = 0;
