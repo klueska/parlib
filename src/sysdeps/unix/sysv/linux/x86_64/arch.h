@@ -70,8 +70,7 @@ static __inline void *get_current_tls_base()
 			: "=a" (addr)
 			:: "memory");
 #else
-  int ret = arch_prctl(ARCH_GET_FS, &addr);
-  assert(ret == 0);
+  arch_prctl(ARCH_GET_FS, &addr);
 #endif
   return (void *)addr;
 }
@@ -84,8 +83,7 @@ static __inline void set_current_tls_base(void *tls_desc)
 			:: "a" (tls_desc)
 			: "memory");
 #else
-  int ret = arch_prctl(ARCH_SET_FS, tls_desc);
-  assert(ret == 0);
+  arch_prctl(ARCH_SET_FS, (uintptr_t *)tls_desc);
 #endif
 }
 
