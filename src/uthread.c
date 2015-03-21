@@ -271,6 +271,15 @@ void EXPORT_SYMBOL uthread_has_blocked(struct uthread *uthread, int flags)
 		sched_ops->thread_has_blocked(uthread, flags);
 }
 
+/* Function indicating an external event has temporarily paused a uthread, but
+ * it is ok to resume it if possible. */
+void EXPORT_SYMBOL uthread_paused(struct uthread *uthread)
+{
+    uthread->state = UT_NOT_RUNNING;
+    /* Call out to the 2LS to package up its uthread */
+    assert(sched_ops->thread_paused);
+    sched_ops->thread_paused(uthread);
+}
 
 /* Need to have this as a separate, non-inlined function since we clobber the
  * stack pointer before calling it, and don't want the compiler to play games

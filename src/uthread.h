@@ -96,6 +96,10 @@ void uthread_cleanup(struct uthread *uthread);
 /* Function indicating an external event has blocked the uthread. */
 void uthread_has_blocked(struct uthread *uthread, int flags);
 
+/* Function indicating an external event has temporarily paused a uthread, but
+ * it is ok to resume it if possible. */
+void uthread_paused(struct uthread *uthread);
+
 /* Function forcing a uthread to become runnable */
 void uthread_runnable(struct uthread *uthread);
 
