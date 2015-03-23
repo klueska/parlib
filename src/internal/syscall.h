@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+/* Only enable this for testing! */
+//#define ALWAYS_BLOCK
+
 #ifdef __GLIBC__
 #define __SUPPORTED_C_LIBRARY__
 #define __internal_open __open
@@ -41,6 +44,23 @@ typedef struct {
   struct event_msg ev_msg;
 } yield_callback_arg_t;
 
+#ifdef ALWAYS_BLOCK
+#define uthread_blocking_call(__func_nonblock, __func_block, ...) \
+({ \
+  typeof(__func_block(__VA_ARGS__)) ret; \
+  yield_callback_arg_t arg = { NULL, {0} }; \
+  int vcoreid = vcore_id(); \
+  void *do_##__func(void *arg) { \
+    ret = __func_block(__VA_ARGS__); \
+    send_event((struct event_msg*)arg, EV_SYSCALL, vcoreid); \
+    return NULL; \
+  } \
+  arg.func = &do_##__func; \
+  uthread_yield(true, __uthread_yield_callback, &arg); \
+  current_uthread->sysc_timeout = 0; \
+  ret; \
+})
+#else
 #define uthread_blocking_call(__func_nonblock, __func_block, ...) \
 ({ \
   typeof(__func_block(__VA_ARGS__)) ret; \
@@ -59,6 +79,7 @@ typedef struct {
   current_uthread->sysc_timeout = 0; \
   ret; \
 })
+#endif
 
 static void __uthread_yield_callback(struct uthread *uthread, void *__arg) {
   yield_callback_arg_t *arg = (yield_callback_arg_t*)__arg;
