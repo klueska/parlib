@@ -25,7 +25,7 @@
 #include "vcore.h"
 #include "mcs.h"
 
-static mcs_lock_t lock = MCS_LOCK_INIT;
+static mcs_pdr_lock_t lock = MCS_PDRLOCK_INIT;
 
 int main(int argc, char** argv)
 {
@@ -58,9 +58,9 @@ void vcore_entry(void)
 	mcs_lock_qnode_t qnode = {0};
 	while(1) {
 		memset(&qnode, 0, sizeof(mcs_lock_qnode_t));
-		mcs_lock_lock(&lock, &qnode);
+		mcs_pdr_lock(&lock, &qnode);
 		printf("global_count: %d, on vcore %d\n", global_count++, vcoreid);
-		mcs_lock_unlock(&lock, &qnode);
+		mcs_pdr_unlock(&lock, &qnode);
 	}
 	assert(0);
 }

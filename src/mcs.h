@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #define MCS_LOCK_INIT {0}
+#define MCS_PDRLOCK_INIT {0}
 #define MCS_QNODE_INIT {0,0}
 
 typedef struct mcs_lock_qnode
@@ -42,6 +43,11 @@ typedef struct mcs_lock
 {
 	mcs_lock_qnode_t* lock;
 } mcs_lock_t;
+
+typedef struct mcs_pdr_lock
+{
+	mcs_lock_qnode_t* lock;
+} mcs_pdr_lock_t;
 
 typedef struct mcs_dissem_flags
 {
@@ -61,21 +67,24 @@ typedef struct mcs_barrier_t
 
 #ifdef COMPILING_PARLIB
 # define mcs_lock_init INTERNAL(mcs_lock_init)
+# define mcs_pdr_init INTERNAL(mcs_pdr_init)
 # define mcs_lock_lock INTERNAL(mcs_lock_lock)
 # define mcs_lock_unlock INTERNAL(mcs_lock_unlock)
+//# define mcs_pdr_lock INTERNAL(mcs_pdr_lock)
+# define mcs_pdr_unlock INTERNAL(mcs_pdr_unlock)
 # define mcs_barrier_init INTERNAL(mcs_barrier_init)
 # define mcs_barrier_wait INTERNAL(mcs_barrier_wait)
 #endif
 
 void mcs_lock_init(struct mcs_lock *lock);
+void mcs_pdr_init(struct mcs_pdr_lock *pdr_lock);
 /* Caller needs to alloc (and zero) their own qnode to spin on.  The memory
  * should be on a cacheline that is 'per-thread'.  This could be on the stack,
  * in a thread control block, etc. */
 void mcs_lock_lock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
 void mcs_lock_unlock(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
-/* If you lock the lock from vcore context, you must use these. */
-void mcs_lock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
-void mcs_unlock_notifsafe(struct mcs_lock *lock, struct mcs_lock_qnode *qnode);
+void mcs_pdr_lock(struct mcs_pdr_lock *pdr_lock, struct mcs_lock_qnode *qnode);
+void mcs_pdr_unlock(struct mcs_pdr_lock *pdr_lock, struct mcs_lock_qnode *qnode);
 
 void mcs_barrier_init(mcs_barrier_t* b, size_t nprocs);
 void mcs_barrier_wait(mcs_barrier_t* b, size_t vcoreid);
