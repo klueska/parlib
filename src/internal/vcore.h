@@ -27,6 +27,8 @@
 #include <stdbool.h>
 #include <asm/ldt.h>
 #include <bits/local_lim.h>
+#include <sys/queue.h>
+#include <signal.h>
 
 #include "arch.h"
 #include "parlib-config.h"
@@ -38,6 +40,12 @@
 
 #define SIGVCORE	SIGUSR1
 
+struct vcore_sigstack {
+	SLIST_ENTRY(vcore_sigstack) next;
+	void *sigstack[SIGSTKSZ - sizeof(SLIST_ENTRY(vcore_sigstack))];
+};
+SLIST_HEAD(vcore_sigstack_list, vcore_sigstack);
+
 struct vcore {
   /* For bookkeeping */
   atomic_t allocated;
@@ -47,6 +55,9 @@ struct vcore {
   /* Architecture-specific TLS context information, e.g. LDT on IA-32 */
   arch_tls_data_t arch_tls_data;
 #endif
+
+  /* List of sigstacks for use on this vcore. Grows, but never shrinks. */
+  struct vcore_sigstack_list sigstacklist;
 
   /* Pointer to the backing pthread for this vcore */
   pthread_t pthread;

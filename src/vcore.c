@@ -74,9 +74,6 @@ __thread int EXPORT_SYMBOL __vcore_id = -1;
 /* Top of stack of the currently running vcore. */
 static __thread void *__vcore_stack = NULL;
 
-/* A pointer to the current signal stack in use by the vcore */
-__thread void *__vcore_sigstack = NULL;
-
 /* Current user context running on a vcore, this used to restore a user context
  * if it is interrupted for some reason without yielding voluntarily */
 __thread struct user_context EXPORT_SYMBOL *vcore_saved_ucontext = NULL;
@@ -115,24 +112,36 @@ static size_t __min_stack_size = -1;
  * assigned.  */
 void __sigstack_swap(void **sigstack)
 {
-	if (sigstack) {
+	if (*sigstack) {
 		__sigstack_free(*sigstack);
-		*sigstack = __vcore_sigstack;
 	}
-	__vcore_sigstack = mmap(0, SIGSTKSZ, PROT_READ | PROT_WRITE,
-                            MAP_PRIVATE | MAP_POPULATE | MAP_ANONYMOUS, -1, 0);
 
-	stack_t altstack;
-	altstack.ss_sp = __vcore_sigstack;
-	altstack.ss_size = SIGSTKSZ;
-	altstack.ss_flags = 0;
-	assert(sigaltstack(&altstack, NULL) == 0);
+	int vcoreid = vcore_id();
+	struct vcore_sigstack *stack = SLIST_FIRST(&__vcores(vcoreid).sigstacklist);
+	if (stack) {
+		SLIST_REMOVE_HEAD(&__vcores(vcoreid).sigstacklist, next);
+	} else {
+		stack = mmap(0, SIGSTKSZ, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_POPULATE | MAP_ANONYMOUS, -1, 0);
+	}
+
+	stack_t newstack, oldstack;
+	newstack.ss_sp = stack;
+	newstack.ss_size = SIGSTKSZ;
+	newstack.ss_flags = 0;
+	int ret = sigaltstack(&newstack, &oldstack);
+	assert(ret == 0);
+	*sigstack = oldstack.ss_sp;
 }
 
 /* Free the signal stack */
-void __sigstack_free(void *sigstack)
+void __sigstack_free(void *__sigstack)
 {
-	munmap(sigstack, SIGSTKSZ);
+	if (__sigstack) {
+		int vcoreid = vcore_id();
+		struct vcore_sigstack *sigstack = (struct vcore_sigstack *)__sigstack;
+		SLIST_INSERT_HEAD(&__vcores(vcoreid).sigstacklist, sigstack, next);
+	}
 }
 
 /* Generic set affinity function */
@@ -259,9 +268,6 @@ static void __vcore_init(int vcoreid)
   /* Switch to the proper tls region */
   __set_tls_desc(vcore_tls_descs(vcoreid), vcoreid);
 
-  /* Set the signal stack for this vcore */
-  __sigstack_swap(NULL);
-
   /* Set that we are in vcore context */
   __in_vcore_context = true;
 
@@ -305,9 +311,11 @@ static void __create_vcore(int i)
   pthread_attr_init(&attr);
 
   /* Up the vcore count counts and set the flag for allocated until we
-   * get a chance to stop the thread and deallocate it in its entry gate */
+   * get a chance to stop the thread and deallocate it in its entry gate. Also
+   * initialize the sigstack list. */
   atomic_add(&__num_vcores, 1);
   atomic_set(&__vcores(i).allocated, true);
+  SLIST_INIT(&__vcores(i).sigstacklist);
 
   /* Actually create the vcore's backing pthread. */
   internal_pthread_create(VCORE_STACK_SIZE, __vcore_trampoline_entry, (void*)(long)i);
