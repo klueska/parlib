@@ -119,7 +119,8 @@ void __sigstack_swap(void **sigstack)
 		__sigstack_free(*sigstack);
 		*sigstack = __vcore_sigstack;
 	}
-	__vcore_sigstack = parlib_aligned_alloc(PGSIZE, SIGSTKSZ);
+	__vcore_sigstack = mmap(0, SIGSTKSZ, PROT_READ | PROT_WRITE,
+                            MAP_PRIVATE | MAP_POPULATE | MAP_ANONYMOUS, -1, 0);
 
 	stack_t altstack;
 	altstack.ss_sp = __vcore_sigstack;
@@ -131,7 +132,7 @@ void __sigstack_swap(void **sigstack)
 /* Free the signal stack */
 void __sigstack_free(void *sigstack)
 {
-	free(sigstack);
+	munmap(sigstack, SIGSTKSZ);
 }
 
 /* Generic set affinity function */
