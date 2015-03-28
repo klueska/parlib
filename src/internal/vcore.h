@@ -58,6 +58,7 @@ struct vcore {
 
   /* List of sigstacks for use on this vcore. Grows, but never shrinks. */
   struct vcore_sigstack_list sigstacklist;
+  void *activesigstack;
 
   /* Pointer to the backing pthread for this vcore */
   pthread_t pthread;
@@ -77,7 +78,7 @@ extern struct internal_vcore_pvc_data *internal_vcore_pvc_data;
 #define __vcore_sigpending(i) (internal_vcore_pvc_data[i].sigpending)
 
 void __sigstack_swap(void **sigstack);
-void __sigstack_free(void *sigstack);
+void __sigstack_free(void **sigstack);
 
 pthread_t internal_pthread_create(size_t stack_size,
                                   void *(*start_routine) (void *), void *arg);

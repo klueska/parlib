@@ -112,35 +112,35 @@ static size_t __min_stack_size = -1;
  * assigned.  */
 void __sigstack_swap(void **sigstack)
 {
-	if (*sigstack) {
-		__sigstack_free(*sigstack);
-	}
-
 	int vcoreid = vcore_id();
-	struct vcore_sigstack *stack = SLIST_FIRST(&__vcores(vcoreid).sigstacklist);
-	if (stack) {
-		SLIST_REMOVE_HEAD(&__vcores(vcoreid).sigstacklist, next);
-	} else {
-		stack = mmap(0, SIGSTKSZ, PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_POPULATE | MAP_ANONYMOUS, -1, 0);
+	struct vcore_sigstack *stack = *sigstack;
+	if (!stack) {
+		stack = SLIST_FIRST(&__vcores(vcoreid).sigstacklist);
+		if (stack) {
+			SLIST_REMOVE_HEAD(&__vcores(vcoreid).sigstacklist, next);
+		} else {
+			stack = mmap(0, SIGSTKSZ, PROT_READ | PROT_WRITE,
+			                MAP_PRIVATE | MAP_POPULATE | MAP_ANONYMOUS, -1, 0);
+		}
 	}
+	*sigstack = __vcores(vcoreid).activesigstack;
+	__vcores(vcoreid).activesigstack = stack;
 
-	stack_t newstack, oldstack;
-	newstack.ss_sp = stack;
-	newstack.ss_size = SIGSTKSZ;
-	newstack.ss_flags = 0;
-	int ret = sigaltstack(&newstack, &oldstack);
+	stack_t altstack;
+	altstack.ss_sp = stack;
+	altstack.ss_size = SIGSTKSZ;
+	altstack.ss_flags = SS_DISABLE;
+	int ret = sigaltstack(&altstack, NULL);
 	assert(ret == 0);
-	*sigstack = oldstack.ss_sp;
 }
 
 /* Free the signal stack */
-void __sigstack_free(void *__sigstack)
+void __sigstack_free(void **__sigstack)
 {
-	if (__sigstack) {
-		int vcoreid = vcore_id();
-		struct vcore_sigstack *sigstack = (struct vcore_sigstack *)__sigstack;
-		SLIST_INSERT_HEAD(&__vcores(vcoreid).sigstacklist, sigstack, next);
+	if (*__sigstack) {
+		struct vcore_sigstack *sigstack = (struct vcore_sigstack *)(*__sigstack);
+		SLIST_INSERT_HEAD(&__vcores(vcore_id()).sigstacklist, sigstack, next);
+		*__sigstack = NULL;
 	}
 }
 
@@ -189,7 +189,7 @@ static void __set_sigaction()
 {
 	struct sigaction act;
 	act.sa_sigaction = __vcore_sigentry;
-	act.sa_flags = SA_SIGINFO;
+	act.sa_flags = SA_SIGINFO | SA_ONSTACK;
 	sigemptyset(&act.sa_mask);
 	sigaction(SIGVCORE, &act, NULL);
 }
@@ -274,6 +274,11 @@ static void __vcore_init(int vcoreid)
   /* Assign the id to the tls variable */
   __vcore_id = vcoreid;
 
+  /* Initialize the sigstack stuff. */
+  __vcores(vcoreid).activesigstack = NULL;
+  SLIST_INIT(&__vcores(vcoreid).sigstacklist);
+  __sigstack_swap(&__vcores(vcoreid).activesigstack);
+
   /* Store a pointer to the backing pthread for this vcore */
   __vcores(vcoreid).pthread = pthread_self();
 
@@ -311,11 +316,9 @@ static void __create_vcore(int i)
   pthread_attr_init(&attr);
 
   /* Up the vcore count counts and set the flag for allocated until we
-   * get a chance to stop the thread and deallocate it in its entry gate. Also
-   * initialize the sigstack list. */
+   * get a chance to stop the thread and deallocate it in its entry gate. */
   atomic_add(&__num_vcores, 1);
   atomic_set(&__vcores(i).allocated, true);
-  SLIST_INIT(&__vcores(i).sigstacklist);
 
   /* Actually create the vcore's backing pthread. */
   internal_pthread_create(VCORE_STACK_SIZE, __vcore_trampoline_entry, (void*)(long)i);

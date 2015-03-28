@@ -243,8 +243,6 @@ void EXPORT_SYMBOL uthread_cleanup(struct uthread *uthread)
 		assert(uthread->tls_desc);
 		__uthread_free_tls(uthread);
 #endif
-	/* Free the uthread sigaltstack */
-	__sigstack_free(uthread->sigstack);
 }
 
 void EXPORT_SYMBOL uthread_runnable(struct uthread *uthread)
@@ -291,6 +289,9 @@ __uthread_yield(void)
 	assert(current_uthread);
 
 	struct uthread *uthread = current_uthread;
+
+	/* Free the uthread sigaltstack if there is one. */
+	__sigstack_free(&uthread->sigstack);
 
 	/* Do whatever the yielder wanted us to do */
 	assert(uthread->yield_func);
