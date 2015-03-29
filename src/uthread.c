@@ -375,17 +375,20 @@ void EXPORT_SYMBOL save_current_uthread(struct uthread *uthread)
 	parlib_getcontext(&uthread->uc);
 }
 
-/* Simply sets current uthread to be whatever the value of uthread is.  This
- * can be called from outside of sched_entry() to hijack the current context,
- * and make sure that the new uthread struct is used to store this context upon
- * yielding, etc. USE WITH EXTREME CAUTION!
+/* Simply sets current_uthread to be whatever the value of new_uthread is.
+ * This can be called from outside of sched_entry() to hijack the current
+ * context, and make sure that the new uthread struct is used to store this
+ * context upon yielding, etc. USE WITH EXTREME CAUTION!
 */
 void EXPORT_SYMBOL hijack_current_uthread(struct uthread *new_uthread)
 {
 	struct uthread *old_uthread = current_uthread;
 	assert(new_uthread != old_uthread);
+	new_uthread->state = UT_NOT_RUNNING;
+	new_uthread->flags = NO_INTERRUPT;
+	new_uthread->sigstack = NULL;
+	new_uthread->disable_depth = 1;
 
-	__uth_disable_notifs(new_uthread);
 	__uth_disable_notifs(old_uthread);
 		old_uthread->state = UT_NOT_RUNNING;
 		new_uthread->state = UT_RUNNING;
