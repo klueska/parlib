@@ -22,6 +22,7 @@
 #define _PARLIB_CONTEXT_H
 
 #ifdef COMPILING_PARLIB
+# include "internal/parlib.h"
 # define parlib_getcontext INTERNAL(parlib_getcontext)
 # define parlib_setcontext INTERNAL(parlib_setcontext)
 # define parlib_swapcontext INTERNAL(parlib_swapcontext)
