@@ -22,6 +22,7 @@ LIB_CFILES = \
   @SRCDIR@/vcore.c    \
   @SRCDIR@/parlib.c   \
   @SRCDIR@/timing.c   \
+  @SRCDIR@/signal.c   \
   @SRCDIR@/waitfreelist.c
 
 LIB_HFILES = \

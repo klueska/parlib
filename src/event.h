@@ -30,7 +30,8 @@ struct event_msg {
 #define EV_SYSCALL 1
 #define EV_ALARM 2
 #define EV_USER_IPI 3
-#define MAX_NR_EVENT 4
+#define EV_POSIX_SIGNAL 4
+#define MAX_NR_EVENT 5
 
 typedef void (*handle_event_t)(struct event_msg *ev_msg, unsigned ev_type);
 extern handle_event_t ev_handlers[MAX_NR_EVENT];

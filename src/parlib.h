@@ -34,10 +34,20 @@
 #include "dtls.h"
 #include "spinlock.h"
 #include "export.h"
+#include <signal.h>
 
 /* Function to obtain the main thread's stack bottom and size. Must be called
  * while running on the main thread, otherwise the values returned are
  * undefined. */
 void EXPORT_SYMBOL parlib_get_main_stack(void **bottom, size_t *size);
+
+struct sigdata {
+	siginfo_t info;
+	void *stack;
+};
+void init_posix_signals(void);
+struct sigdata *alloc_sigdata();
+void free_sigdata(struct sigdata *sigdata);
+void trigger_posix_signal(int sig_nr, siginfo_t *info, void *aux);
 
 #endif  // PARLIB_PARLIB_H
